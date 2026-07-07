@@ -19,34 +19,42 @@
   }, { threshold: 0.15 });
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-  // Formspree: reemplaza por tu endpoint real (crea uno nuevo en formspree.io, distinto al de MiVigía)
-  const FORMSPREE_ENDPOINT = 'TU_ENDPOINT_AQUI';
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mbdverne';
 
-  async function notifyFormspree(email) {
-    if (!FORMSPREE_ENDPOINT || FORMSPREE_ENDPOINT === 'TU_ENDPOINT_AQUI') return;
-    try {
-      await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email, message: 'Nuevo signup en la waitlist de MercadoAlerta' })
-      });
-    } catch { /* si falla el aviso por email, el signup ya quedó guardado en storage igual */ }
-  }
-
-  async function joinWaitlist(email, noteEl, btnEl) {
+  async function joinWaitlist(form, email, noteEl, btnEl) {
     if (!email) return;
+
     btnEl.disabled = true;
     const originalText = btnEl.textContent;
-    btnEl.textContent = 'Guardando...';
+    btnEl.textContent = 'Enviando...';
+    noteEl.textContent = '';
+    noteEl.classList.remove('success');
+
     try {
-      const key = 'waitlist-mercadoalerta:' + email.toLowerCase().trim();
-      await window.storage.set(key, JSON.stringify({ email, joined_at: new Date().toISOString() }), true);
-      notifyFormspree(email);
+      const formData = new FormData(form);
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('No se pudo enviar el formulario');
+
+      try {
+        const key = 'waitlist-mercadoalerta:' + email.toLowerCase().trim();
+        if (window.storage?.set) {
+          await window.storage.set(key, JSON.stringify({ email, joined_at: new Date().toISOString() }), true);
+        }
+      } catch {
+        // Si no se puede guardar localmente, el envío a Formspree ya quedó registrado.
+      }
+
       noteEl.textContent = '¡Listo! Te escribimos apenas abramos la beta.';
       noteEl.classList.add('success');
       btnEl.textContent = 'Anotado ✓';
+      form.reset();
     } catch (err) {
-      noteEl.textContent = 'Algo falló guardando tu correo. Intenta de nuevo.';
+      noteEl.textContent = 'No pudimos enviar tu correo. Intenta de nuevo.';
       btnEl.disabled = false;
       btnEl.textContent = originalText;
     }
@@ -55,13 +63,13 @@
   document.getElementById('waitlistForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('emailInput').value;
-    joinWaitlist(email, document.getElementById('formNote'), document.getElementById('submitBtn'));
+    joinWaitlist(document.getElementById('waitlistForm'), email, document.getElementById('formNote'), document.getElementById('submitBtn'));
   });
 
   document.getElementById('waitlistForm2').addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('emailInput2').value;
-    joinWaitlist(email, document.getElementById('formNote2'), document.getElementById('submitBtn2'));
+    joinWaitlist(document.getElementById('waitlistForm2'), email, document.getElementById('formNote2'), document.getElementById('submitBtn2'));
   });
 
   // Admin panel: visita la landing agregando #admin al final de la URL para verla

@@ -11,12 +11,14 @@
 </head>
 <body>
 
-<div class="wrap">
-  <nav>
-    <div class="logo"><span class="logo-seal"></span>MercadoAlerta</div>
-    <a href="#waitlist" class="nav-cta">Unirse a la beta</a>
-  </nav>
-</div>
+  <section id="head">
+    <div class="wrap" >
+      <nav>
+        <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
+        <a href="#waitlist" class="nav-cta">Unirse a la beta</a>
+      </nav>
+    </div>
+  </section>
 
 <div class="ticker-outer">
   <div class="ticker-track" id="tickerTrack"></div>
@@ -28,8 +30,9 @@
     <h1>Las licitaciones que te interesan,<br>directo a tu correo — <em>apenas se publican</em>.</h1>
     <p class="hero-sub">MercadoAlerta revisa Mercado Público varias veces al día y te avisa solo cuando aparece una licitación o una Compra Ágil en tu rubro, tu presupuesto o tu región. Nada de entrar a revisar a mano todos los días.</p>
 
-    <form class="waitlist-form" id="waitlistForm">
-      <input type="email" id="emailInput" placeholder="tu@email.com" required>
+    <form class="waitlist-form" id="waitlistForm" action="https://formspree.io/f/mbdverne" method="POST">
+      <input type="email" id="emailInput" name="email" placeholder="tu@email.com" required autocomplete="email">
+      <input type="hidden" name="source" value="landing-mercadoalerta">
       <button type="submit" class="btn" id="submitBtn">Quiero entrar a la beta</button>
     </form>
     <div class="form-note" id="formNote">Sin tarjeta. Cupos limitados para la beta cerrada. Pensado para micro, pequeñas y medianas empresas (EMT).</div>
@@ -85,15 +88,15 @@
     </div>
     <div class="problem-grid">
       <div class="problem-card">
-        <div class="mark">→</div>
+        <div class="mark"><div class="icon"><img src="/assets/icons/calendario-exclamacion.svg" class="icon-desc"></img></div></div>
         <p><strong>Te enteras tarde.</strong> Revisas el portal una vez a la semana y para cuando ves una licitación que te interesa, el plazo ya está encima — y una Compra Ágil puede cerrar en solo 24 horas.</p>
       </div>
       <div class="problem-card">
-        <div class="mark">→</div>
+        <div class="mark"><div class="icon"><img src="/assets/icons/ajustes-deslizadores.svg" class="icon-desc"></img></div></div>
         <p><strong>Filtrar a mano toma tiempo.</strong> El buscador de Mercado Público no está pensado para "avísame solo de esto" — tienes que revisar todo cada vez.</p>
       </div>
       <div class="problem-card">
-        <div class="mark">→</div>
+        <div class="mark"><div class="icon"><img src="/assets/icons/comenta-alt-check.svg" class="icon-desc"></img></div></div>
         <p><strong>Se te pasan oportunidades reales.</strong> Sin un sistema de alertas, dependes de acordarte de entrar — y algunas semanas simplemente no alcanzas.</p>
       </div>
     </div>
@@ -106,18 +109,18 @@
     </div>
     <div class="steps">
       <div class="step">
-        <div class="step-num">01</div>
-        <h3>Define tus criterios</h3>
+        <div class="icon"><img src="/assets/icons/hacer.svg" class="icon-desc"></img></div>
+        <div class="step-num">01 - Define tus criterios</div>
         <p>Categoría o rubro, monto mínimo, región — lo que sea relevante para tu negocio.</p>
       </div>
       <div class="step">
-        <div class="step-num">02</div>
-        <h3>Nosotros revisamos Mercado Público</h3>
+        <div class="icon"><img src="/assets/icons/lupa-analitica.svg" class="icon-desc"></img></div>
+        <div class="step-num">02 - Nosotros revisamos Mercado Público</div>
         <p>Varias veces al día, cruzando cada licitación nueva contra tus criterios.</p>
       </div>
       <div class="step">
-        <div class="step-num">03</div>
-        <h3>Te llega la alerta</h3>
+        <div class="icon"><img src="/assets/icons/sonido-de-timbre.svg" class="icon-desc"></img></div>
+        <div class="step-num">03 - Te llega la alerta</div>
         <p>Por email o Telegram, con el detalle y la fecha de cierre, apenas hay una coincidencia.</p>
       </div>
     </div>
@@ -149,8 +152,9 @@
   <section class="footer-cta reveal" id="waitlist">
     <h2>Sé de los primeros en probarlo.</h2>
     <p class="hero-sub">Estamos armando la beta cerrada. Deja tu correo y te avisamos apenas haya cupo.</p>
-    <form class="waitlist-form" id="waitlistForm2">
-      <input type="email" id="emailInput2" placeholder="tu@email.com" required>
+    <form class="waitlist-form" id="waitlistForm2" action="https://formspree.io/f/mbdverne" method="POST">
+      <input type="email" id="emailInput2" name="email" placeholder="tu@email.com" required autocomplete="email">
+      <input type="hidden" name="source" value="landing-mercadoalerta2">
       <button type="submit" class="btn" id="submitBtn2">Unirme a la lista</button>
     </form>
     <div class="form-note" id="formNote2"></div>
