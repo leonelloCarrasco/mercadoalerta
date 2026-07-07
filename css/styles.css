@@ -25,20 +25,28 @@
   a { color: inherit; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
+  #head {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg);
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }
+
   /* ---------- NAV ---------- */
   nav {
     display: flex; align-items: center; justify-content: space-between;
     padding: 24px 0;
   }
   .logo {
-    font-family: var(--font-display);
     font-weight: 600;
     font-size: 21px;
     letter-spacing: -0.01em;
     display: flex; align-items: center; gap: 10px;
   }
   .logo-seal {
-    width: 20px; height: 20px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     border: 1.5px solid var(--gold);
     display: flex; align-items: center; justify-content: center;
   }
@@ -241,10 +249,21 @@
   .problem-card .mark { font-family: var(--font-mono); font-size: 13px; color: var(--gold); margin-bottom: 14px; }
   .problem-card p { font-size: 15px; color: var(--text-muted); }
   .problem-card strong { color: var(--text); font-weight: 500; }
+  
+  .icon {
+    height: 50px;
+    width: 50px; 
+    background-color: #8B90A8; 
+    border-radius: 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+  .icon-desc {height: 40px;}
 
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
-  .step-num { font-family: var(--font-mono); font-size: 13px; color: var(--gold); margin-bottom: 16px; }
+  .step-num { font-family: var(--font-mono); font-size: 20px; color: var(--gold); margin-bottom: 16px; }
   .step h3 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-bottom: 8px; }
   .step p { color: var(--text-muted); font-size: 14px; }
 
