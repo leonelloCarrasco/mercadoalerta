@@ -3,21 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MercadoAlerta — Licitaciones del Estado, directo a tu correo</title>
-<link rel="stylesheet" href="css/styles.css">
+<title>MercadoAlerta — Licitaciones y Compras Ágiles, antes de que se te escapen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 
   <section id="head">
-    <div class="wrap" >
-      <nav>
-        <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
-        <a href="#waitlist" class="nav-cta">Unirse a la beta</a>
-      </nav>
+<div class="wrap">
+  <nav>
+    <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
+    <div class="nav-links">
+      <a class="plain" href="#planes">Planes</a>
+      <a class="plain" href="#como-funciona">Cómo funciona</a>
+      <a class="nav-cta dashboard-link" data-path="/login.html" href="https://dashboard.mercadoalerta.cl/login.html">Iniciar sesión</a>
     </div>
+  </nav>
+</div>
   </section>
 
 <div class="ticker-outer">
@@ -26,73 +29,30 @@
 
 <div class="wrap">
   <section class="hero">
-    <div class="eyebrow">Para PyMEs proveedoras del Estado</div>
-    <h1>Las licitaciones que te interesan,<br>directo a tu correo — <em>apenas se publican</em>.</h1>
-    <p class="hero-sub">MercadoAlerta revisa Mercado Público varias veces al día y te avisa solo cuando aparece una licitación o una Compra Ágil en tu rubro, tu presupuesto o tu región. Nada de entrar a revisar a mano todos los días.</p>
-
-    <form class="waitlist-form" id="waitlistForm" action="https://formspree.io/f/mbdverne" method="POST">
-      <input type="email" id="emailInput" name="email" placeholder="tu@email.com" required autocomplete="email">
-      <input type="hidden" name="source" value="landing-mercadoalerta">
-      <button type="submit" class="btn" id="submitBtn">Quiero entrar a la beta</button>
-    </form>
-    <div class="form-note" id="formNote">Sin tarjeta. Cupos limitados para la beta cerrada. Pensado para micro, pequeñas y medianas empresas (EMT).</div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <span>MERCADOALERTA · BOLETÍN DE COINCIDENCIAS</span>
-        <span class="live"><span class="live-dot"></span>ÚLTIMA REVISIÓN HACE 47 MIN</span>
-      </div>
-      <div class="bulletin-item">
-        <div class="bulletin-top">
-          <span class="bulletin-codigo">1488587-15-LE26</span>
-          <span class="bulletin-badge">Cierra en 8 días</span>
-        </div>
-        <div class="bulletin-title">Mantenimiento de salas de aprendizaje — Universidad de La Serena</div>
-        <div class="bulletin-meta">
-          <span>Categoría: <strong>Construcción residencial</strong></span>
-          <span>Monto est.: <strong>$40.740.000</strong></span>
-          <span>Región: <strong>Coquimbo</strong></span>
-        </div>
-      </div>
-      <div class="bulletin-item">
-        <div class="bulletin-top">
-          <span class="bulletin-codigo">1057489-138-LE26</span>
-          <span class="bulletin-badge">Cierra en 3 días</span>
-        </div>
-        <div class="bulletin-title">Convenio de suministro de dispositivos médicos — Hospital del Salvador</div>
-        <div class="bulletin-meta">
-          <span>Categoría: <strong>Insumos médicos</strong></span>
-          <span>Monto est.: <strong>$18.200.000</strong></span>
-          <span>Región: <strong>Metropolitana</strong></span>
-        </div>
-      </div>
-      <div class="bulletin-item">
-        <div class="bulletin-top">
-          <span class="bulletin-codigo">CA-4471-2026</span>
-          <span class="bulletin-badge">Compra Ágil · cierra en 24 hrs</span>
-        </div>
-        <div class="bulletin-title">Arriendo de equipos audiovisuales — Municipalidad de Providencia</div>
-        <div class="bulletin-meta">
-          <span>Categoría: <strong>Equipamiento audiovisual</strong></span>
-          <span>Monto est.: <strong>$2.100.000</strong></span>
-          <span>Región: <strong>Metropolitana</strong></span>
-        </div>
+    <div class="hero-content">
+      <div class="eyebrow">Para PyMEs que le venden al Estado</div>
+      <h1>Las Licitaciones y Compras Ágiles que te interesan,<br>antes de que <em>se te escapen</em>.</h1>
+      <p class="hero-sub"><strong>MercadoAlerta</strong> revisa Mercado Público por ti, día y noche, y te avisa apenas aparece algo que calza con lo que buscas — sin entrar a revisar a mano todos los días.</p>
+      <div class="hero-ctas">
+        <a href="#planes" class="btn btn-primary">Ver planes</a>
+        <a href="https://dashboard.mercadoalerta.cl/pre-registro-empresa.html?plan=trial" class="btn btn-ghost dashboard-link" data-path="/pre-registro-empresa.html?plan=trial">Empezar gratis</a>
       </div>
     </div>
+    <img src="/assets/mercadoalerta-dashboard-browser.png" class="hero-image" alt="Dashboard de MercadoAlerta">
   </section>
 
   <section class="section reveal">
     <div class="section-head">
       <div class="section-eyebrow">El problema</div>
-      <h2>Mercado Público publica cientos de licitaciones y Compras Ágiles al día. Tú solo necesitas ver las tuyas.</h2>
+      <h2>Mercado Público publica cientos de Licitaciones y Compras Ágiles al día. Tú solo necesitas ver las tuyas.</h2>
     </div>
     <div class="problem-grid">
       <div class="problem-card">
         <div class="mark"><div class="icon"><img src="/assets/icons/calendario-exclamacion.svg" class="icon-desc"></img></div></div>
-        <p><strong>Te enteras tarde.</strong> Revisas el portal una vez a la semana y para cuando ves una licitación que te interesa, el plazo ya está encima — y una Compra Ágil puede cerrar en solo 24 horas.</p>
+        <p><strong>Te enteras tarde.</strong> Revisas el portal una vez a la semana y para cuando ves una Licitación que te interesa, el plazo ya está encima — y una Compra Ágil puede cerrar en solo 24 horas.</p>
       </div>
       <div class="problem-card">
-        <div class="mark"><div class="icon"><img src="/assets/icons/ajustes-deslizadores.svg" class="icon-desc"></img></div></div>
+        <div class="mark"><div class="icon"><img src="/assets/icons/lista-de-filtros.svg" class="icon-desc"></img></div></div>
         <p><strong>Filtrar a mano toma tiempo.</strong> El buscador de Mercado Público no está pensado para "avísame solo de esto" — tienes que revisar todo cada vez.</p>
       </div>
       <div class="problem-card">
@@ -102,69 +62,145 @@
     </div>
   </section>
 
-  <section class="section reveal">
+  <section class="section reveal" id="como-funciona">
     <div class="section-head">
       <div class="section-eyebrow">Cómo funciona</div>
       <h2>Configura una vez, recibe siempre.</h2>
     </div>
     <div class="steps">
       <div class="step">
-        <div class="icon"><img src="/assets/icons/hacer.svg" class="icon-desc"></img></div>
-        <div class="step-num">01 - Define tus criterios</div>
-        <p>Categoría o rubro, monto mínimo, región — lo que sea relevante para tu negocio.</p>
+        <div class="icon"><img src="/assets/icons/editar.svg" class="icon-desc"></img></div>
+        <div class="step-num">01 - Registra tu empresa y usuario(s)</div>
+        <p>Validamos tu RUT contra Mercado Público — un paso único. El resto de los usuarios de tu empresa no lo vuelven a hacer.</p>
       </div>
       <div class="step">
-        <div class="icon"><img src="/assets/icons/lupa-analitica.svg" class="icon-desc"></img></div>
-        <div class="step-num">02 - Nosotros revisamos Mercado Público</div>
-        <p>Varias veces al día, cruzando cada licitación nueva contra tus criterios.</p>
+        <div class="icon"><img src="/assets/icons/ajustes-deslizadores.svg" class="icon-desc"></img></div>
+        <div class="step-num">02 - Configura tus alertas</div>
+        <p>Categoría, monto mínimo, región — lo que sea relevante para tu negocio. Licitaciones y Compras Ágiles, en un solo lugar.</p>
       </div>
       <div class="step">
         <div class="icon"><img src="/assets/icons/sonido-de-timbre.svg" class="icon-desc"></img></div>
-        <div class="step-num">03 - Te llega la alerta</div>
-        <p>Por email o Telegram, con el detalle y la fecha de cierre, apenas hay una coincidencia.</p>
+        <div class="step-num">03 - Recibe el aviso</div>
+        <p>Por email o Telegram, apenas hay una coincidencia. Nada de revisar el portal a mano todos los días.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal" id="planes">
+    <div class="section-head">
+      <div class="section-eyebrow">Planes</div>
+      <h2>Un plan para cada etapa de tu empresa.</h2>
+      <p class="section-sub">Todos los planes incluyen el mismo motor de alertas — Licitaciones y Compras Ágiles, email y Telegram, historial completo. La diferencia es cuántas personas de tu equipo pueden tener su propia cuenta y las alertas configuradas.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-plan-name">Trial</div>
+        <div class="price-plan-desc">7 días gratis para probar antes de decidir.</div>
+        <div class="price-now">
+          <span class="price-amount">Gratis</span>
+        </div>
+        <div class="price-later">Por 7 días · luego puedes elegir Basic o Full para seguir usándolo</div>
+        <ul class="price-features">
+          <li><strong>1 usuario</strong> en tu empresa</li>
+          <li>Hasta <strong>3 alertas</strong> activas</li>
+          <li><strong>1 categoría</strong> por alerta</li>
+          <li>Licitaciones y Compras Ágiles</li>
+          <li>Alertas por email y Telegram</li>
+          <li>Historial completo</li>
+          <li>Sin tarjeta de crédito</li>
+        </ul>
+        <a href="https://dashboard.mercadoalerta.cl/pre-registro-empresa.html?plan=trial" class="btn btn-ghost dashboard-link" data-path="/pre-registro-empresa.html?plan=trial">Empezar gratis</a>
+      </div>
+
+      <div class="price-card destacado">
+        <div class="price-stamp">OFERTA DE LANZAMIENTO</div>
+        <div class="price-plan-name">Basic</div>
+        <div class="price-plan-desc">Para equipos chicos que ya postulan seguido.</div>
+        <div class="price-now">
+          <span class="price-amount">$8.990</span>
+          <span class="price-period">CLP / mes</span>
+        </div>
+        <div class="price-later">Precio normal $12.990/mes — congelado a tu fecha de contratación</div>
+        <ul class="price-features">
+          <li><strong>2 usuarios</strong> en tu empresa</li>
+          <li>Hasta <strong>10 alertas</strong> activas</li>
+          <li>Hasta <strong>3 categorías</strong> por alerta</li>
+          <li>Licitaciones y Compras Ágiles</li>
+          <li>Alertas por email y Telegram</li>
+          <li>Historial completo</li>
+        </ul>
+        <a href="https://dashboard.mercadoalerta.cl/pre-registro-empresa.html?plan=basico" class="btn btn-primary dashboard-link" data-path="/pre-registro-empresa.html?plan=basico">Elegir Basic</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-stamp">OFERTA DE LANZAMIENTO</div>
+        <div class="price-plan-name">Full</div>
+        <div class="price-plan-desc">Para equipos que postulan a diario.</div>
+        <div class="price-now">
+          <span class="price-amount">$14.990</span>
+          <span class="price-period">CLP / mes</span>
+        </div>
+        <div class="price-later">Precio normal $18.990/mes — congelado a tu fecha de contratación</div>
+        <ul class="price-features">
+          <li><strong>5 usuarios</strong> en tu empresa</li>
+          <li>Hasta <strong>20 alertas</strong> activas</li>
+          <li>Hasta <strong>5 categorías</strong> por alerta</li>
+          <li>Licitaciones y Compras Ágiles</li>
+          <li>Alertas por email y Telegram</li>
+          <li>Historial completo</li>
+        </ul>
+        <a href="https://dashboard.mercadoalerta.cl/pre-registro-empresa.html?plan=full" class="btn btn-ghost dashboard-link" data-path="/pre-registro-empresa.html?plan=full">Elegir Full</a>
       </div>
     </div>
   </section>
 
   <section class="section reveal">
     <div class="section-head">
-      <div class="section-eyebrow">Precio</div>
-      <h2>Un plan simple, para empezar.</h2>
+      <div class="section-eyebrow">Preguntas frecuentes</div>
+      <h2>Antes de que preguntes.</h2>
     </div>
-    <div class="pricing-card">
-      <div class="pricing-badge">PRECIO BETA — DE POR VIDA</div>
-      <div class="price-strike">$12.990/mes</div>
-      <div class="price-line">
-        <span class="price-amount">$6.990</span>
-        <span class="price-period">CLP / mes</span>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>¿Por qué tengo que registrar mi empresa antes que mi usuario?</h3>
+        <p>Validamos el RUT de tu empresa contra Mercado Público una sola vez. Una vez validada, cualquier persona de tu equipo (hasta el límite de tu plan) puede crear su propia cuenta sin repetir ese paso.</p>
       </div>
-      <div class="cell-sub" style="margin-bottom: 0; color: var(--text-muted); font-size: 13px;">14 días de prueba, sin tarjeta. Exclusivo para Empresas de Menor Tamaño (EMT).</div>
-      <ul class="price-features">
-        <li>Licitaciones y Compras Ágiles</li>
-        <li>Hasta 5 categorías monitoreadas</li>
-        <li>Revisión varias veces al día</li>
-        <li>Alertas por email y Telegram</li>
-        <li>Historial de oportunidades detectadas</li>
-      </ul>
+      <div class="faq-item">
+        <h3>¿Qué pasa cuando termine mi período de prueba?</h3>
+        <p>Tienes 7 días gratis con el plan Trial. Pasado ese plazo, tu cuenta queda bloqueada hasta que elijas el plan Basic o Full y completes el pago — tus alertas y configuraciones quedan guardadas, no se pierden.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿El precio de $8.990 / $14.990 es para siempre?</h3>
+        <p>Es el precio de lanzamiento vigente hoy. Si contratas ahora, ese precio queda congelado para tu empresa aunque el precio de lista suba más adelante — lo dejamos por escrito en los términos y condiciones.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Puedo tener más de un usuario en el plan Trial?</h3>
+        <p>No — Trial está pensado para probar la herramienta con una sola cuenta, por 7 días. Si tu equipo necesita más de un usuario, los planes Basic (2 usuarios) y Full (5 usuarios) están hechos para eso.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Cómo se paga la suscripción?</h3>
+        <p>A través de MercadoPago, con cargo automático mensual a tu tarjeta. Puedes cancelar cuando quieras desde tu cuenta.</p>
+      </div>
     </div>
   </section>
 
-  <section class="footer-cta reveal" id="waitlist">
-    <h2>Sé de los primeros en probarlo.</h2>
-    <p class="hero-sub">Estamos armando la beta cerrada. Deja tu correo y te avisamos apenas haya cupo.</p>
-    <form class="waitlist-form" id="waitlistForm2" action="https://formspree.io/f/mbdverne" method="POST">
-      <input type="email" id="emailInput2" name="email" placeholder="tu@email.com" required autocomplete="email">
-      <input type="hidden" name="source" value="landing-mercadoalerta2">
-      <button type="submit" class="btn" id="submitBtn2">Unirme a la lista</button>
-    </form>
-    <div class="form-note" id="formNote2"></div>
+  <section class="footer-cta reveal">
+    <h2>Deja de revisar Mercado Público a mano.</h2>
+    <p class="hero-sub">Regístrate gratis con el plan Trial, o elige el plan que calce con tu equipo.</p>
+    <div class="hero-ctas">
+      <a href="https://dashboard.mercadoalerta.cl/pre-registro-empresa.html?plan=trial" class="btn btn-primary dashboard-link" data-path="/pre-registro-empresa.html?plan=trial">Empezar gratis</a>
+      <a href="#planes" class="btn btn-ghost">Ver todos los planes</a>
+    </div>
   </section>
 </div>
 
+<footer>
+  <div class="footer-logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
+  <p>Herramienta independiente, sin afiliación con ChileCompra ni Mercado Público</p>
+  <p>© 2024 MercadoAlerta. Todos los derechos reservados.</p>
+</footer>
 
-<footer>MERCADOALERTA — proyecto en validación · no es un producto disponible aún</footer>
-
-<script src="js/main.js"></script>
+<script src="js/index.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — MercadoAlerta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <div class="logo"><span class="logo-seal"></span>MercadoAlerta</div>
+    <div class="user-info">
+      <span id="userInfo">Cargando...</span>
+      <span class="logout" id="logoutBtn">Cerrar sesión</span>
+    </div>
+  </nav>
+
+  <h1>Tus alertas</h1>
+  <p class="section-sub">Configura qué Licitaciones y Compras Ágiles quieres monitorear.</p>
+
+  <section>
+    <div class="section-head">
+      <h2>Nueva alerta</h2>
+    </div>
+    <div class="card">
+      <form class="form-grid" id="newAlertForm">
+        <div class="field">
+          <label for="montoMinimo">Monto mínimo (CLP)</label>
+          <input type="text" inputmode="numeric" id="montoMinimo" placeholder="$1.000.000">
+          <small>Opcional. Solo Licitaciones/Compras Ágiles sobre este monto.</small>
+        </div>
+        <div class="field">
+          <label for="region">Región</label>
+          <select id="region">
+            <option value="">Todas las regiones</option>
+          </select>
+          <small>Opcional. Selecciona la región a monitorear.</small>
+        </div>
+        <div class="field">
+          <label for="categorias">Categorías (códigos)</label>
+          <input type="text" id="categorias" placeholder="72131500, 43211500">
+          <small>Opcional, separados por coma. Solo aplica a Licitaciones.</small>
+        </div>
+        <div class="field field-btn">
+          <button type="submit" class="btn" id="createBtn">🔔 Crear alerta</button>
+        </div>
+      </form>
+    </div>
+  </section>
+  <div class="error-banner" id="errorBanner"></div>
+  <div class="plan-banner" id="planBanner" style="display:none;"></div>
+  <section>
+    <div class="section-head">
+      <h2>Alertas configuradas</h2>
+    </div>
+    <details class="filter-toggle">
+      <summary>Filtros</summary>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="filtroEstado">Estado</label>
+          <select id="filtroEstado">
+            <option value="">Todos</option>
+            <option value="true">Activa</option>
+            <option value="false">Pausada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroMontoConfig">Monto mín. desde</label>
+          <input type="text" inputmode="numeric" id="filtroMontoConfig" placeholder="$0">
+        </div>
+        <div class="field">
+          <label for="filtroRegionConfig">Región</label>
+          <select id="filtroRegionConfig"></select>
+        </div>
+        <div class="field">
+          <label for="filtroCategoriaConfig">Categoría</label>
+          <input type="text" id="filtroCategoriaConfig" placeholder="72131500">
+        </div>
+      </div>
+    </details>
+    <div class="card" id="configsCard">
+      <div class="loading">Cargando...</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Historial de notificaciones</h2>
+    </div>
+    <details class="filter-toggle">
+      <summary>Filtros</summary>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="filtroTipoHist">Tipo</label>
+          <select id="filtroTipoHist">
+            <option value="">Todos</option>
+            <option value="licitacion">Licitación</option>
+            <option value="compra_agil">Compra Ágil</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroMontoHist">Monto desde</label>
+          <input type="text" inputmode="numeric" id="filtroMontoHist" placeholder="$0">
+        </div>
+        <div class="field">
+          <label for="filtroFechaHist">Cierra desde</label>
+          <input type="date" id="filtroFechaHist">
+        </div>
+        <div class="field">
+          <label for="filtroFechaEnvioHist">Fecha de envío</label>
+          <input type="date" id="filtroFechaEnvioHist">
+        </div>
+      </div>
+    </details>
+    <div class="card" id="historyCard">
+      <div class="loading">Cargando...</div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <p class="modal-message" id="confirmModalMessage">¿Eliminar esta alerta?</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="confirmModalCancel">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="confirmModalAccept">✖ Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>
