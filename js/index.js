@@ -1,7 +1,7 @@
 // Detecta automáticamente si estamos en desarrollo local o en producción
 const DASHBOARD_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://127.0.0.1:5501'
-  : 'https://dashboard.mercadoalerta.cl';
+  : 'https://mercadoalerta.cl';
 
 document.querySelectorAll('.dashboard-link').forEach(a => {
   a.href = DASHBOARD_BASE + a.dataset.path;
