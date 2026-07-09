@@ -231,3 +231,10 @@ footer {
     padding-top: 20px;
     padding-bottom: 12px;
   }
+
+.btn-deshabilitado {
+  pointer-events: none; /* Evita clics y eventos de teclado */
+  color: gray;          /* Cambia el color para indicar que está inactivo */
+  text-decoration: none; /* Quita el subrayado si lo deseas */
+  cursor: not-allowed;   /* Cambia el cursor para mostrar que no se puede interactuar */
+}
