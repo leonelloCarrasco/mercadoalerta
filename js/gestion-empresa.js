@@ -1,6 +1,6 @@
 const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-  ? 'http://127.0.0.1:5501'
-  : 'https://mercadoalerta.cl';
+  ? 'http://localhost:3000'
+  : 'https://api.mercadoalerta.cl';
 
 const solicitarCard = document.getElementById('solicitarCard');
 const verificandoCard = document.getElementById('verificandoCard');
