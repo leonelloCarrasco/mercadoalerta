@@ -23,4 +23,4 @@ El token de sesión se guarda en `sessionStorage` (no `localStorage`) para reduc
 
 ## Deploy
 
-El sitio se sirve como estático. El dominio de la landing está definido en `CNAME` (`mercadoalerta.cl`); el dashboard se despliega por separado en `dashboard.mercadoalerta.cl`.
+El sitio se sirve como estático. El dominio de la landing está definido en `CNAME` (`mercadoalerta.cl`).
