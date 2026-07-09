@@ -129,6 +129,8 @@ function confirmDialog(mensaje) {
 async function cargarUsuario() {
   try {
     const data = await apiFetch('/api/auth/me');
+    window.usuarioActual = data.usuario;
+
     const nombreCompleto = data.usuario.nombre
       ? `${data.usuario.nombre} ${data.usuario.apellido || ''}`.trim()
       : data.usuario.email;
@@ -454,6 +456,81 @@ function renderHistorial() {
 document.getElementById('logoutBtn').addEventListener('click', () => {
   sessionStorage.removeItem('token');
   window.location.href = 'login.html';
+});
+
+// --- Modal de perfil ---
+const profileModal = document.getElementById('profileModal');
+const profileForm = document.getElementById('profileForm');
+const passwordForm = document.getElementById('passwordForm');
+const profileInfoMsg = document.getElementById('profileInfoMsg');
+const passwordInfoMsg = document.getElementById('passwordInfoMsg');
+
+function mostrarMensajeForm(el, mensaje, esExito) {
+  el.textContent = mensaje;
+  el.className = esExito ? 'form-note success' : 'form-note';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+document.getElementById('profileBtn').addEventListener('click', () => {
+  const u = window.usuarioActual;
+  if (!u) return;
+  document.getElementById('profileEmail').textContent = u.email;
+  document.getElementById('profileNombre').value = u.nombre || '';
+  document.getElementById('profileApellido').value = u.apellido || '';
+  profileInfoMsg.style.display = 'none';
+  passwordInfoMsg.style.display = 'none';
+  passwordForm.reset();
+  profileModal.classList.add('open');
+});
+
+document.getElementById('profileModalClose').addEventListener('click', () => {
+  profileModal.classList.remove('open');
+});
+profileModal.addEventListener('click', (e) => {
+  if (e.target === profileModal) profileModal.classList.remove('open');
+});
+
+profileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('profileNombre').value.trim();
+  const apellido = document.getElementById('profileApellido').value.trim();
+
+  try {
+    const data = await apiFetch('/api/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify({ nombre, apellido }),
+    });
+    window.usuarioActual = { ...window.usuarioActual, ...data.usuario };
+    document.getElementById('userInfo').textContent =
+      `${nombre} ${apellido} · ${window.usuarioActual.nombre_empresa || window.usuarioActual.rut_empresa}`;
+    mostrarMensajeForm(profileInfoMsg, 'Perfil actualizado correctamente.', true);
+  } catch (err) {
+    mostrarMensajeForm(profileInfoMsg, err.message, false);
+  }
+});
+
+passwordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const passwordActual = document.getElementById('passwordActual').value;
+  const passwordNueva = document.getElementById('passwordNueva').value;
+  const passwordNuevaConfirmar = document.getElementById('passwordNuevaConfirmar').value;
+
+  if (passwordNueva !== passwordNuevaConfirmar) {
+    mostrarMensajeForm(passwordInfoMsg, 'Las contraseñas nuevas no coinciden.', false);
+    return;
+  }
+
+  try {
+    await apiFetch('/api/auth/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({ passwordActual, passwordNueva }),
+    });
+    mostrarMensajeForm(passwordInfoMsg, 'Contraseña actualizada correctamente.', true);
+    passwordForm.reset();
+  } catch (err) {
+    mostrarMensajeForm(passwordInfoMsg, err.message, false);
+  }
 });
 
 cargarUsuario();

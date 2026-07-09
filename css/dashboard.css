@@ -87,6 +87,14 @@ section { margin-bottom: 56px; }
 .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-muted); }
 .btn-danger { background: none; border: 1px solid var(--danger); color: var(--danger); }
 
+.form-note {
+  padding: 10px 12px; border-radius: 6px; font-size: 13px;
+  background: var(--danger)22; border: 1px solid var(--danger); color: var(--danger);
+}
+.form-note.success {
+  background: var(--down)22; border: 1px solid var(--down); color: var(--down);
+}
+
 .row {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 14px;

@@ -16,6 +16,7 @@
     <div class="logo"><span class="logo-seal"></span>MercadoAlerta</div>
     <div class="user-info">
       <span id="userInfo">Cargando...</span>
+      <span class="logout" id="profileBtn" style="color: var(--text-muted);">Mi perfil</span>
       <span class="logout" id="logoutBtn">Cerrar sesión</span>
     </div>
   </nav>
@@ -130,6 +131,46 @@
       <button type="button" class="btn btn-ghost" id="confirmModalCancel">Cancelar</button>
       <button type="button" class="btn btn-danger" id="confirmModalAccept">✖ Eliminar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="text-align: left; max-width: 420px;">
+    <h3 style="margin-bottom: 4px;">Mi perfil</h3>
+    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Email: <strong id="profileEmail" style="color: var(--text);"></strong> (no se puede cambiar)</p>
+
+    <form id="profileForm">
+      <label for="profileNombre" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Nombre</label>
+      <input type="text" id="profileNombre" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+
+      <label for="profileApellido" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Apellido</label>
+      <input type="text" id="profileApellido" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+
+      <div class="form-note" id="profileInfoMsg" style="display:none; margin-bottom: 12px;"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="profileModalClose">Cerrar</button>
+        <button type="submit" class="btn">Guardar cambios</button>
+      </div>
+    </form>
+
+    <hr style="border-color: var(--border); margin: 22px 0;">
+
+    <h3 style="margin-bottom: 14px; font-size: 15px;">Cambiar contraseña</h3>
+    <form id="passwordForm">
+      <label for="passwordActual" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña actual</label>
+      <input type="password" id="passwordActual" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+
+      <label for="passwordNueva" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña nueva (mín. 8 caracteres)</label>
+      <input type="password" id="passwordNueva" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+
+      <label for="passwordNuevaConfirmar" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Confirmar contraseña nueva</label>
+      <input type="password" id="passwordNuevaConfirmar" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+
+      <div class="form-note" id="passwordInfoMsg" style="display:none; margin-bottom: 12px;"></div>
+      <div class="modal-actions">
+        <button type="submit" class="btn">Cambiar contraseña</button>
+      </div>
+    </form>
   </div>
 </div>
 
