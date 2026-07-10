@@ -138,6 +138,7 @@ async function cargarUsuario() {
       `${nombreCompleto} · ${data.usuario.nombre_empresa || data.usuario.rut_empresa}`;
 
     mostrarBannerPlan(data.usuario);
+    renderAnalisis(data.usuario);
   } catch (err) {
     showError('No se pudo cargar tu sesión: ' + err.message);
   }
@@ -165,7 +166,7 @@ function mostrarBannerPlan(usuario) {
     if (diasRestantes <= 0) {
       banner.className = 'plan-banner bloqueo';
       banner.innerHTML = `
-        <p>Tu período de prueba de 7 días terminó. Elige un plan para seguir recibiendo alertas.</p>
+        <p>Tu período de prueba de 14 días terminó. Elige un plan para seguir recibiendo alertas.</p>
         <div class="btn-group">
           <button class="btn btn-ghost" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico')">Elegir Basic</button>
           <button class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full')">Elegir Full</button>
@@ -457,6 +458,105 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   sessionStorage.removeItem('token');
   window.location.href = 'login.html';
 });
+
+// --- Pestañas ---
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = {
+  alertas: document.getElementById('tabAlertas'),
+  notificaciones: document.getElementById('tabNotificaciones'),
+  analisis: document.getElementById('tabAnalisis'),
+};
+
+tabBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach((b) => b.classList.remove('active'));
+    Object.values(tabContents).forEach((c) => c.classList.remove('active'));
+    btn.classList.add('active');
+    tabContents[btn.dataset.tab].classList.add('active');
+  });
+});
+
+// --- Modal de nueva alerta ---
+const newAlertModal = document.getElementById('newAlertModal');
+
+document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
+  categoriasSeleccionadas = [];
+  document.getElementById('newAlertForm').reset();
+  newAlertModal.classList.add('open');
+});
+document.getElementById('cerrarNuevaAlertaBtn').addEventListener('click', () => {
+  newAlertModal.classList.remove('open');
+});
+newAlertModal.addEventListener('click', (e) => {
+  if (e.target === newAlertModal) newAlertModal.classList.remove('open');
+});
+
+// --- Análisis de datos (mockup) ---
+// Plan Full únicamente. TEMPORAL: se incluye 'trial' acá solo para poder probarlo
+// durante desarrollo — sacar 'trial' de este array antes de lanzar a producción.
+const PLANES_CON_ANALISIS = ['full', 'trial'];
+
+function renderAnalisis(usuario) {
+  const card = document.getElementById('analisisCard');
+
+  if (!PLANES_CON_ANALISIS.includes(usuario.plan)) {
+    card.innerHTML = `
+      <div class="analisis-locked">
+        <div class="lock-icon">🔒</div>
+        <p><strong>Disponible en el plan Full</strong></p>
+        <p style="font-size:13px; margin-top:6px;">Actualiza tu plan para acceder al análisis de datos de Mercado Público.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Mockup — datos de ejemplo, el contenido real se define más adelante.
+  card.innerHTML = `
+    <div style="padding: 20px 20px 0;">
+      <span class="analisis-badge-mockup">VISTA PREVIA · MOCKUP</span>
+    </div>
+    <div class="analisis-table-wrap">
+      <table class="analisis-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Región</th>
+            <th>Monto</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1000-15-LE26</td>
+            <td>Conservación red vial</td>
+            <td>Construcción y mantenimiento</td>
+            <td>Aysén</td>
+            <td>$18.400.000</td>
+            <td>Publicada</td>
+          </tr>
+          <tr>
+            <td>CA-4471-2026</td>
+            <td>Equipos audiovisuales</td>
+            <td>Equipamiento audiovisual</td>
+            <td>Metropolitana</td>
+            <td>$2.100.000</td>
+            <td>Publicada</td>
+          </tr>
+          <tr>
+            <td>588809-165-COT26</td>
+            <td>Insumos computacionales</td>
+            <td>Tecnología</td>
+            <td>Metropolitana</td>
+            <td>$6.900.000</td>
+            <td>Cerrada</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
 
 // --- Modal de perfil ---
 const profileModal = document.getElementById('profileModal');
