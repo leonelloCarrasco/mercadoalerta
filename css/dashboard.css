@@ -203,6 +203,8 @@ table.analisis-table th {
 }
 table.analisis-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 table.analisis-table tr:last-child td { border-bottom: none; }
+table.analisis-table a { color: var(--gold); text-decoration: none; }
+table.analisis-table a:hover { text-decoration: underline; }
 .analisis-locked {
   padding: 60px 24px; text-align: center; color: var(--text-muted);
 }
@@ -214,7 +216,7 @@ table.analisis-table tr:last-child td { border-bottom: none; }
 
 /* --- Buscador de categorías (chips) --- */
 .categoria-resultados {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+  position: absolute; left: 0; right: 0; z-index: 20;
   background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
   margin-top: 4px; max-height: 220px; overflow-y: auto; display: none;
 }
@@ -236,3 +238,10 @@ table.analisis-table tr:last-child td { border-bottom: none; }
   cursor: pointer; font-weight: 700; color: var(--gold); opacity: 0.7;
 }
 .categoria-chip .quitar:hover { opacity: 1; }
+
+.nivel-badge {
+  display: inline-block; font-family: var(--font-mono); font-size: 10px;
+  padding: 1px 6px; border-radius: 3px; margin-left: 4px; vertical-align: middle;
+}
+.nivel-badge.categoria { background: var(--gold-soft); color: var(--gold); }
+.nivel-badge.producto { background: var(--down)22; color: var(--down); }
