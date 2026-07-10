@@ -63,7 +63,7 @@
             <select id="filtroRegionConfig"></select>
           </div>
           <div class="field">
-            <label for="filtroCategoriaConfig">Categoría</label>
+            <label for="filtroCategoriaConfig">Categoría o Producto</label>
             <input type="text" id="filtroCategoriaConfig" placeholder="72131500">
           </div>
         </div>
@@ -115,10 +115,18 @@
   <div class="tab-content" id="tabAnalisis">
     <section>
       <div class="section-head">
-        <h2>Revisión de Datos (En Construcción)</h2>
+        <h2>Análisis de datos</h2>
       </div>
+      <p class="section-sub" style="margin-bottom: 16px;">Busca una categoría o producto para ver el historial de precios de adjudicación — útil para calibrar a qué precio postular en un nuevo llamado.</p>
+
+      <div class="field" style="max-width: 480px; position: relative; margin-bottom: 20px;">
+        <label for="analisisBuscar">Categoría o producto</label>
+        <input type="text" id="analisisBuscar" placeholder="Busca por nombre o código (ej. antibióticos, 51101500)" autocomplete="off">
+        <div id="analisisResultados" class="categoria-resultados"></div>
+      </div>
+
       <div class="card" id="analisisCard">
-        <div class="loading">Cargando...</div>
+        <div class="empty-state">Busca una categoría o producto arriba para ver su historial de precios.</div>
       </div>
     </section>
   </div>
@@ -142,13 +150,14 @@
           <small>Opcional. Selecciona la región a monitorear.</small>
         </div>
         <div class="field" style="grid-column: 1 / -1; position: relative;">
-          <label for="categoriaBuscar">Categorías</label>
+          <label for="categoriaBuscar">Categorías o Productos</label>
           <input type="text" id="categoriaBuscar" placeholder="Busca por nombre o código (ej. vehículos, 72131500)" autocomplete="off">
           <div id="categoriaResultados" class="categoria-resultados"></div>
           <div id="categoriasChips" class="categoria-chips"></div>
-          <small>Opcional. Busca y agrega las categorías que te interesan. Solo aplica a Licitaciones.</small>
+          <small>Opcional. Busca y agrega las categorías o productos que te interesan.</small>
         </div>
       </div>
+      <div class="error-banner" id="errorBannerModal"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="cerrarNuevaAlertaBtn">Cancelar</button>
         <button type="submit" class="btn" id="createBtn">+ Crear alerta</button>

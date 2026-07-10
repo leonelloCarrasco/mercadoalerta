@@ -14,6 +14,13 @@ function showError(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
+function showErrorModal(msg) {
+  const el = document.getElementById('errorBannerModal');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
 function showErrorBubble(target, msg) {
   const bubble = document.createElement('div');
   bubble.className = 'error-bubble';
@@ -87,6 +94,78 @@ const filtroMontoHistInput = registrarInputMonto('filtroMontoHist');
 
 const regionSelect = document.getElementById('region');
 const filtroRegionConfigSelect = document.getElementById('filtroRegionConfig');
+
+// --- Buscador de categorías (chips) ---
+let categoriasSeleccionadas = []; // [{ codigo, titulo }]
+const categoriaBuscarInput = document.getElementById('categoriaBuscar');
+const categoriaResultadosEl = document.getElementById('categoriaResultados');
+const categoriasChipsEl = document.getElementById('categoriasChips');
+let categoriaBuscarTimeout = null;
+
+function renderCategoriasChips() {
+  categoriasChipsEl.innerHTML = categoriasSeleccionadas.map((c) => `
+    <span class="categoria-chip" data-codigo="${c.codigo}">
+      ${c.titulo} <span class="nivel-badge ${c.nivel}">${c.nivel === 'categoria' ? 'Cat.' : 'Prod.'}</span> <span class="cod">(${c.codigo})</span>
+      <span class="quitar" data-quitar="${c.codigo}">✕</span>
+    </span>
+  `).join('');
+
+  categoriasChipsEl.querySelectorAll('[data-quitar]').forEach((el) => {
+    el.addEventListener('click', () => {
+      categoriasSeleccionadas = categoriasSeleccionadas.filter((c) => c.codigo !== el.dataset.quitar);
+      renderCategoriasChips();
+    });
+  });
+}
+
+function agregarCategoria(codigo, titulo, nivel) {
+  if (categoriasSeleccionadas.some((c) => c.codigo === codigo)) return;
+  categoriasSeleccionadas.push({ codigo, titulo, nivel });
+  renderCategoriasChips();
+}
+
+categoriaBuscarInput.addEventListener('input', () => {
+  clearTimeout(categoriaBuscarTimeout);
+  const texto = categoriaBuscarInput.value.trim();
+
+  if (texto.length < 2) {
+    categoriaResultadosEl.classList.remove('open');
+    return;
+  }
+
+  categoriaBuscarTimeout = setTimeout(async () => {
+    try {
+      const data = await apiFetch(`/api/alerts/categorias/buscar?q=${encodeURIComponent(texto)}`);
+      if (data.resultados.length === 0) {
+        categoriaResultadosEl.innerHTML = '<div class="categoria-resultado-vacio">Sin resultados</div>';
+      } else {
+        categoriaResultadosEl.innerHTML = data.resultados.map((r) => `
+          <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
+            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : 'Producto'}</span></span>
+            <span class="cod">${r.codigo}</span>
+          </div>
+        `).join('');
+
+        categoriaResultadosEl.querySelectorAll('[data-codigo]').forEach((el) => {
+          el.addEventListener('click', () => {
+            agregarCategoria(el.dataset.codigo, el.dataset.titulo, el.dataset.nivel);
+            categoriaBuscarInput.value = '';
+            categoriaResultadosEl.classList.remove('open');
+          });
+        });
+      }
+      categoriaResultadosEl.classList.add('open');
+    } catch (err) {
+      console.warn('Error buscando categorías o productos:', err.message);
+    }
+  }, 300);
+});
+
+document.addEventListener('click', (e) => {
+  if (!categoriaBuscarInput.contains(e.target) && !categoriaResultadosEl.contains(e.target)) {
+    categoriaResultadosEl.classList.remove('open');
+  }
+});
 
 async function cargarRegiones() {
   try {
@@ -204,6 +283,7 @@ async function iniciarUpgrade(empresaId, plan) {
 const CONFIGS_POR_PAGINA = 10;
 let configsData = [];
 let configsPaginaActual = 1;
+let mapaCategorias = {}; // codigo -> titulo, para mostrar descripciones en vez de códigos
 
 async function cargarConfigs() {
   const card = document.getElementById('configsCard');
@@ -211,6 +291,20 @@ async function cargarConfigs() {
     const data = await apiFetch('/api/alerts/config');
     configsData = data.configs;
     configsPaginaActual = 1;
+
+    // Resolvemos en un solo request todos los códigos únicos que aparezcan
+    // en cualquier config, para mostrar la descripción en vez del código crudo.
+    const codigosUnicos = [...new Set(configsData.flatMap((c) => c.categorias || []))];
+    if (codigosUnicos.length > 0) {
+      try {
+        const detalle = await apiFetch(`/api/alerts/categorias/detalle?codigos=${codigosUnicos.join(',')}`);
+        mapaCategorias = Object.fromEntries(detalle.categorias.map((c) => [c.codigo, c.titulo]));
+      } catch (err) {
+        console.warn('No se pudieron resolver las descripciones de categorías o productos:', err.message);
+        mapaCategorias = {};
+      }
+    }
+
     renderConfigs();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
@@ -250,10 +344,12 @@ function renderConfigs() {
   const inicio = (configsPaginaActual - 1) * CONFIGS_POR_PAGINA;
   const pagina = configsFiltrados.slice(inicio, inicio + CONFIGS_POR_PAGINA);
 
-  const filasHtml = pagina.map(c => `
+  const filasHtml = pagina.map(c => {
+    const nombresCategorias = (c.categorias || []).map((cod) => mapaCategorias[cod] || cod);
+    return `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${c.categorias && c.categorias.length ? 'Categorías: ' + c.categorias.join(', ') : 'Todas las categorías'}</div>
+        <div class="row-title">${nombresCategorias.length ? '<strong>Categorías y productos:</strong> ' + nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
         <div class="row-meta">
           ${c.monto_minimo ? `<span>Monto mín: ${formatMoney(c.monto_minimo)}</span>` : ''}
           ${c.region ? `<span>Región: ${c.region}</span>` : ''}
@@ -265,7 +361,8 @@ function renderConfigs() {
         <button class="btn btn-danger" data-delete="${c.id}">✖ Eliminar</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   const mostrarPaginador = configsFiltrados.length > CONFIGS_POR_PAGINA;
   const paginadorHtml = mostrarPaginador ? `
@@ -322,11 +419,10 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
 
   const montoMinimo = soloDigitos(montoMinimoInput.value);
   const region = document.getElementById('region').value.trim();
-  const categoriasRaw = document.getElementById('categorias').value.trim();
-  const categorias = categoriasRaw ? categoriasRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const categorias = categoriasSeleccionadas.map((c) => c.codigo);
 
   if (!montoMinimo && !region && categorias.length === 0) {
-    showError('Especifica al menos un criterio: monto mínimo, región o categorías.');
+    showErrorModal('Especifica al menos un criterio: monto mínimo, región, categorías o productos.');
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
     return;
@@ -342,9 +438,12 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
       }),
     });
     document.getElementById('newAlertForm').reset();
+    categoriasSeleccionadas = [];
+    renderCategoriasChips();
+    newAlertModal.classList.remove('open');
     cargarConfigs();
   } catch (err) {
-    showError(err.message);
+    showErrorModal(err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
@@ -481,6 +580,7 @@ const newAlertModal = document.getElementById('newAlertModal');
 
 document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
   categoriasSeleccionadas = [];
+  renderCategoriasChips();
   document.getElementById('newAlertForm').reset();
   newAlertModal.classList.add('open');
 });
@@ -491,15 +591,19 @@ newAlertModal.addEventListener('click', (e) => {
   if (e.target === newAlertModal) newAlertModal.classList.remove('open');
 });
 
-// --- Análisis de datos (mockup) ---
+// --- Análisis de datos ---
 // Plan Full únicamente. TEMPORAL: se incluye 'trial' acá solo para poder probarlo
-// durante desarrollo — sacar 'trial' de este array antes de lanzar a producción.
+// durante desarrollo — sacar 'trial' de este array antes de lanzar a producción
+// (el backend tiene el mismo criterio temporal en analisis.routes.js, hay que
+// sacarlo de los dos lados a la vez).
 const PLANES_CON_ANALISIS = ['full', 'trial'];
 
 function renderAnalisis(usuario) {
   const card = document.getElementById('analisisCard');
+  const buscador = document.getElementById('analisisBuscar').closest('.field');
 
   if (!PLANES_CON_ANALISIS.includes(usuario.plan)) {
+    buscador.style.display = 'none';
     card.innerHTML = `
       <div class="analisis-locked">
         <div class="lock-icon">🔒</div>
@@ -507,55 +611,114 @@ function renderAnalisis(usuario) {
         <p style="font-size:13px; margin-top:6px;">Actualiza tu plan para acceder al análisis de datos de Mercado Público.</p>
       </div>
     `;
-    return;
   }
+}
 
-  // Mockup — datos de ejemplo, el contenido real se define más adelante.
-  card.innerHTML = `
-    <div style="padding: 20px 20px 0;">
-      <span class="analisis-badge-mockup">VISTA PREVIA · MOCKUP</span>
-    </div>
-    <div class="analisis-table-wrap">
-      <table class="analisis-table">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Nombre</th>
-            <th>Categoría</th>
-            <th>Región</th>
-            <th>Monto</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1000-15-LE26</td>
-            <td>Conservación red vial</td>
-            <td>Construcción y mantenimiento</td>
-            <td>Aysén</td>
-            <td>$18.400.000</td>
-            <td>Publicada</td>
-          </tr>
-          <tr>
-            <td>CA-4471-2026</td>
-            <td>Equipos audiovisuales</td>
-            <td>Equipamiento audiovisual</td>
-            <td>Metropolitana</td>
-            <td>$2.100.000</td>
-            <td>Publicada</td>
-          </tr>
-          <tr>
-            <td>588809-165-COT26</td>
-            <td>Insumos computacionales</td>
-            <td>Tecnología</td>
-            <td>Metropolitana</td>
-            <td>$6.900.000</td>
-            <td>Cerrada</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `;
+// --- Buscador de categoría/producto para el análisis ---
+const analisisBuscarInput = document.getElementById('analisisBuscar');
+const analisisResultadosEl = document.getElementById('analisisResultados');
+let analisisBuscarTimeout = null;
+
+if (analisisBuscarInput) {
+  analisisBuscarInput.addEventListener('input', () => {
+    clearTimeout(analisisBuscarTimeout);
+    const texto = analisisBuscarInput.value.trim();
+
+    if (texto.length < 2) {
+      analisisResultadosEl.classList.remove('open');
+      return;
+    }
+
+    analisisBuscarTimeout = setTimeout(async () => {
+      try {
+        const data = await apiFetch(`/api/alerts/categorias/buscar?q=${encodeURIComponent(texto)}`);
+        if (data.resultados.length === 0) {
+          analisisResultadosEl.innerHTML = '<div class="categoria-resultado-vacio">Sin resultados</div>';
+        } else {
+          analisisResultadosEl.innerHTML = data.resultados.map((r) => `
+            <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
+              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : 'Producto'}</span></span>
+              <span class="cod">${r.codigo}</span>
+            </div>
+          `).join('');
+
+          analisisResultadosEl.querySelectorAll('[data-codigo]').forEach((el) => {
+            el.addEventListener('click', () => {
+              analisisBuscarInput.value = el.dataset.titulo;
+              analisisResultadosEl.classList.remove('open');
+              buscarPrecios(el.dataset.codigo, el.dataset.titulo);
+            });
+          });
+        }
+        analisisResultadosEl.classList.add('open');
+      } catch (err) {
+        console.warn('Error buscando categorías:', err.message);
+      }
+    }, 300);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!analisisBuscarInput.contains(e.target) && !analisisResultadosEl.contains(e.target)) {
+      analisisResultadosEl.classList.remove('open');
+    }
+  });
+}
+
+async function buscarPrecios(codigo, titulo) {
+  const card = document.getElementById('analisisCard');
+  card.innerHTML = '<div class="loading">Buscando...</div>';
+
+  try {
+    const data = await apiFetch(`/api/analisis/precios?codigo=${codigo}`);
+
+    if (!data.resumen) {
+      card.innerHTML = `<div class="empty-state">Todavía no hay historial de precios para "${titulo}". A medida que se resuelvan licitaciones y Compras Ágiles de esta categoría, van a ir apareciendo acá.</div>`;
+      return;
+    }
+
+    const filasHtml = data.registros.map((r) => `
+      <tr>
+        <td>${r.fuente === 'licitacion'
+          ? (r.url_acta ? `<a href="${r.url_acta}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
+          : '⚡ Compra Ágil'}</td>
+        <td>${r.nombre_producto || '—'}</td>
+        <td>${r.organismo || '—'}</td>
+        <td>${r.proveedor || '—'}</td>
+        <td>${formatMoney(r.precio_unitario)}</td>
+        <td>${r.fuente === 'licitacion'
+          ? `🏆 Adjudicado${r.numero_oferentes ? ` <span class="row-meta">(${r.numero_oferentes} oferentes)</span>` : ''}`
+          : (r.gano ? '🟢 Ganó' : '⚪ No ganó')}</td>
+        <td>${r.fecha_adjudicacion ? new Date(r.fecha_adjudicacion).toLocaleDateString('es-CL') : '—'}</td>
+      </tr>
+    `).join('');
+
+    card.innerHTML = `
+      <div style="padding: 20px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--border);">
+        <div><div class="row-meta">Registros</div><strong style="font-size: 20px;">${data.resumen.cantidadRegistros}</strong></div>
+        <div><div class="row-meta">Precio mínimo</div><strong style="font-size: 20px; color: var(--down);">${formatMoney(data.resumen.precioMinimo)}</strong></div>
+        <div><div class="row-meta">Precio promedio</div><strong style="font-size: 20px;">${formatMoney(data.resumen.precioPromedio)}</strong></div>
+        <div><div class="row-meta">Precio máximo</div><strong style="font-size: 20px; color: var(--danger);">${formatMoney(data.resumen.precioMaximo)}</strong></div>
+      </div>
+      <div class="analisis-table-wrap">
+        <table class="analisis-table">
+          <thead>
+            <tr>
+              <th>Fuente</th>
+              <th>Producto</th>
+              <th>Organismo</th>
+              <th>Proveedor</th>
+              <th>Precio unit.</th>
+              <th>Resultado</th>
+              <th>Fecha Adjudicación</th>
+            </tr>
+          </thead>
+          <tbody>${filasHtml}</tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  }
 }
 
 // --- Modal de perfil ---
