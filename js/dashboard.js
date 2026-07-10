@@ -596,7 +596,7 @@ newAlertModal.addEventListener('click', (e) => {
 // durante desarrollo — sacar 'trial' de este array antes de lanzar a producción
 // (el backend tiene el mismo criterio temporal en analisis.routes.js, hay que
 // sacarlo de los dos lados a la vez).
-const PLANES_CON_ANALISIS = ['full', 'trial'];
+const PLANES_CON_ANALISIS = ['full'];
 
 function renderAnalisis(usuario) {
   const card = document.getElementById('analisisCard');
