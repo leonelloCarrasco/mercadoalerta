@@ -155,7 +155,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       } else {
         categoriaResultadosEl.innerHTML = data.resultados.map((r) => `
           <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : 'Producto'}</span></span>
+            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
             <span class="cod">${r.codigo}</span>
           </div>
         `).join('');
@@ -567,13 +567,31 @@ function renderHistorial() {
   });
 });
 
+document.getElementById('limpiarFiltroConfigBtn').addEventListener('click', () => {
+  document.getElementById('filtroEstado').value = '';
+  filtroMontoConfigInput.value = '';
+  filtroRegionConfigSelect.value = '';
+  document.getElementById('filtroCategoriaConfig').value = '';
+  configsPaginaActual = 1;
+  renderConfigs();
+});
+
+document.getElementById('limpiarFiltroHistBtn').addEventListener('click', () => {
+  document.getElementById('filtroTipoHist').value = '';
+  filtroMontoHistInput.value = '';
+  document.getElementById('filtroFechaHist').value = '';
+  document.getElementById('filtroFechaEnvioHist').value = '';
+  historialPaginaActual = 1;
+  renderHistorial();
+});
+
 document.getElementById('logoutBtn').addEventListener('click', () => {
   sessionStorage.removeItem('token');
   window.location.href = 'login.html';
 });
 
 // --- Pestañas ---
-const tabBtns = document.querySelectorAll('.tab-btn');
+const tabBtns = document.querySelectorAll('#mainTabs .tab-btn');
 const tabContents = {
   alertas: document.getElementById('tabAlertas'),
   notificaciones: document.getElementById('tabNotificaciones'),
@@ -651,7 +669,7 @@ if (analisisBuscarInput) {
         } else {
           analisisResultadosEl.innerHTML = data.resultados.map((r) => `
             <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
-              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : 'Producto'}</span></span>
+              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
               <span class="cod">${r.codigo}</span>
             </div>
           `).join('');
@@ -660,7 +678,9 @@ if (analisisBuscarInput) {
             el.addEventListener('click', () => {
               analisisBuscarInput.value = el.dataset.titulo;
               analisisResultadosEl.classList.remove('open');
-              buscarPrecios(el.dataset.codigo, el.dataset.titulo);
+              codigoSeleccionadoAnalisis = el.dataset.codigo;
+              tituloSeleccionadoAnalisis = el.dataset.titulo;
+              renderSubTabAnalisisActiva();
             });
           });
         }
@@ -678,19 +698,170 @@ if (analisisBuscarInput) {
   });
 }
 
+// --- Sub-pestañas de Análisis (Precios / Proveedores / Razones de rechazo) ---
+let codigoSeleccionadoAnalisis = null;
+let tituloSeleccionadoAnalisis = null;
+let subTabAnalisisActiva = 'precios';
+
+document.querySelectorAll('#analisisSubTabs .tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#analisisSubTabs .tab-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    subTabAnalisisActiva = btn.dataset.subtab;
+    renderSubTabAnalisisActiva();
+  });
+});
+
+function renderSubTabAnalisisActiva() {
+  if (!codigoSeleccionadoAnalisis) return;
+  if (subTabAnalisisActiva === 'precios') buscarPrecios(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
+  else if (subTabAnalisisActiva === 'proveedores') buscarProveedores(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
+  else if (subTabAnalisisActiva === 'organismos') buscarOrganismos(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
+  else if (subTabAnalisisActiva === 'rechazos') buscarRechazos(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
+}
+
+let datosPreciosActuales = null; // { resumen, registros } sin filtrar, tal como llegó del backend
+
 async function buscarPrecios(codigo, titulo) {
   const card = document.getElementById('analisisCard');
   card.innerHTML = '<div class="loading">Buscando...</div>';
 
   try {
     const data = await apiFetch(`/api/analisis/precios?codigo=${codigo}`);
+    datosPreciosActuales = data;
 
     if (!data.resumen) {
       card.innerHTML = `<div class="empty-state">Todavía no hay historial de precios para "${titulo}". A medida que se resuelvan licitaciones y Compras Ágiles de esta categoría, van a ir apareciendo acá.</div>`;
       return;
     }
 
-    const filasHtml = data.registros.map((r) => `
+    construirVistaPrecios();
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  }
+}
+
+function aplicarFiltrosPrecios(registros) {
+  const fuente = document.getElementById('filtroPrecioFuente')?.value || '';
+  const resultado = document.getElementById('filtroPrecioResultado')?.value || '';
+  const producto = (document.getElementById('filtroPrecioProducto')?.value || '').trim().toLowerCase();
+  const organismo = (document.getElementById('filtroPrecioOrganismo')?.value || '').trim().toLowerCase();
+  const proveedor = (document.getElementById('filtroPrecioProveedor')?.value || '').trim().toLowerCase();
+  const fechaDesde = document.getElementById('filtroPrecioFechaDesde')?.value || '';
+  const fechaHasta = document.getElementById('filtroPrecioFechaHasta')?.value || '';
+
+  return registros.filter((r) => {
+    if (fuente && r.fuente !== fuente) return false;
+    // Las licitaciones siempre son "ganadas" por definición (no exponen perdedores).
+    const gano = r.fuente === 'licitacion' ? true : !!r.gano;
+    if (resultado === 'gano' && !gano) return false;
+    if (resultado === 'nogano' && gano) return false;
+    if (producto && !(r.nombre_producto || '').toLowerCase().includes(producto)) return false;
+    if (organismo && !(r.organismo || '').toLowerCase().includes(organismo)) return false;
+    if (proveedor && !(r.proveedor || '').toLowerCase().includes(proveedor)) return false;
+    if (fechaDesde && (!r.fecha_adjudicacion || fechaLocalISO(r.fecha_adjudicacion) < fechaDesde)) return false;
+    if (fechaHasta && (!r.fecha_adjudicacion || fechaLocalISO(r.fecha_adjudicacion) > fechaHasta)) return false;
+    return true;
+  });
+}
+
+// Se llama UNA vez por búsqueda: arma la barra de filtros + el contenedor de
+// resultados, y engancha los listeners. Los inputs de filtro NUNCA se vuelven
+// a reconstruir después de esto — si se reconstruyeran en cada tecla, perderían
+// lo que el usuario ya escribió (justo el bug que estábamos viendo).
+function construirVistaPrecios() {
+  const card = document.getElementById('analisisCard');
+
+  card.innerHTML = `
+    <details class="analisis-filtros-toggle">
+      <summary>Filtros</summary>
+      <div class="analisis-filtros">
+        <div class="field">
+          <label for="filtroPrecioFuente">Fuente</label>
+          <select id="filtroPrecioFuente">
+            <option value="">Todas</option>
+            <option value="licitacion">Licitación</option>
+            <option value="compra_agil">Compra Ágil</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroPrecioResultado">Resultado</label>
+          <select id="filtroPrecioResultado">
+            <option value="">Todos</option>
+            <option value="gano">Ganó</option>
+            <option value="nogano">No ganó</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroPrecioProducto">Producto</label>
+          <input type="text" id="filtroPrecioProducto" placeholder="Buscar...">
+        </div>
+        <div class="field">
+          <label for="filtroPrecioOrganismo">Organismo</label>
+          <input type="text" id="filtroPrecioOrganismo" placeholder="Buscar...">
+        </div>
+        <div class="field">
+          <label for="filtroPrecioProveedor">Proveedor</label>
+          <input type="text" id="filtroPrecioProveedor" placeholder="Buscar...">
+        </div>
+        <div class="field">
+          <label for="filtroPrecioFechaDesde">Fecha desde</label>
+          <input type="date" id="filtroPrecioFechaDesde">
+        </div>
+        <div class="field">
+          <label for="filtroPrecioFechaHasta">Fecha hasta</label>
+          <input type="date" id="filtroPrecioFechaHasta">
+        </div>
+        <div class="field field-btn">
+          <button type="button" class="btn btn-ghost" id="limpiarFiltroPrecioBtn">✖ Limpiar filtros</button>
+        </div>
+      </div>
+    </details>
+    <div id="preciosResultados"></div>
+  `;
+
+  ['filtroPrecioFuente', 'filtroPrecioResultado', 'filtroPrecioProducto', 'filtroPrecioOrganismo', 'filtroPrecioProveedor', 'filtroPrecioFechaDesde', 'filtroPrecioFechaHasta'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', actualizarResultadosPrecios);
+  });
+
+  document.getElementById('limpiarFiltroPrecioBtn').addEventListener('click', () => {
+    ['filtroPrecioFuente', 'filtroPrecioResultado', 'filtroPrecioProducto', 'filtroPrecioOrganismo', 'filtroPrecioProveedor', 'filtroPrecioFechaDesde', 'filtroPrecioFechaHasta'].forEach((id) => {
+      document.getElementById(id).value = '';
+    });
+    actualizarResultadosPrecios();
+  });
+
+  actualizarResultadosPrecios();
+}
+
+// Esta sí se llama en cada cambio de filtro — solo toca #preciosResultados,
+// nunca la barra de filtros, así que los inputs conservan el foco y lo escrito.
+function actualizarResultadosPrecios() {
+  const contenedor = document.getElementById('preciosResultados');
+  const registrosFiltrados = aplicarFiltrosPrecios(datosPreciosActuales.registros);
+
+  const precios = registrosFiltrados
+    .map((r) => r.precio_unitario)
+    .filter((p) => p !== null && p !== undefined)
+    .map((p) => Number(p))
+    .filter((p) => !Number.isNaN(p));
+  const resumen = precios.length > 0 ? {
+    cantidadRegistros: precios.length,
+    precioMinimo: Math.min(...precios),
+    precioMaximo: Math.max(...precios),
+    precioPromedio: Math.round(precios.reduce((a, b) => a + b, 0) / precios.length),
+  } : null;
+
+  const filasHtml = registrosFiltrados.map((r) => {
+    const resultadoHtml = r.fuente === 'licitacion'
+      ? `🏆 Adjudicado${r.numero_oferentes ? ` <span class="row-meta">(${r.numero_oferentes} oferentes)</span>` : ''}`
+      : r.gano
+        ? '🟢 Ganó'
+        // title = tooltip nativo del navegador — a diferencia de uno hecho con
+        // CSS, no lo recorta el overflow-x:auto de la tabla ni depende de z-index.
+        : `<span title="${(r.motivo_rechazo || 'Sin especificar').replace(/"/g, '&quot;')}" style="border-bottom: 1px dotted var(--text-muted); cursor: help;">⚪ No ganó</span>`;
+
+    return `
       <tr>
         <td>${r.fuente === 'licitacion'
           ? (r.url_acta ? `<a href="${r.url_acta}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
@@ -699,40 +870,320 @@ async function buscarPrecios(codigo, titulo) {
         <td>${r.organismo || '—'}</td>
         <td>${r.proveedor || '—'}</td>
         <td>${formatMoney(r.precio_unitario)}</td>
-        <td>${r.fuente === 'licitacion'
-          ? `🏆 Adjudicado${r.numero_oferentes ? ` <span class="row-meta">(${r.numero_oferentes} oferentes)</span>` : ''}`
-          : (r.gano ? '🟢 Ganó' : '⚪ No ganó')}</td>
+        <td>${resultadoHtml}</td>
         <td>${r.fecha_adjudicacion ? new Date(r.fecha_adjudicacion).toLocaleDateString('es-CL') : '—'}</td>
       </tr>
-    `).join('');
-
-    card.innerHTML = `
-      <div style="padding: 20px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--border);">
-        <div><div class="row-meta">Registros</div><strong style="font-size: 20px;">${data.resumen.cantidadRegistros}</strong></div>
-        <div><div class="row-meta">Precio mínimo</div><strong style="font-size: 20px; color: var(--down);">${formatMoney(data.resumen.precioMinimo)}</strong></div>
-        <div><div class="row-meta">Precio promedio</div><strong style="font-size: 20px;">${formatMoney(data.resumen.precioPromedio)}</strong></div>
-        <div><div class="row-meta">Precio máximo</div><strong style="font-size: 20px; color: var(--danger);">${formatMoney(data.resumen.precioMaximo)}</strong></div>
-      </div>
-      <div class="analisis-table-wrap">
-        <table class="analisis-table">
-          <thead>
-            <tr>
-              <th>Fuente</th>
-              <th>Producto</th>
-              <th>Organismo</th>
-              <th>Proveedor</th>
-              <th>Precio unit.</th>
-              <th>Resultado</th>
-              <th>Fecha Adjudicación</th>
-            </tr>
-          </thead>
-          <tbody>${filasHtml}</tbody>
-        </table>
-      </div>
     `;
+  }).join('');
+
+  contenedor.innerHTML = `
+    <div style="padding: 20px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--border);">
+      <div><div class="row-meta">Registros</div><strong style="font-size: 20px;">${resumen ? resumen.cantidadRegistros : 0}</strong></div>
+      <div><div class="row-meta">Precio mínimo</div><strong style="font-size: 20px; color: var(--down);">${resumen ? formatMoney(resumen.precioMinimo) : '—'}</strong></div>
+      <div><div class="row-meta">Precio promedio</div><strong style="font-size: 20px;">${resumen ? formatMoney(resumen.precioPromedio) : '—'}</strong></div>
+      <div><div class="row-meta">Precio máximo</div><strong style="font-size: 20px; color: var(--danger);">${resumen ? formatMoney(resumen.precioMaximo) : '—'}</strong></div>
+    </div>
+    <div class="analisis-table-wrap">
+      <table class="analisis-table">
+        <thead>
+          <tr>
+            <th>Fuente</th>
+            <th>Producto</th>
+            <th>Organismo</th>
+            <th>Proveedor</th>
+            <th>Precio unit.</th>
+            <th>Resultado</th>
+            <th>Fecha Adjudicación</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml || '<tr><td colspan="7" class="empty-state">Sin resultados para estos filtros.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+let datosProveedoresActuales = null;
+
+async function buscarProveedores(codigo, titulo) {
+  const card = document.getElementById('analisisCard');
+  card.innerHTML = '<div class="loading">Buscando...</div>';
+
+  try {
+    const data = await apiFetch(`/api/analisis/proveedores?codigo=${codigo}`);
+    datosProveedoresActuales = data;
+
+    if (data.ranking.length === 0) {
+      card.innerHTML = `<div class="empty-state">Todavía no hay ganadores registrados para "${titulo}".</div>`;
+      return;
+    }
+
+    construirVistaProveedores();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
   }
+}
+
+function construirVistaProveedores() {
+  const card = document.getElementById('analisisCard');
+
+  card.innerHTML = `
+    <details class="analisis-filtros-toggle">
+      <summary>Filtros</summary>
+      <div class="analisis-filtros">
+        <div class="field">
+          <label for="filtroProveedorBuscar">Proveedor (nombre o RUT)</label>
+          <input type="text" id="filtroProveedorBuscar" placeholder="Buscar...">
+        </div>
+        <div class="field">
+          <label for="filtroProveedorMinVeces">Mínimo veces ganadas</label>
+          <input type="number" id="filtroProveedorMinVeces" min="0" placeholder="0">
+        </div>
+        <div class="field field-btn">
+          <button type="button" class="btn btn-ghost" id="limpiarFiltroProveedorBtn">✖ Limpiar filtros</button>
+        </div>
+      </div>
+    </details>
+    <div id="proveedoresResultados"></div>
+  `;
+
+  ['filtroProveedorBuscar', 'filtroProveedorMinVeces'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', actualizarResultadosProveedores);
+  });
+
+  document.getElementById('limpiarFiltroProveedorBtn').addEventListener('click', () => {
+    ['filtroProveedorBuscar', 'filtroProveedorMinVeces'].forEach((id) => {
+      document.getElementById(id).value = '';
+    });
+    actualizarResultadosProveedores();
+  });
+
+  actualizarResultadosProveedores();
+}
+
+function actualizarResultadosProveedores() {
+  const contenedor = document.getElementById('proveedoresResultados');
+  const buscar = (document.getElementById('filtroProveedorBuscar')?.value || '').trim().toLowerCase();
+  const minVeces = Number(document.getElementById('filtroProveedorMinVeces')?.value || 0);
+
+  const filtrados = datosProveedoresActuales.ranking.filter((p) => {
+    if (buscar && !((p.nombreProveedor || '').toLowerCase().includes(buscar) || (p.rutProveedor || '').toLowerCase().includes(buscar))) return false;
+    if (minVeces && p.vecesGanadas < minVeces) return false;
+    return true;
+  });
+
+  const filasHtml = filtrados.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${p.nombreProveedor || '—'} <span class="row-meta">(${p.rutProveedor || '—'})</span></td>
+      <td>${p.vecesGanadas}</td>
+      <td>${p.licitaciones} licitación${p.licitaciones === 1 ? '' : 'es'} · ${p.compraAgil} Compra${p.compraAgil === 1 ? '' : 's'} Ágil</td>
+      <td>${formatMoney(p.precioPromedio)}</td>
+    </tr>
+  `).join('');
+
+  contenedor.innerHTML = `
+    <div class="analisis-table-wrap">
+      <table class="analisis-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Veces ganadas</th>
+            <th>Detalle</th>
+            <th>Precio promedio</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml || '<tr><td colspan="5" class="empty-state">Sin resultados para estos filtros.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+let datosOrganismosActuales = null;
+
+async function buscarOrganismos(codigo, titulo) {
+  const card = document.getElementById('analisisCard');
+  card.innerHTML = '<div class="loading">Buscando...</div>';
+
+  try {
+    const data = await apiFetch(`/api/analisis/organismos?codigo=${codigo}`);
+    datosOrganismosActuales = data;
+
+    if (data.ranking.length === 0) {
+      card.innerHTML = `<div class="empty-state">Todavía no hay compras resueltas registradas para "${titulo}".</div>`;
+      return;
+    }
+
+    construirVistaOrganismos();
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  }
+}
+
+function construirVistaOrganismos() {
+  const card = document.getElementById('analisisCard');
+
+  card.innerHTML = `
+    <details class="analisis-filtros-toggle">
+      <summary>Filtros</summary>
+      <div class="analisis-filtros">
+        <div class="field">
+          <label for="filtroOrganismoBuscar">Organismo</label>
+          <input type="text" id="filtroOrganismoBuscar" placeholder="Buscar...">
+        </div>
+        <div class="field">
+          <label for="filtroOrganismoMinVeces">Mínimo veces comprado</label>
+          <input type="number" id="filtroOrganismoMinVeces" min="0" placeholder="0">
+        </div>
+        <div class="field field-btn">
+          <button type="button" class="btn btn-ghost" id="limpiarFiltroOrganismoBtn">✖ Limpiar filtros</button>
+        </div>
+      </div>
+    </details>
+    <div id="organismosResultados"></div>
+  `;
+
+  ['filtroOrganismoBuscar', 'filtroOrganismoMinVeces'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', actualizarResultadosOrganismos);
+  });
+
+  document.getElementById('limpiarFiltroOrganismoBtn').addEventListener('click', () => {
+    ['filtroOrganismoBuscar', 'filtroOrganismoMinVeces'].forEach((id) => {
+      document.getElementById(id).value = '';
+    });
+    actualizarResultadosOrganismos();
+  });
+
+  actualizarResultadosOrganismos();
+}
+
+function actualizarResultadosOrganismos() {
+  const contenedor = document.getElementById('organismosResultados');
+  const buscar = (document.getElementById('filtroOrganismoBuscar')?.value || '').trim().toLowerCase();
+  const minVeces = Number(document.getElementById('filtroOrganismoMinVeces')?.value || 0);
+
+  const filtrados = datosOrganismosActuales.ranking.filter((o) => {
+    if (buscar && !(o.organismo || '').toLowerCase().includes(buscar)) return false;
+    if (minVeces && o.vecesComprado < minVeces) return false;
+    return true;
+  });
+
+  const filasHtml = filtrados.map((o, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${o.organismo}</td>
+      <td>${o.vecesComprado}</td>
+      <td>${o.licitaciones} licitación${o.licitaciones === 1 ? '' : 'es'} · ${o.compraAgil} Compra${o.compraAgil === 1 ? '' : 's'} Ágil</td>
+      <td>${formatMoney(o.montoPromedio)}</td>
+    </tr>
+  `).join('');
+
+  contenedor.innerHTML = `
+    <div class="analisis-table-wrap">
+      <table class="analisis-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Organismo</th>
+            <th>Veces comprado</th>
+            <th>Detalle</th>
+            <th>Monto promedio</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml || '<tr><td colspan="5" class="empty-state">Sin resultados para estos filtros.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+let datosRechazosActuales = null;
+
+async function buscarRechazos(codigo, titulo) {
+  const card = document.getElementById('analisisCard');
+  card.innerHTML = '<div class="loading">Buscando...</div>';
+
+  try {
+    const data = await apiFetch(`/api/analisis/rechazos?codigo=${codigo}`);
+    datosRechazosActuales = data;
+
+    if (data.totalRechazadas === 0) {
+      card.innerHTML = `<div class="empty-state">Todavía no hay cotizaciones rechazadas registradas para "${titulo}".</div>`;
+      return;
+    }
+
+    construirVistaRechazos();
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  }
+}
+
+function construirVistaRechazos() {
+  const card = document.getElementById('analisisCard');
+
+  card.innerHTML = `
+    <details class="analisis-filtros-toggle">
+      <summary>Filtros</summary>
+      <div class="analisis-filtros">
+        <div class="field">
+          <label for="filtroRechazoBuscar">Buscar en la razón</label>
+          <input type="text" id="filtroRechazoBuscar" placeholder="Ej. monto, plazo...">
+        </div>
+        <div class="field field-btn">
+          <button type="button" class="btn btn-ghost" id="limpiarFiltroRechazoBtn">✖ Limpiar filtros</button>
+        </div>
+      </div>
+    </details>
+    <div id="rechazosResultados"></div>
+  `;
+
+  document.getElementById('filtroRechazoBuscar').addEventListener('input', actualizarResultadosRechazos);
+
+  document.getElementById('limpiarFiltroRechazoBtn').addEventListener('click', () => {
+    document.getElementById('filtroRechazoBuscar').value = '';
+    actualizarResultadosRechazos();
+  });
+
+  actualizarResultadosRechazos();
+}
+
+function actualizarResultadosRechazos() {
+  const contenedor = document.getElementById('rechazosResultados');
+  const buscar = (document.getElementById('filtroRechazoBuscar')?.value || '').trim().toLowerCase();
+
+  const razonesFiltradas = datosRechazosActuales.razones.filter((r) => !buscar || r.razon.toLowerCase().includes(buscar));
+
+  const filasHtml = razonesFiltradas.map((r) => {
+    const porcentaje = Math.round((r.cantidad / datosRechazosActuales.totalRechazadas) * 100);
+    return `
+      <tr>
+        <td>${r.razon}</td>
+        <td>${r.cantidad} <span class="row-meta">(${porcentaje}%)</span></td>
+      </tr>
+    `;
+  }).join('');
+
+  const mostrarSinRazon = !buscar && datosRechazosActuales.sinRazonEspecificada > 0;
+  const filaSinRazon = mostrarSinRazon
+    ? `<tr><td>Sin razón especificada</td><td>${datosRechazosActuales.sinRazonEspecificada}</td></tr>`
+    : '';
+
+  contenedor.innerHTML = `
+    <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+      <div class="row-meta">Total de cotizaciones rechazadas (solo Compra Ágil — licitaciones no exponen a quienes pierden)</div>
+      <strong style="font-size: 20px;">${datosRechazosActuales.totalRechazadas}</strong>
+    </div>
+    <div class="analisis-table-wrap">
+      <table class="analisis-table">
+        <thead>
+          <tr>
+            <th>Razón</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml}${filaSinRazon || (filasHtml ? '' : '<tr><td colspan="2" class="empty-state">Sin resultados para este filtro.</td></tr>')}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 // --- Modal de perfil ---

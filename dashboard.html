@@ -30,7 +30,7 @@
   <div class="error-banner" id="errorBanner"></div>
   <div class="plan-banner" id="planBanner" style="display:none;"></div>
 
-  <div class="tabs">
+  <div class="tabs" id="mainTabs">
     <button type="button" class="tab-btn active" data-tab="alertas">🔔 Mis Alertas</button>
     <button type="button" class="tab-btn" data-tab="notificaciones">💬 Mis Notificaciones</button>
     <button type="button" class="tab-btn" data-tab="analisis">📊 Análisis de Datos</button>
@@ -65,6 +65,9 @@
           <div class="field">
             <label for="filtroCategoriaConfig">Categoría o Producto</label>
             <input type="text" id="filtroCategoriaConfig" placeholder="72131500">
+          </div>
+          <div class="field field-btn">
+            <button type="button" class="btn btn-ghost" id="limpiarFiltroConfigBtn">✖ Limpiar filtros</button>
           </div>
         </div>
       </details>
@@ -103,6 +106,9 @@
             <label for="filtroFechaEnvioHist">Fecha de envío</label>
             <input type="date" id="filtroFechaEnvioHist">
           </div>
+          <div class="field field-btn">
+            <button type="button" class="btn btn-ghost" id="limpiarFiltroHistBtn">✖ Limpiar filtros</button>
+          </div>
         </div>
       </details>
       <div class="card" id="historyCard">
@@ -123,6 +129,13 @@
         <label for="analisisBuscar">Categoría o producto</label>
         <input type="text" id="analisisBuscar" placeholder="Busca por nombre o código (ej. antibióticos, 51101500)" autocomplete="off">
         <div id="analisisResultados" class="categoria-resultados"></div>
+      </div>
+
+      <div class="tabs" id="analisisSubTabs" style="margin-bottom: 16px;">
+        <button type="button" class="tab-btn active" data-subtab="precios">💰 Precios</button>
+        <button type="button" class="tab-btn" data-subtab="proveedores">🏆 Proveedores</button>
+        <button type="button" class="tab-btn" data-subtab="organismos">🏛️ Organismos</button>
+        <button type="button" class="tab-btn" data-subtab="rechazos">❌ Razones de rechazo</button>
       </div>
 
       <div class="card" id="analisisCard">

@@ -159,3 +159,15 @@ input.invalid { border-color: #E8827A; }
   color: var(--text-muted);
 }
 .footer-link a { color: var(--gold); text-decoration: none; }
+
+@media (max-width: 480px) {
+  body { padding: 16px; }
+  .card { padding: 28px 22px; }
+  .logo { padding: 20px 0 32px; font-size: 18px; }
+  .tooltip-bubble {
+    width: min(220px, calc(100vw - 64px));
+    left: auto;
+    right: -8px;
+    transform: none;
+  }
+}
