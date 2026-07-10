@@ -70,6 +70,20 @@ function formatDate(iso) {
   } catch { return iso; }
 }
 
+// Extrae "YYYY-MM-DD" en hora LOCAL (no UTC) — hace falta para que los filtros
+// de fecha comparen contra el mismo día que el usuario ve en pantalla (formatDate
+// de arriba también usa hora local). Comparar contra iso.slice(0,10) directo
+// compara en UTC, que puede ser un día distinto al que se muestra en Chile.
+function fechaLocalISO(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function soloDigitos(valor) {
   return valor.replace(/\D/g, '');
 }
@@ -475,8 +489,8 @@ function obtenerHistorialFiltrado() {
   return historialData.filter(h => {
     if (tipo && h.tipo_proceso !== tipo) return false;
     if (montoDesde && (h.monto == null || h.monto < montoDesde)) return false;
-    if (fechaDesde && (!h.fecha_cierre || h.fecha_cierre.slice(0, 10) < fechaDesde)) return false;
-    if (fechaEnvio && (!h.sent_at || h.sent_at.slice(0, 10) !== fechaEnvio)) return false;
+    if (fechaDesde && (!h.fecha_cierre || fechaLocalISO(h.fecha_cierre) < fechaDesde)) return false;
+    if (fechaEnvio && (!h.sent_at || fechaLocalISO(h.sent_at) !== fechaEnvio)) return false;
     return true;
   });
 }
