@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pago recibido — MercadoAlerta</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/login.css">
+<link rel="icon" type="image/svg+xml" href="/assets/mercadoalerta-icon.svg">
+
+</head>
+<body>
+
+<div class="card">
+  <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
+  <p class="sub">¡Listo! Recibimos tu pago y tu registro quedó completo.</p>
+  <p class="sub" style="margin-top: -20px; font-size: 13px;">
+    Puede tomar unos segundos en activarse mientras confirmamos el pago con MercadoPago.
+    Te redirigimos al inicio de sesión...
+  </p>
+
+  <div class="footer-link">
+    <a href="login.html">Ir a iniciar sesión ahora</a>
+  </div>
+</div>
+
+<script>
+  // NOTA: el back_url de MercadoPago llega acá independiente del resultado real
+  // del pago (autorizado, rechazado, pendiente) — la activación real de la
+  // cuenta ocurre vía el webhook (ver POST /api/pagos/webhook en el backend),
+  // no se debe confiar en la sola llegada a esta página. Este mensaje es
+  // informativo; si el pago fue rechazado, el usuario simplemente no podrá
+  // iniciar sesión todavía (quedará en estado 'pendiente_pago') y deberá
+  // reintentar el pago. Pendiente de validar esto de punta a punta cuando
+  // se prueben las credenciales reales de MercadoPago.
+  setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+</script>
+
+</body>
+</html>

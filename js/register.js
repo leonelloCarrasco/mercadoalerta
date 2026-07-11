@@ -3,6 +3,15 @@ const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://localhost:3000'
   : 'https://api.mercadoalerta.cl';
 
+// El plan viene de la landing como ?plan=trial|basico|full — si no viene
+// (ej. alguien entra directo a register.html), asumimos trial.
+const plan = new URLSearchParams(window.location.search).get('plan') || 'trial';
+const planLabelEl = document.getElementById('planSeleccionado');
+if (planLabelEl) {
+  const nombres = { trial: 'Trial (14 días gratis)', basico: 'Basic', full: 'Full' };
+  planLabelEl.textContent = nombres[plan] || plan;
+}
+
 const form = document.getElementById('registerForm');
 const errorMsg = document.getElementById('errorMsg');
 const noticeMsg = document.getElementById('noticeMsg');
@@ -45,6 +54,21 @@ function validarRut(rutCrudo) {
   return calcularDigitoVerificador(cuerpo) === dv;
 }
 
+document.querySelectorAll('.toggle-password').forEach((toggleBtn) => {
+  const targetInput = document.getElementById(toggleBtn.dataset.target);
+  const iconEye = toggleBtn.querySelector('.icon-eye');
+  const iconEyeOff = toggleBtn.querySelector('.icon-eye-off');
+
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = targetInput.type === 'password';
+    targetInput.type = isHidden ? 'text' : 'password';
+    iconEye.style.display = isHidden ? 'none' : '';
+    iconEyeOff.style.display = isHidden ? '' : 'none';
+    toggleBtn.setAttribute('aria-pressed', String(isHidden));
+    toggleBtn.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+});
+
 const rutEmpresaHint = document.getElementById('rutEmpresaHint');
 
 function mostrarErrorRut(mostrar) {
@@ -78,9 +102,11 @@ form.addEventListener('submit', async (e) => {
   const nombre = document.getElementById('nombre').value;
   const apellido = document.getElementById('apellido').value;
   const email = document.getElementById('email').value;
+  const telefono = document.getElementById('telefono').value;
+  const rutEmpresa = document.getElementById('rutEmpresa').value;
   const password = document.getElementById('password').value;
   const passwordConfirm = document.getElementById('passwordConfirm').value;
-  const rutEmpresa = document.getElementById('rutEmpresa').value;
+  const aceptaTerminos = document.getElementById('aceptaTerminos').checked;
 
   if (password !== passwordConfirm) {
     errorMsg.textContent = 'Las contraseñas no coinciden';
@@ -94,6 +120,20 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  if (!aceptaTerminos) {
+    errorMsg.textContent = 'Debes aceptar los Términos y Condiciones';
+    errorMsg.style.display = 'block';
+    return;
+  }
+
+  // window.turnstile lo inyecta el script de Cloudflare cargado en el <head>.
+  const captchaToken = window.turnstile ? window.turnstile.getResponse() : '';
+  if (!captchaToken) {
+    errorMsg.textContent = 'Completa la verificación "soy humano" para continuar';
+    errorMsg.style.display = 'block';
+    return;
+  }
+
   submitBtn.disabled = true;
   submitBtn.textContent = 'Creando cuenta...';
 
@@ -101,7 +141,10 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, nombre, apellido, rutEmpresa }),
+      body: JSON.stringify({
+        nombre, apellido, email, telefono, rutEmpresa,
+        password, passwordConfirm, aceptaTerminos, plan, captchaToken,
+      }),
     });
     const data = await res.json();
 
@@ -109,14 +152,19 @@ form.addEventListener('submit', async (e) => {
       throw new Error(data.error || 'Error al crear la cuenta');
     }
 
-    // Igual que en login: el token se guarda en sessionStorage, no localStorage,
-    // por seguridad frente a XSS.
-    sessionStorage.setItem('token', data.token);
-    window.location.href = 'dashboard.html';
+    // No hay token todavía: la cuenta queda pendiente hasta confirmar el
+    // correo (ver confirmar-cuenta.html), así que no redirigimos al dashboard.
+    noticeMsg.textContent = data.mensaje;
+    noticeMsg.style.display = 'block';
+    form.reset();
+    if (window.turnstile) window.turnstile.reset();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Cuenta creada — revisa tu correo';
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Crear cuenta';
+    if (window.turnstile) window.turnstile.reset();
   }
 });
