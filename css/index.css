@@ -219,14 +219,19 @@ footer {
 
   .icon {
     height: 50px;
-    width: 50px; 
-    background-color: #8B90A8; 
+    width: 50px;
+    background-color: #8B90A8;
     border-radius: 30%;
     display: flex;
     align-items: center;
     justify-content: center;
     }
   .icon-desc {height: 40px;}
+
+  .mark-forgot-pass {
+    display: flex;
+    justify-content: center;
+  }
 
    #head {
     position: sticky;
