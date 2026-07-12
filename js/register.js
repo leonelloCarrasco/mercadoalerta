@@ -54,6 +54,15 @@ function validarRut(rutCrudo) {
   return calcularDigitoVerificador(cuerpo) === dv;
 }
 
+// Celular chileno: +56 9 seguido de 8 dígitos (el "56" es opcional para
+// aceptar también el número sin código de país, ej. "912345678").
+const TELEFONO_REGEX = /^\+?56?9\d{8}$/;
+
+function validarTelefono(telefonoCrudo) {
+  const limpio = String(telefonoCrudo || '').replace(/[\s-]/g, '');
+  return TELEFONO_REGEX.test(limpio);
+}
+
 document.querySelectorAll('.toggle-password').forEach((toggleBtn) => {
   const targetInput = document.getElementById(toggleBtn.dataset.target);
   const iconEye = toggleBtn.querySelector('.icon-eye');
@@ -94,6 +103,24 @@ rutEmpresaInput.addEventListener('blur', () => {
   mostrarErrorRut(valor.length > 0 && !validarRut(valor));
 });
 
+const telefonoInput = document.getElementById('telefono');
+const telefonoHint = document.getElementById('telefonoHint');
+
+function mostrarErrorTelefono(mostrar) {
+  telefonoInput.classList.toggle('invalid', mostrar);
+  telefonoHint.classList.toggle('visible', mostrar);
+  telefonoHint.textContent = mostrar
+    ? 'El teléfono ingresado no es válido. Verifica el formato (ej. +56 9 1234 5678).'
+    : '';
+}
+
+telefonoInput.addEventListener('input', () => mostrarErrorTelefono(false));
+
+telefonoInput.addEventListener('blur', () => {
+  const valor = telefonoInput.value.trim();
+  mostrarErrorTelefono(valor.length > 0 && !validarTelefono(valor));
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorMsg.style.display = 'none';
@@ -111,6 +138,12 @@ form.addEventListener('submit', async (e) => {
   if (password !== passwordConfirm) {
     errorMsg.textContent = 'Las contraseñas no coinciden';
     errorMsg.style.display = 'block';
+    return;
+  }
+
+  if (!validarTelefono(telefono)) {
+    mostrarErrorTelefono(true);
+    telefonoInput.focus();
     return;
   }
 

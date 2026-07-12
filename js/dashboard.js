@@ -53,6 +53,16 @@ function formatMoney(n) {
   return '$' + Number(n).toLocaleString('es-CL');
 }
 
+// Formatea a "xx.xxx.xxx-x": "761234285" -> "76.123.428-5"
+function formatearRut(valor) {
+  const limpio = String(valor || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (!limpio) return '';
+
+  const cuerpo = limpio.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const dv = limpio.slice(-1);
+  return cuerpo ? `${cuerpo}-${dv}` : dv;
+}
+
 function formatMontoConTramo(h) {
   if (h.monto !== null && h.monto !== undefined) return formatMoney(h.monto);
   if (h.monto_utm_min) {
@@ -227,8 +237,15 @@ async function cargarUsuario() {
     const nombreCompleto = data.usuario.nombre
       ? `${data.usuario.nombre} ${data.usuario.apellido || ''}`.trim()
       : data.usuario.email;
-    document.getElementById('userInfo').textContent =
-      `${nombreCompleto} · ${data.usuario.nombre_empresa || data.usuario.rut_empresa}`;
+    //document.getElementById('userInfo').textContent =
+    //  `${nombreCompleto} · ${data.usuario.nombre_empresa || data.usuario.rut_empresa}`;
+
+    const iniciales = data.usuario.nombre
+      ? `${data.usuario.nombre[0]}${(data.usuario.apellido || '')[0] || ''}`.toUpperCase()
+      : data.usuario.email[0].toUpperCase();
+    document.getElementById('topbarMenuBtn').textContent = iniciales;
+    document.getElementById('topbarMenuName').textContent = nombreCompleto;
+    document.getElementById('topbarMenuEmail').textContent = data.usuario.email;
 
     mostrarBannerPlan(data.usuario);
     renderAnalisis(data.usuario);
@@ -320,6 +337,7 @@ async function cargarConfigs() {
     }
 
     renderConfigs();
+    renderInicio();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
   }
@@ -475,9 +493,50 @@ async function cargarHistorial() {
     historialData = data.historial;
     historialPaginaActual = 1;
     renderHistorial();
+    renderInicio();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
   }
+}
+
+// --- Inicio: resumen ---
+function renderInicio() {
+  const activas = configsData.filter((c) => c.activo).length;
+  const pausadas = configsData.filter((c) => !c.activo).length;
+  const hace7dias = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const notif7d = historialData.filter((h) => h.sent_at && new Date(h.sent_at).getTime() >= hace7dias).length;
+
+  document.getElementById('statAlertasActivas').textContent = activas;
+  document.getElementById('statAlertasPausadas').textContent = pausadas;
+  document.getElementById('statNotifTotal').textContent = historialData.length;
+  document.getElementById('statNotif7d').textContent = notif7d;
+
+  const reporteCard = document.getElementById('inicioReporteCard');
+  if (historialData.length === 0) {
+    reporteCard.innerHTML = '<div class="empty-state">Aún no se te ha enviado ninguna notificación.</div>';
+    return;
+  }
+
+  const porTipo = { licitacion: 0, compra_agil: 0 };
+  const porCanal = {};
+  historialData.forEach((h) => {
+    if (h.tipo_proceso in porTipo) porTipo[h.tipo_proceso]++;
+    porCanal[h.canal] = (porCanal[h.canal] || 0) + 1;
+  });
+
+  reporteCard.innerHTML = `
+    <div class="inicio-reporte-grupo">
+      <h4>Por tipo de proceso</h4>
+      <div class="inicio-reporte-fila"><span>📋 Licitación</span><strong>${porTipo.licitacion}</strong></div>
+      <div class="inicio-reporte-fila"><span>⚡ Compra Ágil</span><strong>${porTipo.compra_agil}</strong></div>
+    </div>
+    <div class="inicio-reporte-grupo">
+      <h4>Por canal de envío</h4>
+      ${Object.entries(porCanal).map(([canal, cantidad]) => `
+        <div class="inicio-reporte-fila"><span>${canal === 'telegram' ? '✈️ Telegram' : '✉️ Email'}</span><strong>${cantidad}</strong></div>
+      `).join('')}
+    </div>
+  `;
 }
 
 function obtenerHistorialFiltrado() {
@@ -585,26 +644,66 @@ document.getElementById('limpiarFiltroHistBtn').addEventListener('click', () => 
   renderHistorial();
 });
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  sessionStorage.removeItem('token');
-  window.location.href = 'login.html';
+document.querySelectorAll('.logout-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    sessionStorage.removeItem('token');
+    window.location.href = 'login.html';
+  });
 });
 
-// --- Pestañas ---
-const tabBtns = document.querySelectorAll('#mainTabs .tab-btn');
-const tabContents = {
+// --- Navegación (sidebar desktop + bottom bar y menú superior en mobile) ---
+const sectionLinks = document.querySelectorAll('[data-section]');
+const secciones = {
+  inicio: document.getElementById('secInicio'),
   alertas: document.getElementById('tabAlertas'),
+  busquedas: document.getElementById('secBusquedas'),
   notificaciones: document.getElementById('tabNotificaciones'),
   analisis: document.getElementById('tabAnalisis'),
+  ia: document.getElementById('secIA'),
+  cuenta: document.getElementById('secCuenta'),
 };
 
-tabBtns.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    tabBtns.forEach((b) => b.classList.remove('active'));
-    Object.values(tabContents).forEach((c) => c.classList.remove('active'));
-    btn.classList.add('active');
-    tabContents[btn.dataset.tab].classList.add('active');
+const bottombarMasBtn = document.getElementById('bottombarMasBtn');
+
+function mostrarSeccion(nombre) {
+  sectionLinks.forEach((l) => l.classList.toggle('active', l.dataset.section === nombre));
+  Object.entries(secciones).forEach(([key, el]) => el.classList.toggle('active', key === nombre));
+  bottombarMasBtn.classList.toggle('active', nombre === 'analisis' || nombre === 'ia');
+}
+
+sectionLinks.forEach((link) => {
+  link.addEventListener('click', () => {
+    mostrarSeccion(link.dataset.section);
+    if (link.dataset.section === 'cuenta') poblarSeccionCuenta();
+    topbarMenu.classList.remove('open');
+    bottombarMasMenu.classList.remove('open');
   });
+});
+
+// --- Menú de identidad del top bar (mobile) ---
+const topbarMenuBtn = document.getElementById('topbarMenuBtn');
+const topbarMenu = document.getElementById('topbarMenu');
+
+topbarMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  topbarMenu.classList.toggle('open');
+});
+
+// --- Hoja "Más" del bottom bar (mobile) ---
+const bottombarMasMenu = document.getElementById('bottombarMasMenu');
+
+bottombarMasBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  bottombarMasMenu.classList.toggle('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!topbarMenu.contains(e.target) && e.target !== topbarMenuBtn) {
+    topbarMenu.classList.remove('open');
+  }
+  if (!bottombarMasMenu.contains(e.target) && e.target !== bottombarMasBtn) {
+    bottombarMasMenu.classList.remove('open');
+  }
 });
 
 // --- Modal de nueva alerta ---
@@ -1186,8 +1285,7 @@ function actualizarResultadosRechazos() {
   `;
 }
 
-// --- Modal de perfil ---
-const profileModal = document.getElementById('profileModal');
+// --- Sección: Mi cuenta ---
 const profileForm = document.getElementById('profileForm');
 const passwordForm = document.getElementById('passwordForm');
 const profileInfoMsg = document.getElementById('profileInfoMsg');
@@ -1200,38 +1298,65 @@ function mostrarMensajeForm(el, mensaje, esExito) {
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
-document.getElementById('profileBtn').addEventListener('click', () => {
+document.querySelectorAll('.toggle-password').forEach((toggleBtn) => {
+  const targetInput = document.getElementById(toggleBtn.dataset.target);
+  const iconEye = toggleBtn.querySelector('.icon-eye');
+  const iconEyeOff = toggleBtn.querySelector('.icon-eye-off');
+
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = targetInput.type === 'password';
+    targetInput.type = isHidden ? 'text' : 'password';
+    iconEye.style.display = isHidden ? 'none' : '';
+    iconEyeOff.style.display = isHidden ? '' : 'none';
+    toggleBtn.setAttribute('aria-pressed', String(isHidden));
+    toggleBtn.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+});
+
+function poblarSeccionCuenta() {
   const u = window.usuarioActual;
   if (!u) return;
-  document.getElementById('profileEmail').textContent = u.email;
+  document.getElementById('profileEmail').value = u.email || '';
   document.getElementById('profileNombre').value = u.nombre || '';
   document.getElementById('profileApellido').value = u.apellido || '';
+  document.getElementById('profileTelefono').value = u.telefono || '';
+  document.getElementById('profileNombreEmpresa').value = u.nombre_empresa || '';
+  document.getElementById('profileRutEmpresa').value = formatearRut(u.rut_empresa);
   profileInfoMsg.style.display = 'none';
   passwordInfoMsg.style.display = 'none';
   passwordForm.reset();
-  profileModal.classList.add('open');
-});
+}
 
-document.getElementById('profileModalClose').addEventListener('click', () => {
-  profileModal.classList.remove('open');
-});
-profileModal.addEventListener('click', (e) => {
-  if (e.target === profileModal) profileModal.classList.remove('open');
-});
+// Celular chileno: +56 9 seguido de 8 dígitos (el "56" es opcional para
+// aceptar también el número sin código de país, ej. "912345678").
+const TELEFONO_REGEX = /^\+?56?9\d{8}$/;
+
+function validarTelefono(telefonoCrudo) {
+  const limpio = String(telefonoCrudo || '').replace(/[\s-]/g, '');
+  return TELEFONO_REGEX.test(limpio);
+}
 
 profileForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const nombre = document.getElementById('profileNombre').value.trim();
   const apellido = document.getElementById('profileApellido').value.trim();
+  const telefonoInput = document.getElementById('profileTelefono');
+  const telefono = telefonoInput.value.trim();
+
+  if (telefono && !validarTelefono(telefono)) {
+    mostrarMensajeForm(profileInfoMsg, 'El teléfono ingresado no es válido. Verifica el formato (ej. +56 9 1234 5678).', false);
+    telefonoInput.focus();
+    return;
+  }
 
   try {
     const data = await apiFetch('/api/auth/me', {
       method: 'PUT',
-      body: JSON.stringify({ nombre, apellido }),
+      body: JSON.stringify({ nombre, apellido, telefono }),
     });
     window.usuarioActual = { ...window.usuarioActual, ...data.usuario };
-    document.getElementById('userInfo').textContent =
-      `${nombre} ${apellido} · ${window.usuarioActual.nombre_empresa || window.usuarioActual.rut_empresa}`;
+    //document.getElementById('userInfo').textContent =
+    //  `${nombre} ${apellido} · ${window.usuarioActual.nombre_empresa || window.usuarioActual.rut_empresa}`;
     mostrarMensajeForm(profileInfoMsg, 'Perfil actualizado correctamente.', true);
   } catch (err) {
     mostrarMensajeForm(profileInfoMsg, err.message, false);
