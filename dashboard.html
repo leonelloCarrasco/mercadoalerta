@@ -126,6 +126,8 @@
           <button type="button" class="btn" id="abrirNuevaAlertaBtn">+ Crear Alerta</button>
         </div>
 
+        <div class="error-banner" id="errorBannerAlertas"></div>
+
         <details class="filter-toggle">
           <summary>Filtros</summary>
           <div class="filter-bar">
@@ -399,23 +401,35 @@
     <form id="newAlertForm">
       <div class="form-grid">
         <div class="field">
-          <label for="montoMinimo">Monto mínimo (CLP)</label>
-          <input type="text" inputmode="numeric" id="montoMinimo" placeholder="$1.000.000">
-          <small>Opcional. Solo Licitaciones/Compras Ágiles sobre este monto.</small>
+          <label for="montoMinimo">Monto mínimo (CLP) *</label>
+          <input type="text" inputmode="numeric" id="montoMinimo" placeholder="$1.000.000" required>
+          <small>Obligatorio. Solo Licitaciones/Compras Ágiles sobre este monto.</small>
         </div>
-        <div class="field">
-          <label for="region">Región</label>
-          <select id="region">
-            <option value="">Todas las regiones</option>
-          </select>
-          <small>Opcional. Selecciona la región a monitorear.</small>
+        <div class="field" style="position: relative;">
+          <label for="regionDropdownBtn">Regiones</label>
+          <button type="button" id="regionDropdownBtn" class="region-dropdown-btn">Todas las regiones</button>
+          <div id="regionDropdownPanel" class="region-dropdown-panel"></div>
+          <small>Opcional. Si no marcas ninguna, se monitorean todas las regiones.</small>
         </div>
         <div class="field" style="grid-column: 1 / -1; position: relative;">
-          <label for="categoriaBuscar">Categorías o Productos</label>
-          <input type="text" id="categoriaBuscar" placeholder="Busca por nombre o código (ej. vehículos, 72131500)" autocomplete="off">
-          <div id="categoriaResultados" class="categoria-resultados"></div>
+          <label>Rubro o Producto *</label>
+          <div class="categoria-modo-tabs" id="categoriaModoTabs">
+            <button type="button" class="categoria-modo-tab active" data-modo="producto">Buscar producto</button>
+            <button type="button" class="categoria-modo-tab" data-modo="rubro">Explorar por rubro</button>
+          </div>
+
+          <div id="categoriaModoProducto">
+            <input type="text" id="categoriaBuscar" placeholder="Busca por nombre o código (ej. vehículos, 72131500)" autocomplete="off">
+            <div id="categoriaResultados" class="categoria-resultados"></div>
+          </div>
+
+          <div id="categoriaModoRubro" style="display:none;">
+            <button type="button" id="rubroArbolBtn" class="region-dropdown-btn">Elegir un rubro...</button>
+            <div id="rubroArbolPanel" class="rubro-arbol-panel"></div>
+          </div>
+
           <div id="categoriasChips" class="categoria-chips"></div>
-          <small>Opcional. Busca y agrega las categorías o productos que te interesan.</small>
+          <small>Obligatorio. Elige un único producto o rubro — al elegir otra se reemplaza la anterior.</small>
         </div>
       </div>
       <div class="error-banner" id="errorBannerModal"></div>

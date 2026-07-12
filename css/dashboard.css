@@ -8,6 +8,7 @@
   --gold: #D4A72C;
   --gold-soft: #D4A72C22;
   --down: #3ECF8E;
+  --down-soft: #3ECF8E25;
   --danger: #E8827A;
   --font-display: 'Arial', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -327,7 +328,8 @@ table.analisis-table a:hover { text-decoration: underline; }
   padding: 9px 12px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; gap: 10px;
 }
 .categoria-resultado-item:hover { background: var(--surface-2); }
-.categoria-resultado-item .cod { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+.cod { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.categoria-resultado-item .cod { flex-shrink: 0; }
 .categoria-resultado-vacio { padding: 12px; font-size: 13px; color: var(--text-muted); }
 
 .categoria-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -346,8 +348,83 @@ table.analisis-table a:hover { text-decoration: underline; }
   padding: 1px 6px; border-radius: 3px; margin-left: 4px; vertical-align: middle;
 }
 .nivel-badge.categoria { background: var(--gold-soft); color: var(--gold); }
-.nivel-badge.producto { background: var(--down)22; color: var(--down); }
+.nivel-badge.producto { background: var(--down-soft); color: var(--down); }
 .nivel-badge.obra { background: #8B90A822; color: var(--text-muted); }
+
+/* --- Selector múltiple de regiones (checkboxes dentro de un desplegable) --- */
+.region-dropdown-btn {
+  width: 100%; text-align: left; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 6px; font-family: var(--font-body);
+  font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  gap: 8px;
+}
+.region-dropdown-btn::after { content: '▾'; color: var(--text-muted); flex-shrink: 0; }
+.region-dropdown-btn:focus, .region-dropdown-btn.open { border-color: var(--gold); outline: none; }
+.region-dropdown-btn .placeholder { color: var(--text-muted); }
+.region-dropdown-panel {
+  position: absolute; left: 0; right: 0; z-index: 20;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  margin-top: 4px; max-height: 240px; overflow-y: auto; display: none;
+}
+.region-dropdown-panel.open { display: block; }
+.region-dropdown-actions {
+  display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg);
+}
+.region-dropdown-actions button {
+  background: none; border: none; color: var(--gold); font-size: 12px; cursor: pointer; padding: 0;
+}
+.region-dropdown-actions button:hover { text-decoration: underline; }
+.region-checkbox-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px;
+}
+.region-checkbox-item:hover { background: var(--surface-2); }
+.region-checkbox-item input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
+
+/* --- Tabs "Buscar producto" / "Explorar por rubro" --- */
+.categoria-modo-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.categoria-modo-tab {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-muted);
+  padding: 7px 14px; border-radius: 6px; font-family: var(--font-body); font-size: 12.5px;
+  cursor: pointer;
+}
+.categoria-modo-tab.active { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.categoria-modo-tab:hover:not(.active) { color: var(--text); }
+
+/* --- Árbol de rubros (Segmento > Familia > Rubro) --- */
+.rubro-arbol-panel {
+  position: absolute; left: 0; right: 0; z-index: 20;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  margin-top: 4px; max-height: 320px; overflow-y: auto; display: none;
+}
+.rubro-arbol-panel.open { display: block; }
+.rubro-arbol-buscar {
+  width: 100%; background: var(--surface-2); border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); padding: 9px 12px; font-family: var(--font-body); font-size: 13px; outline: none;
+  position: sticky; top: 0;
+}
+.rubro-segmento > summary {
+  cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.rubro-segmento > summary::-webkit-details-marker { display: none; }
+.rubro-segmento > summary::before { content: '▸'; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; }
+.rubro-segmento[open] > summary::before { transform: rotate(90deg); }
+.rubro-segmento > summary:hover { background: var(--surface-2); }
+.rubro-familia { padding-left: 16px; }
+.rubro-familia > summary {
+  cursor: pointer; list-style: none; padding: 6px 12px; font-size: 12.5px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.rubro-familia > summary::-webkit-details-marker { display: none; }
+.rubro-familia > summary::before { content: '▸'; font-size: 10px; transition: transform 0.15s; }
+.rubro-familia[open] > summary::before { transform: rotate(90deg); }
+.rubro-familia > summary:hover { background: var(--surface-2); }
+.rubro-hoja {
+  padding: 6px 12px 6px 30px; font-size: 12.5px; cursor: pointer; color: var(--text);
+}
+.rubro-hoja:hover { background: var(--gold-soft); color: var(--gold); }
+.rubro-arbol-vacio { padding: 16px; text-align: center; font-size: 13px; color: var(--text-muted); }
 
 /* --- Filtros del análisis de datos --- */
 .analisis-filtros-toggle { background: var(--surface-2); border-bottom: 1px solid var(--border); }
