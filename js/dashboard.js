@@ -14,6 +14,13 @@ function showError(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
+function showErrorAlertas(msg) {
+  const el = document.getElementById('errorBannerAlertas');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
 function showErrorModal(msg) {
   const el = document.getElementById('errorBannerModal');
   el.textContent = "❌ " + msg;
@@ -61,6 +68,25 @@ function formatearRut(valor) {
   const cuerpo = limpio.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const dv = limpio.slice(-1);
   return cuerpo ? `${cuerpo}-${dv}` : dv;
+}
+
+function etiquetaNivel(nivel) {
+  if (nivel === 'categoria') return 'Rubro';
+  if (nivel === 'obra') return 'Obra';
+  return 'Producto';
+}
+
+// Con pocas regiones las lista todas; con muchas resume en un contador que
+// se puede tocar/clickear para expandir el detalle completo — evita que el
+// texto se desborde en el .row-meta, y a diferencia de un tooltip nativo
+// (title) sí funciona en mobile, donde no hay hover.
+function formatearRegionesTag(regiones) {
+  if (!regiones || regiones.length === 0) return '<span>Todas las regiones</span>';
+  if (regiones.length <= 2) return `<span>Regiones: ${regiones.join(', ')}</span>`;
+
+  const resumen = `Regiones: ${regiones.length} seleccionadas`;
+  const completo = `Regiones: ${regiones.join(', ')}`.replace(/"/g, '&quot;');
+  return `<span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
 }
 
 function formatMontoConTramo(h) {
@@ -116,7 +142,8 @@ const montoMinimoInput = registrarInputMonto('montoMinimo');
 const filtroMontoConfigInput = registrarInputMonto('filtroMontoConfig');
 const filtroMontoHistInput = registrarInputMonto('filtroMontoHist');
 
-const regionSelect = document.getElementById('region');
+const regionDropdownBtn = document.getElementById('regionDropdownBtn');
+const regionDropdownPanel = document.getElementById('regionDropdownPanel');
 const filtroRegionConfigSelect = document.getElementById('filtroRegionConfig');
 
 // --- Buscador de categorías (chips) ---
@@ -129,7 +156,7 @@ let categoriaBuscarTimeout = null;
 function renderCategoriasChips() {
   categoriasChipsEl.innerHTML = categoriasSeleccionadas.map((c) => `
     <span class="categoria-chip" data-codigo="${c.codigo}">
-      ${c.titulo} <span class="nivel-badge ${c.nivel}">${c.nivel === 'categoria' ? 'Cat.' : 'Prod.'}</span> <span class="cod">(${c.codigo})</span>
+      ${c.titulo} <span class="nivel-badge ${c.nivel}">${c.nivel === 'categoria' ? 'Rub.' : 'Prod.'}</span> <span class="cod">(${c.codigo})</span>
       <span class="quitar" data-quitar="${c.codigo}">✕</span>
     </span>
   `).join('');
@@ -142,9 +169,10 @@ function renderCategoriasChips() {
   });
 }
 
+// El máximo es 1 categoría/producto por alerta para todos los planes — elegir
+// una nueva reemplaza la anterior en vez de acumularse en la lista.
 function agregarCategoria(codigo, titulo, nivel) {
-  if (categoriasSeleccionadas.some((c) => c.codigo === codigo)) return;
-  categoriasSeleccionadas.push({ codigo, titulo, nivel });
+  categoriasSeleccionadas = [{ codigo, titulo, nivel }];
   renderCategoriasChips();
 }
 
@@ -159,7 +187,9 @@ categoriaBuscarInput.addEventListener('input', () => {
 
   categoriaBuscarTimeout = setTimeout(async () => {
     try {
-      const data = await apiFetch(`/api/alerts/categorias/buscar?q=${encodeURIComponent(texto)}`);
+      // nivel=producto: en este modo del buscador solo interesan productos
+      // puntuales — para elegir un rubro completo está la pestaña "Explorar por rubro".
+      const data = await apiFetch(`/api/alerts/categorias/buscar?q=${encodeURIComponent(texto)}&nivel=producto`);
       if (data.resultados.length === 0) {
         categoriaResultadosEl.innerHTML = '<div class="categoria-resultado-vacio">Sin resultados</div>';
       } else {
@@ -191,11 +221,204 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// --- Tabs "Buscar producto" / "Explorar por rubro" ---
+const categoriaModoTabs = document.getElementById('categoriaModoTabs');
+const categoriaModoProducto = document.getElementById('categoriaModoProducto');
+const categoriaModoRubro = document.getElementById('categoriaModoRubro');
+
+categoriaModoTabs.addEventListener('click', (e) => {
+  const tab = e.target.closest('.categoria-modo-tab');
+  if (!tab) return;
+
+  categoriaModoTabs.querySelectorAll('.categoria-modo-tab').forEach((t) => t.classList.remove('active'));
+  tab.classList.add('active');
+
+  const esRubro = tab.dataset.modo === 'rubro';
+  categoriaModoProducto.style.display = esRubro ? 'none' : '';
+  categoriaModoRubro.style.display = esRubro ? '' : 'none';
+  categoriaResultadosEl.classList.remove('open');
+  rubroArbolPanel.classList.remove('open');
+
+  if (esRubro) cargarArbolRubros(); // lazy: solo se pide la primera vez que se abre esta pestaña
+});
+
+// --- Árbol de rubros (Segmento > Familia > Rubro), modo "Explorar por rubro" ---
+// El usuario conoce el concepto "Rubro" (nivel 3 de UNSPSC) mejor que "Categoría":
+// al elegir un rubro, la alerta aplica a TODOS los productos de ese rubro (el
+// backend ya matchea por prefijo de código, ver matching.service.js).
+const rubroArbolBtn = document.getElementById('rubroArbolBtn');
+const rubroArbolPanel = document.getElementById('rubroArbolPanel');
+let arbolRubrosData = null; // cacheado en memoria mientras dura la sesión del dashboard
+
+function renderArbolRubros(filtro = '') {
+  const filtroNorm = filtro.trim().toLowerCase();
+
+  const html = arbolRubrosData.map((segmento) => {
+    const familiasHtml = segmento.familias.map((familia) => {
+      const rubrosFiltrados = filtroNorm
+        ? familia.rubros.filter((r) => r.titulo.toLowerCase().includes(filtroNorm))
+        : familia.rubros;
+      if (rubrosFiltrados.length === 0) return '';
+
+      const hojasHtml = rubrosFiltrados.map((r) => `
+        <div class="rubro-hoja" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">${r.titulo}</div>
+      `).join('');
+
+      // Con filtro activo, se abren automáticamente las ramas que tienen resultados.
+      return `
+        <details class="rubro-familia" ${filtroNorm ? 'open' : ''}>
+          <summary>${familia.familia}</summary>
+          ${hojasHtml}
+        </details>
+      `;
+    }).join('');
+
+    if (!familiasHtml.trim()) return '';
+
+    return `
+      <details class="rubro-segmento" ${filtroNorm ? 'open' : ''}>
+        <summary>${segmento.segmento}</summary>
+        ${familiasHtml}
+      </details>
+    `;
+  }).join('');
+
+  rubroArbolPanel.innerHTML = `
+    <input type="text" id="rubroArbolBuscar" class="rubro-arbol-buscar" placeholder="Filtrar rubros..." value="${filtro.replace(/"/g, '&quot;')}">
+    <div id="rubroArbolContenido">${html.trim() ? html : '<div class="rubro-arbol-vacio">Sin rubros que coincidan</div>'}</div>
+  `;
+
+  rubroArbolPanel.querySelectorAll('.rubro-hoja').forEach((el) => {
+    el.addEventListener('click', () => {
+      agregarCategoria(el.dataset.codigo, el.dataset.titulo, 'categoria');
+      rubroArbolPanel.classList.remove('open');
+    });
+  });
+
+  const buscarInput = document.getElementById('rubroArbolBuscar');
+  buscarInput.addEventListener('click', (e) => e.stopPropagation());
+  buscarInput.addEventListener('input', () => renderArbolRubros(buscarInput.value));
+  // Mantiene el foco en el campo de filtro entre renders (se pierde al reemplazar innerHTML).
+  buscarInput.focus();
+  buscarInput.setSelectionRange(buscarInput.value.length, buscarInput.value.length);
+}
+
+async function cargarArbolRubros() {
+  if (!arbolRubrosData) {
+    rubroArbolPanel.innerHTML = '<div class="rubro-arbol-vacio">Cargando rubros...</div>';
+    rubroArbolPanel.classList.add('open');
+    try {
+      const data = await apiFetch('/api/alerts/categorias/arbol');
+      arbolRubrosData = data.arbol;
+    } catch (err) {
+      rubroArbolPanel.innerHTML = `<div class="rubro-arbol-vacio">Error al cargar los rubros: ${err.message}</div>`;
+      return;
+    }
+  }
+  renderArbolRubros();
+}
+
+rubroArbolBtn.addEventListener('click', () => {
+  const abrir = !rubroArbolPanel.classList.contains('open');
+  if (abrir) cargarArbolRubros();
+  rubroArbolPanel.classList.toggle('open', abrir);
+});
+
+document.addEventListener('click', (e) => {
+  if (!rubroArbolBtn.contains(e.target) && !rubroArbolPanel.contains(e.target)) {
+    rubroArbolPanel.classList.remove('open');
+  }
+});
+
+// Vuelve el selector de categoría a su estado inicial (pestaña "Buscar producto")
+// al abrir/cerrar el modal de nueva alerta.
+function resetCategoriaSelector() {
+  categoriaModoTabs.querySelectorAll('.categoria-modo-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  categoriaModoProducto.style.display = '';
+  categoriaModoRubro.style.display = 'none';
+  categoriaBuscarInput.value = '';
+  categoriaResultadosEl.classList.remove('open');
+  rubroArbolPanel.classList.remove('open');
+}
+
+// --- Selector múltiple de regiones (checkboxes dentro de un desplegable) ---
+// Vacío/ninguna marcada = "todas las regiones" (así lo interpreta el backend).
+let regionesDisponibles = [];
+let regionesSeleccionadas = new Set();
+
+function actualizarTextoRegionDropdown() {
+  if (regionesSeleccionadas.size === 0) {
+    regionDropdownBtn.innerHTML = '<span class="placeholder">Todas las regiones</span>';
+  } else if (regionesSeleccionadas.size <= 2) {
+    regionDropdownBtn.textContent = [...regionesSeleccionadas].join(', ');
+  } else {
+    regionDropdownBtn.textContent = `${regionesSeleccionadas.size} regiones seleccionadas`;
+  }
+}
+
+function renderRegionDropdownPanel() {
+  const opciones = regionesDisponibles.map((r) => `
+    <label class="region-checkbox-item">
+      <input type="checkbox" value="${r}" ${regionesSeleccionadas.has(r) ? 'checked' : ''}>
+      <span>${r}</span>
+    </label>
+  `).join('');
+
+  regionDropdownPanel.innerHTML = `
+    <div class="region-dropdown-actions">
+      <button type="button" id="regionSeleccionarTodas">Seleccionar todas</button>
+      <button type="button" id="regionLimpiarSeleccion">Limpiar</button>
+    </div>
+    ${opciones}
+  `;
+
+  regionDropdownPanel.querySelectorAll('input[type="checkbox"]').forEach((chk) => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) regionesSeleccionadas.add(chk.value);
+      else regionesSeleccionadas.delete(chk.value);
+      actualizarTextoRegionDropdown();
+    });
+  });
+
+  document.getElementById('regionSeleccionarTodas').addEventListener('click', () => {
+    regionesSeleccionadas = new Set(regionesDisponibles);
+    renderRegionDropdownPanel();
+    actualizarTextoRegionDropdown();
+  });
+  document.getElementById('regionLimpiarSeleccion').addEventListener('click', () => {
+    regionesSeleccionadas = new Set();
+    renderRegionDropdownPanel();
+    actualizarTextoRegionDropdown();
+  });
+}
+
+function resetRegionDropdown() {
+  regionesSeleccionadas = new Set();
+  actualizarTextoRegionDropdown();
+  renderRegionDropdownPanel();
+}
+
+regionDropdownBtn.addEventListener('click', () => {
+  const abrir = !regionDropdownPanel.classList.contains('open');
+  regionDropdownPanel.classList.toggle('open', abrir);
+  regionDropdownBtn.classList.toggle('open', abrir);
+});
+
+document.addEventListener('click', (e) => {
+  if (!regionDropdownBtn.contains(e.target) && !regionDropdownPanel.contains(e.target)) {
+    regionDropdownPanel.classList.remove('open');
+    regionDropdownBtn.classList.remove('open');
+  }
+});
+
 async function cargarRegiones() {
   try {
     const data = await apiFetch('/api/alerts/regiones');
+    regionesDisponibles = data.regiones;
+    renderRegionDropdownPanel();
+    actualizarTextoRegionDropdown();
+
     const opciones = data.regiones.map(r => `<option value="${r}">${r}</option>`).join('');
-    regionSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
     filtroRegionConfigSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
   } catch (err) {
     console.warn('No se pudieron cargar las regiones:', err.message);
@@ -311,10 +534,21 @@ async function iniciarUpgrade(empresaId, plan) {
   }
 }
 
+// Espejo de src/utils/planes.js (backend) — solo para dar feedback inmediato
+// en el cliente antes de abrir el modal. El backend es la fuente de verdad real
+// y vuelve a validar esto en POST /api/alerts/config de todas formas.
+const LIMITES_ALERTAS_POR_PLAN = { trial: 1, basico: 5, full: 10 };
+
+function obtenerLimitesPlanActual() {
+  const plan = window.usuarioActual?.plan;
+  if (!plan || !(plan in LIMITES_ALERTAS_POR_PLAN)) return null;
+  return { limiteAlertas: LIMITES_ALERTAS_POR_PLAN[plan] };
+}
+
 const CONFIGS_POR_PAGINA = 10;
 let configsData = [];
 let configsPaginaActual = 1;
-let mapaCategorias = {}; // codigo -> titulo, para mostrar descripciones en vez de códigos
+let mapaCategorias = {}; // codigo -> { titulo, nivel }, para mostrar descripciones en vez de códigos
 
 async function cargarConfigs() {
   const card = document.getElementById('configsCard');
@@ -329,7 +563,7 @@ async function cargarConfigs() {
     if (codigosUnicos.length > 0) {
       try {
         const detalle = await apiFetch(`/api/alerts/categorias/detalle?codigos=${codigosUnicos.join(',')}`);
-        mapaCategorias = Object.fromEntries(detalle.categorias.map((c) => [c.codigo, c.titulo]));
+        mapaCategorias = Object.fromEntries(detalle.categorias.map((c) => [c.codigo, { titulo: c.titulo, nivel: c.nivel }]));
       } catch (err) {
         console.warn('No se pudieron resolver las descripciones de categorías o productos:', err.message);
         mapaCategorias = {};
@@ -352,7 +586,9 @@ function obtenerConfigsFiltrados() {
   return configsData.filter(c => {
     if (estado && String(c.activo) !== estado) return false;
     if (montoDesde && (c.monto_minimo == null || c.monto_minimo < montoDesde)) return false;
-    if (region && c.region !== region) return false;
+    // Una alerta sin regiones (null/[]) monitorea TODAS las regiones, así que
+    // también debe aparecer al filtrar por cualquier región específica.
+    if (region && c.regiones && c.regiones.length > 0 && !c.regiones.includes(region)) return false;
     if (categoria && !(c.categorias || []).some(cat => cat.includes(categoria))) return false;
     return true;
   });
@@ -377,14 +613,18 @@ function renderConfigs() {
   const pagina = configsFiltrados.slice(inicio, inicio + CONFIGS_POR_PAGINA);
 
   const filasHtml = pagina.map(c => {
-    const nombresCategorias = (c.categorias || []).map((cod) => mapaCategorias[cod] || cod);
+    const categoriasInfo = (c.categorias || []).map((cod) => {
+      const info = mapaCategorias[cod];
+      return { codigo: cod, titulo: info ? info.titulo : cod, nivel: info ? info.nivel : 'categoria' };
+    });
+    const nombresCategorias = categoriasInfo.map((cat) => `${cat.titulo} <span class="nivel-badge ${cat.nivel}">${etiquetaNivel(cat.nivel)}</span> <span class="cod">(${cat.codigo})</span>`);
     return `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${nombresCategorias.length ? '<strong>Categorías y productos:</strong> ' + nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
+        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
         <div class="row-meta">
           ${c.monto_minimo ? `<span>Monto mín: ${formatMoney(c.monto_minimo)}</span>` : ''}
-          ${c.region ? `<span>Región: ${c.region}</span>` : ''}
+          ${formatearRegionesTag(c.regiones)}
           <span>${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
         </div>
       </div>
@@ -407,6 +647,13 @@ function renderConfigs() {
 
   card.innerHTML = filasHtml + paginadorHtml;
 
+  card.querySelectorAll('.regiones-toggle').forEach((el) => {
+    el.addEventListener('click', () => {
+      const expandido = el.classList.toggle('expandido');
+      el.innerHTML = expandido ? el.dataset.completo : el.dataset.resumen;
+    });
+  });
+
   card.querySelectorAll('[data-delete]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const confirmado = await confirmDialog('¿Eliminar esta alerta?');
@@ -414,7 +661,7 @@ function renderConfigs() {
       try {
         await apiFetch(`/api/alerts/config/${btn.dataset.delete}`, { method: 'DELETE' });
         cargarConfigs();
-      } catch (err) { showError(err.message); }
+      } catch (err) { showErrorAlertas(err.message); }
     });
   });
 
@@ -450,11 +697,18 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
   btn.textContent = 'Creando...';
 
   const montoMinimo = soloDigitos(montoMinimoInput.value);
-  const region = document.getElementById('region').value.trim();
+  const regiones = [...regionesSeleccionadas];
   const categorias = categoriasSeleccionadas.map((c) => c.codigo);
 
-  if (!montoMinimo && !region && categorias.length === 0) {
-    showErrorModal('Especifica al menos un criterio: monto mínimo, región, categorías o productos.');
+  if (!montoMinimo) {
+    showErrorModal('El monto mínimo es obligatorio.');
+    btn.disabled = false;
+    btn.textContent = 'Crear alerta';
+    return;
+  }
+
+  if (categorias.length === 0) {
+    showErrorModal('Debes elegir un producto o rubro para la alerta.');
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
     return;
@@ -464,14 +718,16 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
     await apiFetch('/api/alerts/config', {
       method: 'POST',
       body: JSON.stringify({
-        montoMinimo: montoMinimo ? Number(montoMinimo) : null,
-        region: region || null,
+        montoMinimo: Number(montoMinimo),
+        regiones,
         categorias,
       }),
     });
     document.getElementById('newAlertForm').reset();
     categoriasSeleccionadas = [];
     renderCategoriasChips();
+    resetRegionDropdown();
+    resetCategoriaSelector();
     newAlertModal.classList.remove('open');
     cargarConfigs();
   } catch (err) {
@@ -710,8 +966,19 @@ document.addEventListener('click', (e) => {
 const newAlertModal = document.getElementById('newAlertModal');
 
 document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
+  // Chequeo previo en el cliente (el backend igual lo valida) para no dejar
+  // abrir el formulario si ya no hay cupo — mejor feedback inmediato.
+  const limites = obtenerLimitesPlanActual();
+  const activasActuales = configsData.filter((c) => c.activo).length;
+  if (limites && activasActuales >= limites.limiteAlertas) {
+    showErrorAlertas(`Tu plan (${window.usuarioActual?.plan}) permite hasta ${limites.limiteAlertas} alerta${limites.limiteAlertas === 1 ? '' : 's'} activa${limites.limiteAlertas === 1 ? '' : 's'}. Pausa o elimina alguna antes de crear una nueva.`);
+    return;
+  }
+
   categoriasSeleccionadas = [];
   renderCategoriasChips();
+  resetRegionDropdown();
+  resetCategoriaSelector();
   document.getElementById('newAlertForm').reset();
   newAlertModal.classList.add('open');
 });
