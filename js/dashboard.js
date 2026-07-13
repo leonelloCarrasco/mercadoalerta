@@ -472,6 +472,17 @@ async function cargarUsuario() {
 
     mostrarBannerPlan(data.usuario);
     renderAnalisis(data.usuario);
+
+    // Solo visible para el usuario admin (users.es_admin, migración 028) —
+    // se inyecta por JS en vez de dejarlo fijo en el HTML para que no
+    // "parpadee" visible antes de saber si el usuario es admin o no.
+    if (data.usuario.es_admin) {
+      const linkAdmin = document.createElement('a');
+      linkAdmin.href = 'admin.html';
+      linkAdmin.className = 'sidebar-link';
+      linkAdmin.innerHTML = '<div class="icon"><img src="/assets/icons/alt-administrador.svg" class="icon-desc"></img></div> Panel Admin';
+      document.querySelector('.sidebar-nav').appendChild(linkAdmin);
+    }
   } catch (err) {
     showError('No se pudo cargar tu sesión: ' + err.message);
   }
