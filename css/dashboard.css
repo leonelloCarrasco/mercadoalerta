@@ -173,6 +173,10 @@ section { margin-bottom: 56px; }
 }
 .field input:focus, .field select:focus { border-color: var(--gold); }
 
+#montoField { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { #montoField { grid-template-columns: 1fr; } }
+#title-field { grid-column: 1 / -1; width: 100%; }
+
 .password-field { position: relative; }
 .password-field input { margin-bottom: 0; padding-right: 42px; }
 .toggle-password {
@@ -207,16 +211,19 @@ section { margin-bottom: 56px; }
 .row {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 14px;
-  flex-wrap: wrap;
+}
+@media (max-width: 880px) {
+  .row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .row > div:last-child { align-self: flex-end; }
 }
 @media (max-width: 480px) {
-  .row { flex-direction: column; align-items: stretch; }
-  .row > div:last-child { display: flex; justify-content: flex-end; }
+  .row { gap: 8px; padding: 12px 14px; }
 }
 .row:last-child { border-bottom: none; }
-.row-info { display: flex; flex-direction: column; gap: 4px; }
-.row-title { font-weight: 500; }
-.row-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); display: flex; gap: 14px; flex-wrap: wrap; }
+.row-info { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.row-title { font-weight: 500; overflow-wrap: anywhere; }
+.row-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); gap: 14px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.row > div:last-child { flex-shrink: 0; }
 .tag {
   font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
   background: var(--gold-soft); color: var(--gold);
@@ -253,6 +260,7 @@ section { margin-bottom: 56px; }
 .modal {
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
   padding: 24px; max-width: 360px; width: 100%;
+  max-height: calc(100vh - 48px); overflow-y: auto;
 }
 .modal-message { font-size: 14px; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
@@ -324,6 +332,8 @@ table.analisis-table a:hover { text-decoration: underline; }
   margin-top: 4px; max-height: 220px; overflow-y: auto; display: none;
 }
 .categoria-resultados.open { display: block; }
+#organismoResultados.open { display: grid; grid-template-columns: 1fr 1fr; }
+#organismoResultados .categoria-resultado-vacio { grid-column: 1 / -1; }
 .categoria-resultado-item {
   padding: 9px 12px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; gap: 10px;
 }
@@ -367,6 +377,8 @@ table.analisis-table a:hover { text-decoration: underline; }
   margin-top: 4px; max-height: 240px; overflow-y: auto; display: none;
 }
 .region-dropdown-panel.open { display: block; }
+#regionDropdownPanel.open { display: grid; grid-template-columns: 1fr 1fr; }
+#regionDropdownPanel .region-dropdown-actions { grid-column: 1 / -1; }
 .region-dropdown-actions {
   display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border);
   position: sticky; top: 0; background: var(--bg);
@@ -380,6 +392,11 @@ table.analisis-table a:hover { text-decoration: underline; }
 }
 .region-checkbox-item:hover { background: var(--surface-2); }
 .region-checkbox-item input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
+
+/* --- Tipo de proceso (Licitaciones / Compras Ágiles) --- */
+.tipo-proceso-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox-row input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
 
 /* --- Tabs "Buscar producto" / "Explorar por rubro" --- */
 .categoria-modo-tabs { display: flex; gap: 6px; margin-bottom: 10px; }

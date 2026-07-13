@@ -80,13 +80,47 @@ function etiquetaNivel(nivel) {
 // se puede tocar/clickear para expandir el detalle completo — evita que el
 // texto se desborde en el .row-meta, y a diferencia de un tooltip nativo
 // (title) sí funciona en mobile, donde no hay hover.
+// Criterio exclusivo de Compra Ágil (migración 029) — muestra el rango como
+// corresponda según qué extremos estén definidos.
+function formatearMontoTag(montoMinimo, montoMaximo) {
+  if (!montoMinimo && !montoMaximo) return '';
+  if (montoMinimo && montoMaximo) return `<br><span>Monto C.A.: ${formatMoney(montoMinimo)} – ${formatMoney(montoMaximo)}</span>`;
+  if (montoMinimo) return `<br><span>Monto mín: ${formatMoney(montoMinimo)}</span>`;
+  return `<br><span>Monto máx: ${formatMoney(montoMaximo)}</span>`;
+}
+
 function formatearRegionesTag(regiones) {
-  if (!regiones || regiones.length === 0) return '<span>Todas las regiones</span>';
-  if (regiones.length <= 2) return `<span>Regiones: ${regiones.join(', ')}</span>`;
+  if (!regiones || regiones.length === 0) return '<br><span>Todas las regiones</span>';
+  if (regiones.length <= 2) return `<br><span>Regiones: ${regiones.join(', ')}</span>`;
 
   const resumen = `Regiones: ${regiones.length} seleccionadas`;
   const completo = `Regiones: ${regiones.join(', ')}`.replace(/"/g, '&quot;');
-  return `<span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
+  return `<br><span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
+}
+
+// Solo se muestra si NO son ambos (ambos = el caso por defecto, no aporta info extra).
+function formatearTipoProcesoTag(tiposProceso) {
+  if (!tiposProceso || tiposProceso.length === 0 || tiposProceso.length === 2) return '';
+  const etiquetas = { licitacion: 'Solo Licitaciones', compra_agil: 'Solo Compras Ágiles' };
+  return `<br><span>${etiquetas[tiposProceso[0]] || tiposProceso[0]}</span>`;
+}
+
+function formatearTramosTag(tramos) {
+  if (!tramos || tramos.length === 0) return '';
+  if (tramos.length <= 3) return `<br><span>Tramos Lic.: ${tramos.join(', ')}</span>`;
+
+  const resumen = `Tramos: ${tramos.length} seleccionados`;
+  const completo = `Tramos: ${tramos.join(', ')}`.replace(/"/g, '&quot;');
+  return `<br><span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
+}
+
+function formatearOrganismosTag(organismos) {
+  if (!organismos || organismos.length === 0) return '';
+  if (organismos.length === 1) return `<br><span>Organismo: ${organismos[0]}</span>`;
+
+  const resumen = `Organismos: ${organismos.length} seleccionados`;
+  const completo = `Organismos: ${organismos.join(', ')}`.replace(/"/g, '&quot;');
+  return `<br><span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
 }
 
 function formatMontoConTramo(h) {
@@ -139,12 +173,17 @@ function registrarInputMonto(id) {
 }
 
 const montoMinimoInput = registrarInputMonto('montoMinimo');
+const montoMaximoInput = registrarInputMonto('montoMaximo');
 const filtroMontoConfigInput = registrarInputMonto('filtroMontoConfig');
 const filtroMontoHistInput = registrarInputMonto('filtroMontoHist');
 
 const regionDropdownBtn = document.getElementById('regionDropdownBtn');
 const regionDropdownPanel = document.getElementById('regionDropdownPanel');
 const filtroRegionConfigSelect = document.getElementById('filtroRegionConfig');
+const tramoDropdownBtn = document.getElementById('tramoDropdownBtn');
+const tramoDropdownPanel = document.getElementById('tramoDropdownPanel');
+const tipoProcesoLicitacionChk = document.getElementById('tipoProcesoLicitacion');
+const tipoProcesoCompraAgilChk = document.getElementById('tipoProcesoCompraAgil');
 
 // --- Buscador de categorías (chips) ---
 let categoriasSeleccionadas = []; // [{ codigo, titulo }]
@@ -425,6 +464,200 @@ async function cargarRegiones() {
   }
 }
 
+// --- Tipo de licitación (tramo UTM) — mismo patrón de checkboxes que regiones,
+// pero cada opción tiene un código (L1, LE, LP...) distinto de su etiqueta visible. ---
+let tramosDisponibles = []; // [{codigo, descripcion}]
+let tramosSeleccionados = new Set(); // set de códigos
+
+function actualizarTextoTramoDropdown() {
+  if (tramosSeleccionados.size === 0) {
+    tramoDropdownBtn.innerHTML = '<span class="placeholder">Todos los tramos</span>';
+  } else if (tramosSeleccionados.size <= 3) {
+    tramoDropdownBtn.textContent = [...tramosSeleccionados].join(', ');
+  } else {
+    tramoDropdownBtn.textContent = `${tramosSeleccionados.size} tramos seleccionados`;
+  }
+}
+
+function renderTramoDropdownPanel() {
+  const opciones = tramosDisponibles.map((t) => `
+    <label class="region-checkbox-item">
+      <input type="checkbox" value="${t.codigo}" ${tramosSeleccionados.has(t.codigo) ? 'checked' : ''}>
+      <span>${t.codigo} — ${t.descripcion}</span>
+    </label>
+  `).join('');
+
+  tramoDropdownPanel.innerHTML = `
+    <div class="region-dropdown-actions">
+      <button type="button" id="tramoSeleccionarTodos">Seleccionar todos</button>
+      <button type="button" id="tramoLimpiarSeleccion">Limpiar</button>
+    </div>
+    ${opciones}
+  `;
+
+  tramoDropdownPanel.querySelectorAll('input[type="checkbox"]').forEach((chk) => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) tramosSeleccionados.add(chk.value);
+      else tramosSeleccionados.delete(chk.value);
+      actualizarTextoTramoDropdown();
+    });
+  });
+
+  document.getElementById('tramoSeleccionarTodos').addEventListener('click', () => {
+    tramosSeleccionados = new Set(tramosDisponibles.map((t) => t.codigo));
+    renderTramoDropdownPanel();
+    actualizarTextoTramoDropdown();
+  });
+  document.getElementById('tramoLimpiarSeleccion').addEventListener('click', () => {
+    tramosSeleccionados = new Set();
+    renderTramoDropdownPanel();
+    actualizarTextoTramoDropdown();
+  });
+}
+
+function resetTramoDropdown() {
+  tramosSeleccionados = new Set();
+  actualizarTextoTramoDropdown();
+  renderTramoDropdownPanel();
+}
+
+tramoDropdownBtn.addEventListener('click', () => {
+  const abrir = !tramoDropdownPanel.classList.contains('open');
+  tramoDropdownPanel.classList.toggle('open', abrir);
+  tramoDropdownBtn.classList.toggle('open', abrir);
+});
+
+document.addEventListener('click', (e) => {
+  if (!tramoDropdownBtn.contains(e.target) && !tramoDropdownPanel.contains(e.target)) {
+    tramoDropdownPanel.classList.remove('open');
+    tramoDropdownBtn.classList.remove('open');
+  }
+});
+
+async function cargarTramos() {
+  try {
+    const data = await apiFetch('/api/alerts/tramos');
+    tramosDisponibles = data.tramos;
+    renderTramoDropdownPanel();
+    actualizarTextoTramoDropdown();
+  } catch (err) {
+    console.warn('No se pudieron cargar los tramos de licitación:', err.message);
+  }
+}
+
+// --- Tipo de proceso (Licitaciones / Compras Ágiles) — al menos uno debe
+// quedar marcado; si el usuario intenta destildar el último, se revierte.
+// El tramo UTM solo tiene sentido para Licitaciones, y el rango de monto
+// mínimo/máximo solo para Compras Ágiles (un tramo YA define un rango de
+// monto para licitaciones) — cada campo se muestra u oculta según corresponda.
+const tramoFieldEl = document.getElementById('tramoField');
+const montoMinimoFieldEl = document.getElementById('montoMinimoField');
+const montoMaximoFieldEl = document.getElementById('montoMaximoField');
+
+function actualizarCamposSegunTipoProceso() {
+  const licitacionesActivas = tipoProcesoLicitacionChk.checked;
+  const compraAgilActiva = tipoProcesoCompraAgilChk.checked;
+
+  tramoFieldEl.style.display = licitacionesActivas ? '' : 'none';
+  montoMinimoFieldEl.style.display = compraAgilActiva ? '' : 'none';
+  montoMaximoFieldEl.style.display = compraAgilActiva ? '' : 'none';
+
+  // Si se oculta un campo, se limpia su valor — no debe quedar guardado un
+  // criterio que el usuario ya no puede ver ni editar en el formulario.
+  if (!licitacionesActivas) resetTramoDropdown();
+  if (!compraAgilActiva) {
+    montoMinimoInput.value = '';
+    montoMaximoInput.value = '';
+  }
+}
+
+[tipoProcesoLicitacionChk, tipoProcesoCompraAgilChk].forEach((chk) => {
+  chk.addEventListener('change', () => {
+    if (!tipoProcesoLicitacionChk.checked && !tipoProcesoCompraAgilChk.checked) {
+      chk.checked = true; // no se puede dejar los dos destildados
+    }
+    actualizarCamposSegunTipoProceso();
+  });
+});
+
+function resetTipoProceso() {
+  tipoProcesoLicitacionChk.checked = true;
+  tipoProcesoCompraAgilChk.checked = true;
+  actualizarCamposSegunTipoProceso();
+}
+
+// --- Organismo comprador — buscador con autocompletado + selección múltiple
+// (chips), mismo patrón visual que las categorías pero sin límite de 1. ---
+const organismoBuscarInput = document.getElementById('organismoBuscar');
+const organismoResultadosEl = document.getElementById('organismoResultados');
+const organismosChipsEl = document.getElementById('organismosChips');
+let organismoBuscarTimeout = null;
+let organismosSeleccionados = [];
+
+function renderOrganismosChips() {
+  organismosChipsEl.innerHTML = organismosSeleccionados.map((o) => `
+    <span class="categoria-chip" data-organismo="${o.replace(/"/g, '&quot;')}">
+      ${o}
+      <span class="quitar" data-quitar-organismo="${o.replace(/"/g, '&quot;')}">✕</span>
+    </span>
+  `).join('');
+
+  organismosChipsEl.querySelectorAll('[data-quitar-organismo]').forEach((el) => {
+    el.addEventListener('click', () => {
+      organismosSeleccionados = organismosSeleccionados.filter((o) => o !== el.dataset.quitarOrganismo);
+      renderOrganismosChips();
+    });
+  });
+}
+
+function resetOrganismos() {
+  organismosSeleccionados = [];
+  renderOrganismosChips();
+}
+
+organismoBuscarInput.addEventListener('input', () => {
+  clearTimeout(organismoBuscarTimeout);
+  const texto = organismoBuscarInput.value.trim();
+
+  if (texto.length < 2) {
+    organismoResultadosEl.classList.remove('open');
+    return;
+  }
+
+  organismoBuscarTimeout = setTimeout(async () => {
+    try {
+      const data = await apiFetch(`/api/alerts/organismos/buscar?q=${encodeURIComponent(texto)}`);
+      const disponibles = data.resultados.filter((o) => !organismosSeleccionados.includes(o));
+
+      organismoResultadosEl.innerHTML = disponibles.length === 0
+        ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
+        : disponibles.map((o) => `
+            <div class="categoria-resultado-item" data-organismo="${o.replace(/"/g, '&quot;')}">
+              <span>${o}</span>
+            </div>
+          `).join('');
+
+      organismoResultadosEl.querySelectorAll('[data-organismo]').forEach((el) => {
+        el.addEventListener('click', () => {
+          organismosSeleccionados.push(el.dataset.organismo);
+          renderOrganismosChips();
+          organismoBuscarInput.value = '';
+          organismoResultadosEl.classList.remove('open');
+        });
+      });
+      organismoResultadosEl.classList.add('open');
+    } catch (err) {
+      console.warn('Error buscando organismos:', err.message);
+    }
+  }, 300);
+});
+
+document.addEventListener('click', (e) => {
+  if (!organismoBuscarInput.contains(e.target) && !organismoResultadosEl.contains(e.target)) {
+    organismoResultadosEl.classList.remove('open');
+  }
+});
+
 const confirmModal = document.getElementById('confirmModal');
 const confirmModalMessage = document.getElementById('confirmModalMessage');
 const confirmModalCancel = document.getElementById('confirmModalCancel');
@@ -634,9 +867,12 @@ function renderConfigs() {
       <div class="row-info">
         <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
         <div class="row-meta">
-          ${c.monto_minimo ? `<span>Monto mín: ${formatMoney(c.monto_minimo)}</span>` : ''}
+          <span style="font-size: 14px;">${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
+          ${formatearTipoProcesoTag(c.tipos_proceso)}
+          ${formatearTramosTag(c.tramos_licitacion)}
+          ${formatearMontoTag(c.monto_minimo, c.monto_maximo)}
           ${formatearRegionesTag(c.regiones)}
-          <span>${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
+          ${formatearOrganismosTag(c.organismos)}
         </div>
       </div>
       <div style="display:flex; gap:8px;">
@@ -708,18 +944,32 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
   btn.textContent = 'Creando...';
 
   const montoMinimo = soloDigitos(montoMinimoInput.value);
+  const montoMaximo = soloDigitos(montoMaximoInput.value);
   const regiones = [...regionesSeleccionadas];
   const categorias = categoriasSeleccionadas.map((c) => c.codigo);
+  const tramosLicitacion = [...tramosSeleccionados];
+  const organismos = [...organismosSeleccionados];
 
-  if (!montoMinimo) {
-    showErrorModal('El monto mínimo es obligatorio.');
+  const tiposProceso = [];
+  if (tipoProcesoLicitacionChk.checked) tiposProceso.push('licitacion');
+  if (tipoProcesoCompraAgilChk.checked) tiposProceso.push('compra_agil');
+
+  if (categorias.length === 0) {
+    showErrorModal('Debes elegir un producto o rubro para la alerta.');
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
     return;
   }
 
-  if (categorias.length === 0) {
-    showErrorModal('Debes elegir un producto o rubro para la alerta.');
+  if (tiposProceso.length === 0) {
+    showErrorModal('Debes dejar marcado al menos "Licitaciones" o "Compras Ágiles".');
+    btn.disabled = false;
+    btn.textContent = 'Crear alerta';
+    return;
+  }
+
+  if (montoMinimo && montoMaximo && Number(montoMaximo) < Number(montoMinimo)) {
+    showErrorModal('El monto máximo no puede ser menor que el monto mínimo.');
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
     return;
@@ -729,9 +979,13 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
     await apiFetch('/api/alerts/config', {
       method: 'POST',
       body: JSON.stringify({
-        montoMinimo: Number(montoMinimo),
+        montoMinimo: montoMinimo ? Number(montoMinimo) : null,
+        montoMaximo: montoMaximo ? Number(montoMaximo) : null,
         regiones,
         categorias,
+        tiposProceso,
+        tramosLicitacion,
+        organismos,
       }),
     });
     document.getElementById('newAlertForm').reset();
@@ -739,6 +993,9 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
     renderCategoriasChips();
     resetRegionDropdown();
     resetCategoriaSelector();
+    resetTramoDropdown();
+    resetTipoProceso();
+    resetOrganismos();
     newAlertModal.classList.remove('open');
     cargarConfigs();
   } catch (err) {
@@ -991,6 +1248,9 @@ document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
   resetRegionDropdown();
   resetCategoriaSelector();
   document.getElementById('newAlertForm').reset();
+  resetTramoDropdown();
+  resetTipoProceso();
+  resetOrganismos();
   newAlertModal.classList.add('open');
 });
 document.getElementById('cerrarNuevaAlertaBtn').addEventListener('click', () => {
@@ -1666,5 +1926,6 @@ passwordForm.addEventListener('submit', async (e) => {
 
 cargarUsuario();
 cargarRegiones();
+cargarTramos();
 cargarConfigs();
 cargarHistorial();
