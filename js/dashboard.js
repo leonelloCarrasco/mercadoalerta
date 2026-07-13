@@ -551,16 +551,14 @@ async function cargarTramos() {
 // mínimo/máximo solo para Compras Ágiles (un tramo YA define un rango de
 // monto para licitaciones) — cada campo se muestra u oculta según corresponda.
 const tramoFieldEl = document.getElementById('tramoField');
-const montoMinimoFieldEl = document.getElementById('montoMinimoField');
-const montoMaximoFieldEl = document.getElementById('montoMaximoField');
+const montoFieldEl = document.getElementById('montoField');
 
 function actualizarCamposSegunTipoProceso() {
   const licitacionesActivas = tipoProcesoLicitacionChk.checked;
   const compraAgilActiva = tipoProcesoCompraAgilChk.checked;
 
   tramoFieldEl.style.display = licitacionesActivas ? '' : 'none';
-  montoMinimoFieldEl.style.display = compraAgilActiva ? '' : 'none';
-  montoMaximoFieldEl.style.display = compraAgilActiva ? '' : 'none';
+  montoFieldEl.style.display = compraAgilActiva ? '' : 'none';
 
   // Si se oculta un campo, se limpia su valor — no debe quedar guardado un
   // criterio que el usuario ya no puede ver ni editar en el formulario.
@@ -1105,7 +1103,13 @@ function renderHistorial() {
         }</div>
         <div class="row-meta">
           <span>${h.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
+          <br>
           <span>Monto: ${formatMontoConTramo(h)}</span>
+          <br>
+          <span>Región: ${h.region}</span>
+          <br>
+          <span>Organismo: ${h.organismo}</span>
+          <br>
           <span>Cierra: ${formatDate(h.fecha_cierre)}</span>
         </div>
       </div>
