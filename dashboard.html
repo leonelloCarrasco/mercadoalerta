@@ -24,7 +24,7 @@
       <button type="button" class="sidebar-link" data-section="alertas"><div class="icon"><img src="/assets/icons/sonido-de-timbre.svg" class="icon-desc"></img></div> Alertas</button>
       <button type="button" class="sidebar-link" data-section="notificaciones"><div class="icon"><img src="/assets/icons/mensajes.svg" class="icon-desc"></img></div> Notificaciones</button>
       <button type="button" class="sidebar-link" data-section="busquedas"><div class="icon"><img src="/assets/icons/busqueda.svg" class="icon-desc"></img></div> Búsquedas</button>
-      <button type="button" class="sidebar-link" data-section="analisis"><div class="icon"><img src="/assets/icons/monitor-de-tablero.svg" class="icon-desc"></img></div> Análisis de Datos</button>
+      <button type="button" class="sidebar-link" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
       <button type="button" class="sidebar-link" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button>
     </nav>
 
@@ -55,7 +55,7 @@
     <button type="button" class="bottombar-link" data-section="busquedas"><div class="icon"><img src="/assets/icons/busqueda.svg" class="icon-desc"></img></div>Búsquedas</button>
     <button type="button" class="bottombar-link" id="bottombarMasBtn"><span class="bottombar-link-icon">⋯</span>Más</button>
     <div class="topbar-menu bottombar-mas-menu" id="bottombarMasMenu">
-      <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/monitor-de-tablero.svg" class="icon-desc"></img></div> Datos</button>
+      <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Datos</button>
       <button type="button" class="topbar-menu-item" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button>
     </div>
   </nav>
@@ -130,7 +130,7 @@
 
         <details class="filter-toggle">
           <summary>Filtros</summary>
-          <div class="filter-bar">
+          <div class="filter-bar filter-bar-oneline">
             <div class="field">
               <label for="filtroEstado">Estado</label>
               <select id="filtroEstado">
@@ -140,21 +140,28 @@
               </select>
             </div>
             <div class="field">
-              <label for="filtroMontoConfig">Monto mín. desde</label>
-              <input type="text" inputmode="numeric" id="filtroMontoConfig" placeholder="$0">
+              <label for="filtroTipoProcesoConfig">Tipo proceso</label>
+              <select id="filtroTipoProcesoConfig">
+                <option value="">Todos</option>
+                <option value="licitacion">Licitación</option>
+                <option value="compra_agil">Compra Ágil</option>
+              </select>
             </div>
             <div class="field">
               <label for="filtroRegionConfig">Región</label>
               <select id="filtroRegionConfig"></select>
             </div>
-            <div class="field">
-              <label for="filtroCategoriaConfig">Categoría o Producto</label>
-              <input type="text" id="filtroCategoriaConfig" placeholder="72131500">
+            <div class="field" style="position: relative;">
+              <label for="filtroCategoriaConfig">Rubro o Producto</label>
+              <input type="text" id="filtroCategoriaConfig" placeholder="Busca por nombre o código" autocomplete="off">
+              <div id="filtroCategoriaConfigResultados" class="categoria-resultados"></div>
             </div>
-            <div class="field field-btn">
-              <button type="button" class="btn btn-ghost" id="limpiarFiltroConfigBtn">✖ Limpiar filtros</button>
-            </div>
+            
           </div>
+          <br>
+          <div class="field field-btn">
+              <button type="button" class="btn btn-ghost" id="limpiarFiltroConfigBtn">✖ Limpiar</button>
+            </div>
         </details>
         <div class="card" id="configsCard">
           <div class="loading">Cargando...</div>
@@ -221,9 +228,9 @@
 
         <details class="filter-toggle">
           <summary>Filtros</summary>
-          <div class="filter-bar">
+          <div class="filter-bar filter-bar-oneline">
             <div class="field">
-              <label for="filtroTipoHist">Tipo</label>
+              <label for="filtroTipoHist">Tipo proceso</label>
               <select id="filtroTipoHist">
                 <option value="">Todos</option>
                 <option value="licitacion">Licitación</option>
@@ -231,21 +238,28 @@
               </select>
             </div>
             <div class="field">
-              <label for="filtroMontoHist">Monto desde</label>
-              <input type="text" inputmode="numeric" id="filtroMontoHist" placeholder="$0">
+              <label for="filtroRegionHist">Región</label>
+              <select id="filtroRegionHist"></select>
+            </div>
+            <div class="field" style="position: relative;">
+              <label for="filtroCategoriaHist">Rubro o Producto</label>
+              <input type="text" id="filtroCategoriaHist" placeholder="Busca por nombre o código" autocomplete="off">
+              <div id="filtroCategoriaHistResultados" class="categoria-resultados"></div>
             </div>
             <div class="field">
-              <label for="filtroFechaHist">Cierra desde</label>
+              <label for="filtroFechaHist">Fecha de cierre</label>
               <input type="date" id="filtroFechaHist">
             </div>
             <div class="field">
               <label for="filtroFechaEnvioHist">Fecha de envío</label>
               <input type="date" id="filtroFechaEnvioHist">
             </div>
-            <div class="field field-btn">
-              <button type="button" class="btn btn-ghost" id="limpiarFiltroHistBtn">✖ Limpiar filtros</button>
-            </div>
+           
           </div>
+          <br>
+           <div class="field field-btn">
+              <button type="button" class="btn btn-ghost" id="limpiarFiltroHistBtn">✖ Limpiar</button>
+            </div>
         </details>
         <div class="card" id="historyCard">
           <div class="loading">Cargando...</div>
@@ -253,20 +267,20 @@
       </section>
     </div>
 
-    <!-- Sección: Análisis de datos (plan Full — temporalmente visible en Trial para pruebas) -->
+    <!-- Sección: Análisis de precios (plan Full — temporalmente visible en Trial para pruebas) -->
     <div class="tab-content" id="tabAnalisis">
       <section>
         <div class="section-head">
-          <div class="icon"><img src="/assets/icons/monitor-de-tablero.svg" class="icon-desc"></img></div>
-          <h2>Análisis de Datos</h2>
+          <div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div>
+          <h2>Análisis de Precios</h2>
         </div>
 
         <div class="section-head">
-          <p class="section-sub" style="margin-bottom: 16px;">Busca una categoría o producto para ver el historial de precios de adjudicación — útil para calibrar a qué precio postular en un nuevo llamado.</p>
+          <p class="section-sub" style="margin-bottom: 16px;">Busca un producto o rubro para ver el historial de precios de adjudicación — útil para calibrar a qué precio postular en un nuevo llamado.</p>
         </div>
 
         <div class="field" style="max-width: 480px; position: relative; margin-bottom: 20px;">
-          <label for="analisisBuscar">Categoría o producto</label>
+          <label for="analisisBuscar">Producto o Rubro</label>
           <input type="text" id="analisisBuscar" placeholder="Busca por nombre o código (ej. antibióticos, 51101500)" autocomplete="off">
           <div id="analisisResultados" class="categoria-resultados"></div>
         </div>
@@ -279,7 +293,7 @@
         </div>
 
         <div class="card" id="analisisCard">
-          <div class="empty-state">Busca una categoría o producto arriba para ver su historial de precios.</div>
+          <div class="empty-state">Busca un producto o rubro arriba para ver su historial de precios.</div>
         </div>
       </section>
     </div>

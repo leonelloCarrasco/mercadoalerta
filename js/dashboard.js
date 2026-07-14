@@ -174,12 +174,11 @@ function registrarInputMonto(id) {
 
 const montoMinimoInput = registrarInputMonto('montoMinimo');
 const montoMaximoInput = registrarInputMonto('montoMaximo');
-const filtroMontoConfigInput = registrarInputMonto('filtroMontoConfig');
-const filtroMontoHistInput = registrarInputMonto('filtroMontoHist');
 
 const regionDropdownBtn = document.getElementById('regionDropdownBtn');
 const regionDropdownPanel = document.getElementById('regionDropdownPanel');
 const filtroRegionConfigSelect = document.getElementById('filtroRegionConfig');
+const filtroRegionHistSelect = document.getElementById('filtroRegionHist');
 const tramoDropdownBtn = document.getElementById('tramoDropdownBtn');
 const tramoDropdownPanel = document.getElementById('tramoDropdownPanel');
 const tipoProcesoLicitacionChk = document.getElementById('tipoProcesoLicitacion');
@@ -258,6 +257,99 @@ document.addEventListener('click', (e) => {
   if (!categoriaBuscarInput.contains(e.target) && !categoriaResultadosEl.contains(e.target)) {
     categoriaResultadosEl.classList.remove('open');
   }
+});
+
+// --- Buscador de rubro/producto de SELECCIÓN ÚNICA, para los filtros de las
+// tablas de Alertas y Notificaciones (misma lógica de búsqueda del modal de
+// nueva alerta — /api/alerts/categorias/buscar — pero sin restringir a
+// "producto": acá interesa poder filtrar tanto por rubro como por producto
+// puntual, y sin chips: al elegir un resultado, el input se llena con el
+// título elegido, listo para usarse en el filtro). Se instancia una vez por
+// cada campo (Alertas y Notificaciones) más abajo.
+function crearBuscadorCategoriaUnico(inputId, resultadosId, alCambiar) {
+  const input = document.getElementById(inputId);
+  const resultadosEl = document.getElementById(resultadosId);
+  let seleccion = null; // { codigo, nivel } o null si no hay selección/no calza con el catálogo
+  let timeout = null;
+
+  input.addEventListener('input', () => {
+    clearTimeout(timeout);
+    seleccion = null;
+    alCambiar(seleccion);
+    const texto = input.value.trim();
+
+    if (texto.length < 2) {
+      resultadosEl.classList.remove('open');
+      return;
+    }
+
+    timeout = setTimeout(async () => {
+      try {
+        const data = await apiFetch(`/api/alerts/categorias/buscar?q=${encodeURIComponent(texto)}`);
+        resultadosEl.innerHTML = data.resultados.length === 0
+          ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
+          : data.resultados.map((r) => `
+              <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
+                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+                <span class="cod">${r.codigo}</span>
+              </div>
+            `).join('');
+
+        resultadosEl.querySelectorAll('[data-codigo]').forEach((el) => {
+          el.addEventListener('click', () => {
+            seleccion = { codigo: el.dataset.codigo, nivel: el.dataset.nivel };
+            input.value = el.dataset.titulo;
+            resultadosEl.classList.remove('open');
+            alCambiar(seleccion);
+          });
+        });
+        resultadosEl.classList.add('open');
+      } catch (err) {
+        console.warn('Error buscando rubro o producto:', err.message);
+      }
+    }, 300);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !resultadosEl.contains(e.target)) {
+      resultadosEl.classList.remove('open');
+    }
+  });
+
+  return {
+    limpiar() {
+      seleccion = null;
+      input.value = '';
+      resultadosEl.classList.remove('open');
+    },
+  };
+}
+
+// Compara el código elegido en el filtro contra un código guardado (de una
+// alerta o de una notificación): si el filtro es un PRODUCTO puntual, exige
+// coincidencia exacta; si es un RUBRO, compara solo los primeros 6 dígitos
+// (nivel de categoría UNSPSC), para que capture cualquier producto de ese
+// rubro además del propio rubro. Simplificación: no expande la jerarquía
+// completa vía el árbol de rubros (como sí hace el backend en matching.service.js),
+// alcanza para un filtro rápido en pantalla.
+function coincideConFiltroCategoria(codigoGuardado, filtroSeleccion) {
+  if (!filtroSeleccion || !codigoGuardado) return true;
+  if (filtroSeleccion.nivel === 'producto') return String(codigoGuardado) === filtroSeleccion.codigo;
+  return String(codigoGuardado).slice(0, 6) === filtroSeleccion.codigo.slice(0, 6);
+}
+
+let filtroCategoriaConfigSeleccion = null;
+const buscadorCategoriaConfig = crearBuscadorCategoriaUnico('filtroCategoriaConfig', 'filtroCategoriaConfigResultados', (sel) => {
+  filtroCategoriaConfigSeleccion = sel;
+  configsPaginaActual = 1;
+  renderConfigs();
+});
+
+let filtroCategoriaHistSeleccion = null;
+const buscadorCategoriaHist = crearBuscadorCategoriaUnico('filtroCategoriaHist', 'filtroCategoriaHistResultados', (sel) => {
+  filtroCategoriaHistSeleccion = sel;
+  historialPaginaActual = 1;
+  renderHistorial();
 });
 
 // --- Tabs "Buscar producto" / "Explorar por rubro" ---
@@ -459,6 +551,7 @@ async function cargarRegiones() {
 
     const opciones = data.regiones.map(r => `<option value="${r}">${r}</option>`).join('');
     filtroRegionConfigSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
+    filtroRegionHistSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
   } catch (err) {
     console.warn('No se pudieron cargar las regiones:', err.message);
   }
@@ -821,17 +914,22 @@ async function cargarConfigs() {
 
 function obtenerConfigsFiltrados() {
   const estado = document.getElementById('filtroEstado').value;
-  const montoDesde = Number(soloDigitos(filtroMontoConfigInput.value)) || 0;
+  const tipoProceso = document.getElementById('filtroTipoProcesoConfig').value;
   const region = filtroRegionConfigSelect.value;
-  const categoria = document.getElementById('filtroCategoriaConfig').value.trim();
 
   return configsData.filter(c => {
     if (estado && String(c.activo) !== estado) return false;
-    if (montoDesde && (c.monto_minimo == null || c.monto_minimo < montoDesde)) return false;
+    // Una config sin tipos_proceso (o con ambos) monitorea licitaciones Y compras
+    // ágiles — mismo criterio que formatearTipoProcesoTag: solo restringe si el
+    // array tiene largo 1.
+    if (tipoProceso && c.tipos_proceso && c.tipos_proceso.length === 1 && c.tipos_proceso[0] !== tipoProceso) return false;
     // Una alerta sin regiones (null/[]) monitorea TODAS las regiones, así que
     // también debe aparecer al filtrar por cualquier región específica.
     if (region && c.regiones && c.regiones.length > 0 && !c.regiones.includes(region)) return false;
-    if (categoria && !(c.categorias || []).some(cat => cat.includes(categoria))) return false;
+    if (filtroCategoriaConfigSeleccion) {
+      const coincide = (c.categorias || []).some(cod => coincideConFiltroCategoria(cod, filtroCategoriaConfigSeleccion));
+      if (!coincide) return false;
+    }
     return true;
   });
 }
@@ -1063,14 +1161,15 @@ function renderInicio() {
 
 function obtenerHistorialFiltrado() {
   const tipo = document.getElementById('filtroTipoHist').value;
-  const montoDesde = Number(soloDigitos(filtroMontoHistInput.value)) || 0;
-  const fechaDesde = document.getElementById('filtroFechaHist').value;
+  const region = filtroRegionHistSelect.value;
+  const fechaCierre = document.getElementById('filtroFechaHist').value;
   const fechaEnvio = document.getElementById('filtroFechaEnvioHist').value;
 
   return historialData.filter(h => {
     if (tipo && h.tipo_proceso !== tipo) return false;
-    if (montoDesde && (h.monto == null || h.monto < montoDesde)) return false;
-    if (fechaDesde && (!h.fecha_cierre || fechaLocalISO(h.fecha_cierre) < fechaDesde)) return false;
+    if (region && h.region !== region) return false;
+    if (filtroCategoriaHistSeleccion && !coincideConFiltroCategoria(h.codigo_categoria, filtroCategoriaHistSeleccion)) return false;
+    if (fechaCierre && (!h.fecha_cierre || fechaLocalISO(h.fecha_cierre) !== fechaCierre)) return false;
     if (fechaEnvio && (!h.sent_at || fechaLocalISO(h.sent_at) !== fechaEnvio)) return false;
     return true;
   });
@@ -1140,14 +1239,14 @@ function renderHistorial() {
   }
 }
 
-['filtroEstado', 'filtroMontoConfig', 'filtroRegionConfig', 'filtroCategoriaConfig'].forEach(id => {
+['filtroEstado', 'filtroTipoProcesoConfig', 'filtroRegionConfig'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     configsPaginaActual = 1;
     renderConfigs();
   });
 });
 
-['filtroTipoHist', 'filtroMontoHist', 'filtroFechaHist', 'filtroFechaEnvioHist'].forEach(id => {
+['filtroTipoHist', 'filtroRegionHist', 'filtroFechaHist', 'filtroFechaEnvioHist'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     historialPaginaActual = 1;
     renderHistorial();
@@ -1156,16 +1255,19 @@ function renderHistorial() {
 
 document.getElementById('limpiarFiltroConfigBtn').addEventListener('click', () => {
   document.getElementById('filtroEstado').value = '';
-  filtroMontoConfigInput.value = '';
+  document.getElementById('filtroTipoProcesoConfig').value = '';
   filtroRegionConfigSelect.value = '';
-  document.getElementById('filtroCategoriaConfig').value = '';
+  buscadorCategoriaConfig.limpiar();
+  filtroCategoriaConfigSeleccion = null;
   configsPaginaActual = 1;
   renderConfigs();
 });
 
 document.getElementById('limpiarFiltroHistBtn').addEventListener('click', () => {
   document.getElementById('filtroTipoHist').value = '';
-  filtroMontoHistInput.value = '';
+  filtroRegionHistSelect.value = '';
+  buscadorCategoriaHist.limpiar();
+  filtroCategoriaHistSeleccion = null;
   document.getElementById('filtroFechaHist').value = '';
   document.getElementById('filtroFechaEnvioHist').value = '';
   historialPaginaActual = 1;
@@ -1269,7 +1371,7 @@ newAlertModal.addEventListener('click', (e) => {
 // durante desarrollo — sacar 'trial' de este array antes de lanzar a producción
 // (el backend tiene el mismo criterio temporal en analisis.routes.js, hay que
 // sacarlo de los dos lados a la vez).
-const PLANES_CON_ANALISIS = ['full'];
+const PLANES_CON_ANALISIS = ['full','trial'];
 
 function renderAnalisis(usuario) {
   const card = document.getElementById('analisisCard');
