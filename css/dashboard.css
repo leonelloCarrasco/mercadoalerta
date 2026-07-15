@@ -492,6 +492,8 @@ table.analisis-table a:hover { text-decoration: underline; }
   font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
 }
+.stat-tile-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.stat-tile-head .stat-tile-label { margin-bottom: 0; }
 .stat-tile-value { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--gold); }
 .stat-tile-value.muted { color: var(--text); }
 .inicio-reporte-grupo { padding: 16px 20px; border-bottom: 1px solid var(--border); }
@@ -549,3 +551,14 @@ table.analisis-table a:hover { text-decoration: underline; }
     justify-content: center;
     }
  .icon-desc {height: 20px;}
+
+  .icon-stat {
+    height: 20px;
+    width: 20px;
+    background-color: #3ECF8E;
+    border-radius: 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+    .icon-stat-desc {height: 15px;}

@@ -77,25 +77,37 @@
 
         <div class="stat-tiles" id="inicioStats">
           <div class="stat-tile">
-            <div class="stat-tile-label">Alertas activas</div>
+            <div class="stat-tile-head">
+              <div class="icon-stat"><img src="/assets/icons/campana.svg" class="icon-stat-desc"></img></div>
+              <div class="stat-tile-label">Alertas activas</div>
+            </div>
             <div class="stat-tile-value" id="statAlertasActivas" style="color: #3ECF8E;">—</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-tile-label">Alertas pausadas</div>
+            <div class="stat-tile-head">
+              <div class="icon-stat" style="background-color: #edeef5;"><img src="/assets/icons/corte-de-campana.svg" class="icon-stat-desc" ></img></div>
+              <div class="stat-tile-label">Alertas pausadas</div>
+            </div>
             <div class="stat-tile-value muted" id="statAlertasPausadas">—</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-tile-label">Notificaciones recibidas</div>
+            <div class="stat-tile-head">
+              <div class="icon-stat" style="background-color: #D4A72C;"><img src="/assets/icons/sobre.svg" class="icon-stat-desc" ></img></div>
+              <div class="stat-tile-label">Notificaciones</div>
+            </div>
             <div class="stat-tile-value" id="statNotifTotal">—</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-tile-label">Notificaciones recibidas los últimos 7 días</div>
+            <div class="stat-tile-head">
+              <div class="icon-stat" style="background-color: #D4A72C;"><img src="/assets/icons/sobre-a-granel.svg" class="icon-stat-desc" ></img></div>
+              <div class="stat-tile-label">Recibidos Última semana</div>
+            </div>
             <div class="stat-tile-value" id="statNotif7d">—</div>
           </div>
         </div>
 
         <div class="section-head" style="margin-top: 32px;">
-          <h3>Resumen de notificaciones</h3>
+          <h3>Resumen de Notificaciones</h3>
         </div>
         <div class="card" id="inicioReporteCard">
           <div class="loading">Cargando...</div>
