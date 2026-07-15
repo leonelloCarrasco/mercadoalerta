@@ -133,6 +133,7 @@ section { margin-bottom: 56px; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+#head-new-search { justify-content: space-between; flex: 1 1 100%; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 
@@ -229,7 +230,6 @@ section { margin-bottom: 56px; }
 }
 @media (max-width: 880px) {
   .row { flex-direction: column; align-items: stretch; gap: 10px; }
-  .row > div:last-child { align-self: flex-end; }
 }
 @media (max-width: 480px) {
   .row { gap: 8px; padding: 12px 14px; }
@@ -410,6 +410,12 @@ table.analisis-table a:hover { text-decoration: underline; }
 
 /* --- Tipo de proceso (Licitaciones / Compras Ágiles) --- */
 .tipo-proceso-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+.tipo-proceso-row.tipo-proceso-row-4col { display: grid; grid-template-columns: repeat(4, 1fr); flex-wrap: initial; }
+.tipo-proceso-select { display: none; margin-top: 4px; }
+@media (max-width: 720px) {
+  .tipo-proceso-row, .tipo-proceso-row.tipo-proceso-row-4col { display: none; }
+  .tipo-proceso-select { display: block; }
+}
 .checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .checkbox-row input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
 

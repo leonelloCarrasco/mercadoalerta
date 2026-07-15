@@ -181,7 +181,7 @@
       </section>
     </div>
 
-    <!-- Sección: Búsquedas (mockup) -->
+    <!-- Sección: Búsquedas -->
     <div class="tab-content" id="secBusquedas">
       <section>
         <div class="section-head">
@@ -191,37 +191,24 @@
 
         <div class="section-head">
           <p class="section-sub" style="margin-bottom: 20px;">Guarda combinaciones de filtros que uses seguido y vuelve a ejecutarlas con un clic, sin tener que armarlas de nuevo cada vez.</p>
+          <div class="section-head" id="head-new-search">
+            <h3 id="busquedaTitulo">Búsqeudas Guardadas</h3>
+            <button type="button" class="btn" id="abrirNuevaBusquedaBtn">+ Nueva búsqueda</button>
+          </div>
         </div>
 
-        <span class="analisis-badge-mockup">Próximamente</span>
+        <div class="error-banner" id="errorBannerBusquedas"></div>
 
-        <div class="field" style="max-width: 480px; margin-bottom: 20px;">
-          <label for="busquedasMockInput">Nueva búsqueda</label>
-          <input type="text" id="busquedasMockInput" placeholder="Ej. vehículos sobre $5.000.000 en Región Metropolitana" disabled>
+        <div class="card" id="busquedasCard">
+          <div class="loading">Cargando...</div>
         </div>
 
-        <div class="card mockup-locked">
-          <div class="row">
-            <div class="row-info">
-              <div class="row-title">Vehículos livianos — Región Metropolitana</div>
-              <div class="row-meta"><span>Monto mín: $5.000.000</span><span>3 categorías</span></div>
-            </div>
-            <button type="button" class="btn btn-ghost" disabled>▶ Ejecutar</button>
+        <div id="busquedaResultadosWrap" style="display:none; margin-top: 28px;">
+          <div class="section-head">
+            <h3 id="busquedaResultadosTitulo">Resultados</h3>
+            <button type="button" class="btn btn-ghost" id="descargarPdfBtn">📄 Descargar PDF</button>
           </div>
-          <div class="row">
-            <div class="row-info">
-              <div class="row-title">Servicios de aseo — Todas las regiones</div>
-              <div class="row-meta"><span>Monto mín: $1.000.000</span><span>1 categoría</span></div>
-            </div>
-            <button type="button" class="btn btn-ghost" disabled>▶ Ejecutar</button>
-          </div>
-          <div class="row">
-            <div class="row-info">
-              <div class="row-title">Insumos médicos — Región de Valparaíso</div>
-              <div class="row-meta"><span>Sin monto mínimo</span><span>5 categorías</span></div>
-            </div>
-            <button type="button" class="btn btn-ghost" disabled>▶ Ejecutar</button>
-          </div>
+          <div class="card" id="busquedaResultadosCard"></div>
         </div>
       </section>
     </div>
@@ -460,6 +447,11 @@
             <label class="checkbox-row" style="margin:0;"><input type="checkbox" id="tipoProcesoLicitacion" checked> Licitaciones</label>
             <label class="checkbox-row" style="margin:0;"><input type="checkbox" id="tipoProcesoCompraAgil" checked> Compras Ágiles</label>
           </div>
+          <select id="tipoProcesoSelect" class="tipo-proceso-select">
+            <option value="ambas" selected>Licitaciones y Compras Ágiles</option>
+            <option value="licitacion">Solo Licitaciones</option>
+            <option value="compra_agil">Solo Compras Ágiles</option>
+          </select>
         </div>
 
         <!-- 3. Tipo de licitación (tramo UTM) — solo visible si "Licitaciones" está marcado -->
@@ -518,6 +510,127 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="newBusquedaModal">
+  <div class="modal modal-wide">
+    <h3>Nueva Búsqueda</h3>
+    <form id="newBusquedaForm">
+      <div class="form-grid">
+
+        <!-- 1. Nombre -->
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="busquedaNombre"><strong>Nombre de la búsqueda *</strong></label>
+          <input type="text" id="busquedaNombre" placeholder="Ej. Búsqueda de licitaciones en HDS" maxlength="150">
+        </div>
+
+        <!-- 2. Qué buscar: Licitaciones O Compra Ágil -->
+        <div class="field" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
+          <label><strong>¿Qué quieres buscar? *</strong></label>
+          <div class="tipo-proceso-row">
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaTipo" id="busquedaTipoLicitacion" value="licitacion" checked> Licitaciones</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaTipo" id="busquedaTipoCompraAgil" value="compra_agil"> Compras Ágiles</label>
+          </div>
+          <select id="busquedaTipoSelect" class="tipo-proceso-select">
+            <option value="licitacion" selected>Licitaciones</option>
+            <option value="compra_agil">Compras Ágiles</option>
+          </select>
+        </div>
+
+        <!-- 3. Modo de búsqueda — SOLO Licitaciones. La API solo admite estas
+             4 combinaciones de filtro, así que cada una oculta el resto. -->
+        <div class="field" id="busquedaModoField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
+          <label><strong>¿Cómo quieres buscarla? *</strong></label>
+          <div class="tipo-proceso-row tipo-proceso-row-4col">
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoCodigo" value="codigo" checked> Por código</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoEstadoFecha" value="estado_fecha"> Por estado y fecha</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoProveedor" value="proveedor"> Por proveedor (RUT)</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoOrganismo" value="organismo"> Por organismo</label>
+          </div>
+          <select id="busquedaModoSelect" class="tipo-proceso-select">
+            <option value="codigo" selected>Por código</option>
+            <option value="estado_fecha">Por estado y fecha</option>
+            <option value="proveedor">Por proveedor (RUT)</option>
+            <option value="organismo">Por organismo</option>
+          </select>
+          <!-- Aviso de qué NO se puede filtrar, según el tipo/modo elegido -->
+          <div class="field" style="grid-column: 1 / -1;">
+            <small id="busquedaAvisoLimitacion" style="color: var(--text-muted);"></small>
+          </div>
+        </div>
+
+        <!-- 3a. Modo 'codigo' -->
+        <div class="field" id="busquedaCodigoField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaCodigoExterno">Código de la licitación *</label>
+          <input type="text" id="busquedaCodigoExterno" placeholder="Ej: 1509-5-L114">
+        </div>
+
+        <!-- 3b. Modo 'estado_fecha' -->
+        <div class="field" id="busquedaEstadoField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaEstadoSelect">Estado *</label>
+          <select id="busquedaEstadoSelect">
+            <option value="todos" selected>Todos</option>
+            <option value="publicada">Publicada</option>
+            <option value="cerrada">Cerrada</option>
+            <option value="desierta">Desierta</option>
+            <option value="adjudicada">Adjudicada</option>
+            <option value="revocada">Revocada</option>
+            <option value="suspendida">Suspendida</option>
+          </select>
+        </div>
+
+        <!-- 3c. Modo 'proveedor' -->
+        <div class="field" id="busquedaRutProveedorField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaRutProveedor">RUT del proveedor *</label>
+          <small>Con puntos y guión, ej. 70.017.820-k.</small>
+          <input type="text" id="busquedaRutProveedor" placeholder="70.017.820-k">
+        </div>
+
+        <!-- 3d./Compra Ágil: Organismo comprador -->
+        <div class="field" id="busquedaOrganismoField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px; display: none;">
+          <label for="busquedaOrganismoBuscar"><strong>Organismo comprador *</strong></label>
+          <small id="busquedaOrganismoSmall">Elige una institución compradora.</small>
+          <input type="text" id="busquedaOrganismoBuscar" placeholder="Busca por nombre (ej. Municipalidad de...)" autocomplete="off">
+          <div id="busquedaOrganismoResultados" class="categoria-resultados"></div>
+          <div id="busquedaOrganismosChips" class="categoria-chips"></div>
+        </div>
+
+        <!-- 3e. Fecha — modos 'estado_fecha' / 'proveedor' / 'organismo' -->
+        <div class="field" id="busquedaFechaField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaFecha">Fecha</label>
+          <small>Opcional. Si no eliges una, se busca con la fecha del día en que ejecutes la búsqueda.</small>
+          <input type="date" id="busquedaFecha">
+        </div>
+
+        <!-- 4. Región — SOLO Compra Ágil -->
+        <div class="field" id="busquedaRegionField" style="grid-column: 1 / -1; display: none;">
+          <label for="busquedaRegionSelect"><strong>Región</strong></label>
+          <small>Opcional. La API de Compra Ágil acepta una región por búsqueda.</small>
+          <select id="busquedaRegionSelect">
+            <option value="">Todas las regiones</option>
+          </select>
+        </div>
+
+        <!-- 5. Monto mínimo / máximo — SOLO Compra Ágil -->
+        <div class="field" id="busquedaMontoField" style="grid-column: 1 / -1; display: none;">
+          <div class="field" id="busquedaMontoMinimoField">
+            <label for="busquedaMontoMinimo">Monto mínimo (CLP)</label>
+            <input type="text" inputmode="numeric" id="busquedaMontoMinimo" placeholder="$1">
+          </div>
+          <div class="field" id="busquedaMontoMaximoField">
+            <label for="busquedaMontoMaximo">Monto máximo (CLP)</label>
+            <input type="text" inputmode="numeric" id="busquedaMontoMaximo" placeholder="$7.164.900">
+          </div>
+        </div>
+
+      </div>
+      <div class="error-banner" id="errorBannerBusquedaModal"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cerrarNuevaBusquedaBtn">Cancelar</button>
+        <button type="submit" class="btn" id="crearBusquedaBtn">+ Guardar búsqueda</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <p class="modal-message" id="confirmModalMessage">¿Eliminar esta alerta?</p>
@@ -528,6 +641,8 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 <script src="js/dashboard.js"></script>
 
 </body>
