@@ -233,7 +233,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       } else {
         categoriaResultadosEl.innerHTML = data.resultados.map((r) => `
           <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
             <span class="cod">${r.codigo}</span>
           </div>
         `).join('');
@@ -248,7 +248,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       }
       categoriaResultadosEl.classList.add('open');
     } catch (err) {
-      console.warn('Error buscando categorías o productos:', err.message);
+      console.warn('Error buscando productos o rubros:', err.message);
     }
   }, 300);
 });
@@ -290,7 +290,7 @@ function crearBuscadorCategoriaUnico(inputId, resultadosId, alCambiar) {
           ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
           : data.resultados.map((r) => `
               <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
                 <span class="cod">${r.codigo}</span>
               </div>
             `).join('');
@@ -900,7 +900,7 @@ async function cargarConfigs() {
         const detalle = await apiFetch(`/api/alerts/categorias/detalle?codigos=${codigosUnicos.join(',')}`);
         mapaCategorias = Object.fromEntries(detalle.categorias.map((c) => [c.codigo, { titulo: c.titulo, nivel: c.nivel }]));
       } catch (err) {
-        console.warn('No se pudieron resolver las descripciones de categorías o productos:', err.message);
+        console.warn('No se pudieron resolver las descripciones de rubros o productos:', err.message);
         mapaCategorias = {};
       }
     }
@@ -961,7 +961,7 @@ function renderConfigs() {
     return `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
+        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todos los  rubros y productos'}</div>
         <div class="row-meta">
           <span style="font-size: 14px;">${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
           ${formatearTipoProcesoTag(c.tipos_proceso)}
@@ -1412,7 +1412,7 @@ if (analisisBuscarInput) {
         } else {
           analisisResultadosEl.innerHTML = data.resultados.map((r) => `
             <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
-              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
               <span class="cod">${r.codigo}</span>
             </div>
           `).join('');
@@ -1429,7 +1429,7 @@ if (analisisBuscarInput) {
         }
         analisisResultadosEl.classList.add('open');
       } catch (err) {
-        console.warn('Error buscando categorías:', err.message);
+        console.warn('Error buscando rubros:', err.message);
       }
     }, 300);
   });
