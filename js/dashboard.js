@@ -21,8 +21,22 @@ function showErrorAlertas(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
+function showErrorNotificaciones(msg) {
+  const el = document.getElementById('errorBannerNotificaciones');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
 function showErrorBusquedas(msg) {
   const el = document.getElementById('errorBannerBusquedas');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
+function showErrorBusquedasOp(msg) {
+  const el = document.getElementById('errorBannerBusquedasOp');
   el.textContent = "❌ " + msg;
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 6000);
@@ -1299,7 +1313,7 @@ function actualizarCamposBusquedaSegunTipo() {
   // Limpia lo que quede oculto, para no guardar un criterio que el usuario ya no ve.
   if (esCompraAgil) {
     busquedaRutProveedorInput.value = '';
-    busquedaFechaInput.value = '';
+    //busquedaFechaInput.value = '';
     if (modoCA !== 'organismo') buscadorOrganismosBusqueda.reset();
   } else {
     buscadorOrganismosBusqueda.reset();
@@ -1314,7 +1328,7 @@ function actualizarCamposBusquedaSegunTipo() {
 }
 
 const busquedaCodigoExternoInput = document.getElementById('busquedaCodigoExterno');
-const busquedaFechaInput = document.getElementById('busquedaFecha');
+//const busquedaFechaInput = document.getElementById('busquedaFecha');
 
 [busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio, ...busquedaModoRadios, ...busquedaModoCompraAgilRadios].forEach((radio) => {
   radio.addEventListener('change', actualizarCamposBusquedaSegunTipo);
@@ -1407,7 +1421,7 @@ document.getElementById('newBusquedaForm').addEventListener('submit', async (e) 
   const payload = { nombre, tipo, modo };
 
   if (tipo === 'licitacion') {
-    payload.fecha = busquedaFechaInput.value || null;
+    //payload.fecha = busquedaFechaInput.value || null;
     if (modo === 'codigo') {
       payload.codigoExterno = busquedaCodigoExternoInput.value.trim();
     } else if (modo === 'estado_fecha') {
@@ -1677,6 +1691,9 @@ function filaResultadoHtml(r, tipo) {
           <br><span>Estado: ${r.estado || 'Desconocido'}</span>
           <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
         </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          ${botonesOportunidadHtml(tipo, r.codigo_externo, r.nombre, "busqueda")}
+        </div>
       </div>
     </div>
   `;
@@ -1831,7 +1848,239 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
   doc.save(nombreArchivo);
 });
 
+// ============================================================
+// --- Sección: Oportunidades (recordatorios + seguimiento) ---
+// ============================================================
 
+// Botones que aparecen en cada fila de Notificaciones y de resultados de
+// Búsquedas — "Seguir" solo tiene sentido para Licitaciones (ver diseño:
+// Compra Ágil tiene un ciclo de vida demasiado corto para que valga la pena
+// avisar en cada cambio de estado intermedio).
+function botonesOportunidadHtml(tipoProceso, codigoExterno, nombre, origen) {
+  const nombreEscapado = (nombre || codigoExterno || '').replace(/"/g, '&quot;');
+  let html = `<button data-from="${origen}" type="button" class="btn btn-ghost" data-recordatorio-tipo="${tipoProceso}" data-recordatorio-codigo="${codigoExterno}" data-recordatorio-nombre="${nombreEscapado}">🔔 Recordarme</button>`;
+  if (tipoProceso === 'licitacion') {
+    html += ` <button data-from="${origen}" type="button" class="btn btn-ghost" data-seguir-codigo="${codigoExterno}" data-seguir-nombre="${nombreEscapado}">➕ Seguir</button>`;
+  }
+  return html;
+}
+
+const HORAS_RECORDATORIO = {
+  licitacion: [
+    { horas: 24, etiqueta: '1 día antes del cierre' },
+    { horas: 72, etiqueta: '3 días antes del cierre' },
+    { horas: 168, etiqueta: '1 semana antes del cierre' },
+  ],
+  compra_agil: [
+    { horas: 2, etiqueta: '2 horas antes del cierre' },
+    { horas: 6, etiqueta: '6 horas antes del cierre' },
+    { horas: 12, etiqueta: '12 horas antes del cierre' },
+  ],
+};
+
+const agregarRecordatorioModal = document.getElementById('agregarRecordatorioModal');
+let recordatorioPendiente = null; // { tipoProceso, codigoExterno }
+
+function abrirModalRecordatorio(tipoProceso, codigoExterno, nombre) {
+  recordatorioPendiente = { tipoProceso, codigoExterno };
+  document.getElementById('agregarRecordatorioNombre').textContent = nombre || codigoExterno;
+
+  const select = document.getElementById('agregarRecordatorioHoras');
+  select.innerHTML = HORAS_RECORDATORIO[tipoProceso].map((o) => `<option value="${o.horas}">${o.etiqueta}</option>`).join('');
+
+  document.getElementById('errorBannerRecordatorioModal').style.display = 'none';
+  agregarRecordatorioModal.classList.add('open');
+}
+
+document.getElementById('cerrarAgregarRecordatorioBtn').addEventListener('click', () => {
+  agregarRecordatorioModal.classList.remove('open');
+});
+agregarRecordatorioModal.addEventListener('click', (e) => {
+  if (e.target === agregarRecordatorioModal) agregarRecordatorioModal.classList.remove('open');
+});
+
+document.getElementById('confirmarAgregarRecordatorioBtn').addEventListener('click', async () => {
+  if (!recordatorioPendiente) return;
+  const btn = document.getElementById('confirmarAgregarRecordatorioBtn');
+  const horasAntes = Number(document.getElementById('agregarRecordatorioHoras').value);
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    await apiFetch('/api/oportunidades/recordatorios', {
+      method: 'POST',
+      body: JSON.stringify({ ...recordatorioPendiente, horasAntes }),
+    });
+    agregarRecordatorioModal.classList.remove('open');
+    if (typeof cargarOportunidades === 'function') cargarOportunidades();
+  } catch (err) {
+    const el = document.getElementById('errorBannerRecordatorioModal');
+    el.textContent = '❌ ' + err.message;
+    el.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔔 Guardar recordatorio';
+  }
+});
+
+// Delegación de eventos: los botones "Recordarme"/"Seguir" aparecen en varias
+// listas (Notificaciones, resultados de Búsquedas) que se re-renderizan
+// seguido — más simple engancharlos una sola vez acá que re-atarlos cada vez.
+document.addEventListener('click', async (e) => {
+  const btnRecordatorio = e.target.closest('[data-recordatorio-codigo]');
+  if (btnRecordatorio) {
+    abrirModalRecordatorio(btnRecordatorio.dataset.recordatorioTipo, btnRecordatorio.dataset.recordatorioCodigo, btnRecordatorio.dataset.recordatorioNombre);
+    return;
+  }
+
+  const btnSeguir = e.target.closest('[data-seguir-codigo]');
+  if (btnSeguir) {
+    btnSeguir.disabled = true;
+    btnSeguir.textContent = 'Agregando...';
+    try {
+      await apiFetch('/api/oportunidades/seguimientos', {
+        method: 'POST',
+        body: JSON.stringify({ codigoExterno: btnSeguir.dataset.seguirCodigo }),
+      });
+      btnSeguir.textContent = '✓ Siguiendo';
+      if (typeof cargarOportunidades === 'function') cargarOportunidades();
+    } catch (err) {
+      btnSeguir.disabled = false;
+      btnSeguir.textContent = '➕ Seguir';
+      if(btnSeguir.dataset.from === 'notificaciones'){
+        showErrorNotificaciones(err.message);
+      }else{
+        showErrorBusquedasOp(err.message);
+      }
+    }
+  }
+});
+
+// --- Listado dentro de "Oportunidades" ---
+let recordatoriosData = [];
+let seguimientosData = [];
+let oportunidadesSubtabActiva = 'recordatorios';
+
+document.querySelectorAll('#oportunidadesSubTabs .tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#oportunidadesSubTabs .tab-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    oportunidadesSubtabActiva = btn.dataset.subtab;
+    renderOportunidadesActiva();
+  });
+});
+
+async function cargarOportunidades() {
+  const card = document.getElementById('oportunidadesCard');
+  try {
+    const [recordatoriosRes, seguimientosRes] = await Promise.all([
+      apiFetch('/api/oportunidades/recordatorios'),
+      apiFetch('/api/oportunidades/seguimientos'),
+    ]);
+    recordatoriosData = recordatoriosRes.recordatorios;
+    seguimientosData = seguimientosRes.seguimientos;
+    renderOportunidadesActiva();
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function renderOportunidadesActiva() {
+  if (oportunidadesSubtabActiva === 'recordatorios') renderRecordatorios();
+  else renderSeguimientos();
+}
+
+function renderRecordatorios() {
+  const card = document.getElementById('oportunidadesCard');
+  if (recordatoriosData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no tienes recordatorios de cierre. Agrégalos desde Notificaciones o Búsquedas con el botón "🔔 Recordarme".</div>';
+    return;
+  }
+
+  card.innerHTML = recordatoriosData.map((r) => `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">${r.nombre || r.codigo_externo}</div>
+        <div class="row-meta">
+          <span>${r.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
+          <br><span>Código: ${r.codigo_externo}</span>
+          <br><span>Organismo: ${r.organismo || 'No especificado'}</span>
+          <br><span>Monto: ${r.monto != null ? formatMoney(r.monto) : 'No especificado'}</span>
+          <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
+          <br><span>Avisa: ${r.horas_antes}h antes del cierre</span>
+          <br><span>${r.notificado_at ? `✅ Avisado el ${formatDate(r.notificado_at)}` : '⏳ Pendiente de avisar'}</span>
+        </div>
+      </div>
+      <button class="btn btn-danger" data-eliminar-recordatorio="${r.id}">✖ Eliminar</button>
+    </div>
+  `).join('');
+
+  card.querySelectorAll('[data-eliminar-recordatorio]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Eliminar este recordatorio de cierre?');
+      if (!confirmado) return;
+      const id = btn.dataset.eliminarRecordatorio;
+      try {
+        await apiFetch(`/api/oportunidades/recordatorios/${id}`, { method: 'DELETE' });
+        // Actualiza el array local YA (no depende de que el refresh de abajo
+        // llegue bien) y vuelve a renderizar esta misma pestaña al toque.
+        recordatoriosData = recordatoriosData.filter((r) => String(r.id) !== String(id));
+        renderRecordatorios();
+        cargarOportunidades();
+      } catch (err) {
+        document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
+        document.getElementById('errorBannerOportunidades').style.display = 'block';
+      }
+    });
+  });
+}
+
+function renderSeguimientos() {
+  const card = document.getElementById('oportunidadesCard');
+  if (seguimientosData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no estás siguiendo ninguna licitación. Agrégalas desde Notificaciones o Búsquedas con el botón "➕ Seguir".</div>';
+    return;
+  }
+
+  card.innerHTML = seguimientosData.map((s) => `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">
+          <a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(s.codigo_externo)}" target="_blank" rel="noopener noreferrer">${s.nombre || s.codigo_externo} ↗</a>
+        </div>
+        <div class="row-meta">
+          <span>📋 Licitación</span>
+          <br><span>Código: ${s.codigo_externo}</span>
+          <br><span>Organismo: ${s.organismo || 'No especificado'}</span>
+          <br><span>Región: ${s.region || 'No especificada'}</span>
+          <br><span>Estado actual: ${s.estado || 'Desconocido'}</span>
+          <br><span>Cierra: ${formatDate(s.fecha_cierre)}</span>
+          ${s.resuelta ? '<br><span>✅ Proceso resuelto</span>' : ''}
+        </div>
+      </div>
+      <button class="btn btn-danger" data-eliminar-seguimiento="${s.id}">✖ Dejar de seguir</button>
+    </div>
+  `).join('');
+
+  card.querySelectorAll('[data-eliminar-seguimiento]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Dejar de seguir esta licitación?');
+      if (!confirmado) return;
+      const id = btn.dataset.eliminarSeguimiento;
+      try {
+        await apiFetch(`/api/oportunidades/seguimientos/${id}`, { method: 'DELETE' });
+        // Actualiza el array local YA (no depende de que el refresh de abajo
+        // llegue bien) y vuelve a renderizar esta misma pestaña al toque.
+        seguimientosData = seguimientosData.filter((s) => String(s.id) !== String(id));
+        renderSeguimientos();
+        cargarOportunidades();
+      } catch (err) {
+        document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
+        document.getElementById('errorBannerOportunidades').style.display = 'block';
+      }
+    });
+  });
+}
 
 let historialData = [];
 let historialPaginaActual = 1;
@@ -1933,6 +2182,8 @@ function renderHistorial() {
         <div class="row-meta">
           <span>${h.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
           <br>
+          <span>Código: ${h.codigo_externo}</span>
+          <br>
           <span>Monto: ${formatMontoConTramo(h)}</span>
           <br>
           <span>Región: ${h.region}</span>
@@ -1940,6 +2191,9 @@ function renderHistorial() {
           <span>Organismo: ${h.organismo}</span>
           <br>
           <span>Cierra: ${formatDate(h.fecha_cierre)}</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          ${botonesOportunidadHtml(h.tipo_proceso, h.codigo_externo, h.nombre, "notificaciones")}
         </div>
       </div>
       <span class="tag ${h.canal === 'telegram' ? 'telegram' : ''}">${h.canal} · ${formatDate(h.sent_at)}</span>
@@ -2018,6 +2272,7 @@ const secciones = {
   alertas: document.getElementById('tabAlertas'),
   busquedas: document.getElementById('secBusquedas'),
   notificaciones: document.getElementById('tabNotificaciones'),
+  oportunidades: document.getElementById('tabOportunidades'),
   analisis: document.getElementById('tabAnalisis'),
   ia: document.getElementById('secIA'),
   cuenta: document.getElementById('secCuenta'),
@@ -2028,7 +2283,7 @@ const bottombarMasBtn = document.getElementById('bottombarMasBtn');
 function mostrarSeccion(nombre) {
   sectionLinks.forEach((l) => l.classList.toggle('active', l.dataset.section === nombre));
   Object.entries(secciones).forEach(([key, el]) => el.classList.toggle('active', key === nombre));
-  bottombarMasBtn.classList.toggle('active', nombre === 'analisis' || nombre === 'ia');
+  bottombarMasBtn.classList.toggle('active', nombre === 'analisis' || nombre === 'ia' || nombre === 'oportunidades');
 }
 
 sectionLinks.forEach((link) => {
@@ -2773,3 +3028,4 @@ cargarTramos();
 cargarConfigs();
 cargarHistorial();
 cargarBusquedas();
+cargarOportunidades();
