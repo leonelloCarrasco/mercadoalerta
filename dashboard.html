@@ -24,6 +24,7 @@
       <button type="button" class="sidebar-link" data-section="alertas"><div class="icon"><img src="/assets/icons/sonido-de-timbre.svg" class="icon-desc"></img></div> Alertas</button>
       <button type="button" class="sidebar-link" data-section="notificaciones"><div class="icon"><img src="/assets/icons/mensajes.svg" class="icon-desc"></img></div> Notificaciones</button>
       <button type="button" class="sidebar-link" data-section="busquedas"><div class="icon"><img src="/assets/icons/busqueda.svg" class="icon-desc"></img></div> Búsquedas</button>
+      <button type="button" class="sidebar-link" data-section="oportunidades"><div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div> Oportunidades</button>
       <button type="button" class="sidebar-link" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
       <button type="button" class="sidebar-link" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button>
     </nav>
@@ -55,7 +56,8 @@
     <button type="button" class="bottombar-link" data-section="busquedas"><div class="icon"><img src="/assets/icons/busqueda.svg" class="icon-desc"></img></div>Búsquedas</button>
     <button type="button" class="bottombar-link" id="bottombarMasBtn"><span class="bottombar-link-icon">⋯</span>Más</button>
     <div class="topbar-menu bottombar-mas-menu" id="bottombarMasMenu">
-      <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Datos</button>
+      <button type="button" class="topbar-menu-item" data-section="oportunidades"><div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div> Oportunidades</button>
+      <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
       <button type="button" class="topbar-menu-item" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button>
     </div>
   </nav>
@@ -193,7 +195,7 @@
           <p class="section-sub" style="margin-bottom: 20px;">Guarda combinaciones de filtros que uses seguido y vuelve a ejecutarlas con un clic, sin tener que armarlas de nuevo cada vez.</p>
           <div class="section-head" id="head-new-search">
             <h3 id="busquedaTitulo">Búsquedas Guardadas</h3>
-            <button type="button" class="btn" id="abrirNuevaBusquedaBtn">+ Nueva búsqueda</button>
+            <button type="button" class="btn" id="abrirNuevaBusquedaBtn">+ Crear Búsqueda</button>
           </div>
         </div>
 
@@ -208,6 +210,8 @@
             <h3 id="busquedaResultadosTitulo">Resultados</h3>
             <button type="button" class="btn btn-ghost" id="descargarPdfBtn">📄 Descargar PDF</button>
           </div>
+          <div class="error-banner" id="errorBannerBusquedasOp"></div>
+
           <div class="card" id="busquedaResultadosCard"></div>
         </div>
       </section>
@@ -224,6 +228,8 @@
         <div class="section-head">
           <p class="section-sub" style="margin-bottom: 20px;">Visualiza las notificaciones recibidas.</p>
         </div>
+
+        <div class="error-banner" id="errorBannerNotificaciones"></div>
 
         <details class="filter-toggle">
           <summary>Filtros</summary>
@@ -261,6 +267,31 @@
             </div>
         </details>
         <div class="card" id="historyCard">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Sección: Oportunidades -->
+    <div class="tab-content" id="tabOportunidades">
+      <section>
+        <div class="section-head">
+          <div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div>
+          <h2>Oportunidades</h2>
+        </div>
+
+        <div class="section-head">
+          <p class="section-sub" style="margin-bottom: 16px;">Licitaciones y Compras Ágiles que marcaste desde Notificaciones o Búsquedas para recordatorio de cierre o seguimiento de cambio de estado.</p>
+        </div>
+
+        <div class="tabs" id="oportunidadesSubTabs" style="margin-bottom: 16px;">
+          <button type="button" class="tab-btn active" data-subtab="recordatorios">⏰ Recordatorios de Cierre</button>
+          <button type="button" class="tab-btn" data-subtab="seguimiento">👁️ Seguimiento de Estado</button>
+        </div>
+
+        <div class="error-banner" id="errorBannerOportunidades"></div>
+
+        <div class="card" id="oportunidadesCard">
           <div class="loading">Cargando...</div>
         </div>
       </section>
@@ -368,15 +399,15 @@
 
             <div class="form-note" id="profileInfoMsg" style="display:none; margin-bottom: 12px;"></div>
             <div class="modal-actions" style="justify-content: flex-start;">
-              <button type="submit" class="btn">Guardar cambios</button>
+              <button type="submit" class="btn">Guardar Cambios</button>
             </div>
           </form>
 
           <hr style="border-color: var(--border); margin: 22px 0;">
 
-          <h3 style="margin-bottom: 14px; font-size: 15px;">Cambiar contraseña</h3>
+          <h3 style="margin-bottom: 14px; font-size: 15px;">Cambiar Contraseña</h3>
           <form id="passwordForm">
-            <label for="passwordActual" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña actual</label>
+            <label for="passwordActual" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña  Actual</label>
             <input type="password" id="passwordActual" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
 
             <label for="passwordNueva" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña nueva (mín. 8 caracteres)</label>
@@ -399,7 +430,7 @@
 
             <div class="form-note" id="passwordInfoMsg" style="display:none; margin-bottom: 12px;"></div>
             <div class="modal-actions" style="justify-content: flex-start;">
-              <button type="submit" class="btn">Cambiar contraseña</button>
+              <button type="submit" class="btn">Cambiar Contraseña</button>
             </div>
           </form>
         </div>
@@ -504,7 +535,7 @@
       <div class="error-banner" id="errorBannerModal"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="cerrarNuevaAlertaBtn">Cancelar</button>
-        <button type="submit" class="btn" id="createBtn">+ Crear alerta</button>
+        <button type="submit" class="btn" id="createBtn">+ Crear Alerta</button>
       </div>
     </form>
   </div>
@@ -665,9 +696,26 @@
       <div class="error-banner" id="errorBannerBusquedaModal"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="cerrarNuevaBusquedaBtn">Cancelar</button>
-        <button type="submit" class="btn" id="crearBusquedaBtn">+ Guardar búsqueda</button>
+        <button type="submit" class="btn" id="crearBusquedaBtn">+ Guardar Búsqueda</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="agregarRecordatorioModal">
+  <div class="modal modal-wide">
+    <h3>Recordatorio de cierre</h3>
+    <p class="modal-message" id="agregarRecordatorioNombre"></p>
+    <div class="field">
+      <label for="agregarRecordatorioHoras">Avisarme</label>
+      <select id="agregarRecordatorioHoras"></select>
+    </div>
+    <div class="error-banner" id="errorBannerRecordatorioModal"></div>
+    <br>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cerrarAgregarRecordatorioBtn">Cancelar</button>
+      <button type="button" class="btn" id="confirmarAgregarRecordatorioBtn">+ Crear Recordatorio</button>
+    </div>
   </div>
 </div>
 
