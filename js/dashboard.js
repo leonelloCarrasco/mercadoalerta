@@ -1655,6 +1655,14 @@ function urlFichaCompraAgil(codigoExterno) {
   return `https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(codigoExterno)}`;
 }
 
+function urlFichaProveedor(rutProveedor){
+  return `https://proveedor.mercadopublico.cl/ficha/${encodeURIComponent(rutProveedor)}`;
+}
+
+function urlFichaComprador(rutComprador){
+  return `https://comprador.mercadopublico.cl/ficha/${encodeURIComponent(rutComprador)}`;
+}
+
 function filaResultadoHtml(r, tipo) {
   return `
     <div class="row">
@@ -2331,6 +2339,9 @@ function actualizarResultadosPrecios() {
         <td>${r.fuente === 'licitacion'
           ? (r.url_acta ? `<a href="${r.url_acta}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
           : '⚡ Compra Ágil'}</td>
+        <td>${r.fuente === 'licitacion'
+          ? `<a href="${urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener">${r.codigo_externo || '—'}</a>`
+          : `<a href="${urlFichaCompraAgil(r.codigo_externo)}" target="_blank" rel="noopener">${r.codigo_externo || '—'}</a>`}</td>
         <td>${r.nombre_producto || '—'}</td>
         <td>${r.organismo || '—'}</td>
         <td>${r.proveedor || '—'}</td>
@@ -2353,6 +2364,7 @@ function actualizarResultadosPrecios() {
         <thead>
           <tr>
             <th>Fuente</th>
+            <th>Código</th>
             <th>Producto</th>
             <th>Organismo</th>
             <th>Proveedor</th>
@@ -2361,7 +2373,7 @@ function actualizarResultadosPrecios() {
             <th>Fecha Adjudicación</th>
           </tr>
         </thead>
-        <tbody>${filasHtml || '<tr><td colspan="7" class="empty-state">Sin resultados para estos filtros.</td></tr>'}</tbody>
+        <tbody>${filasHtml || '<tr><td colspan="8" class="empty-state">Sin resultados para estos filtros.</td></tr>'}</tbody>
       </table>
     </div>
   `;
@@ -2439,7 +2451,10 @@ function actualizarResultadosProveedores() {
   const filasHtml = filtrados.map((p, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${p.nombreProveedor || '—'} <span class="row-meta">(${p.rutProveedor || '—'})</span></td>
+      <td>
+        <a href="${urlFichaProveedor(p.rutProveedor)}" target="_blank" rel="noopener">${p.nombreProveedor || '—'}</a>
+        <span class="row-meta">(${p.rutProveedor || '—'})</span>
+      </td>
       <td>${p.vecesGanadas}</td>
       <td>${p.licitaciones} licitación${p.licitaciones === 1 ? '' : 'es'} · ${p.compraAgil} Compra${p.compraAgil === 1 ? '' : 's'} Ágil</td>
       <td>${formatMoney(p.precioPromedio)}</td>
