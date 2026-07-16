@@ -542,13 +542,13 @@
           <label><strong>¿Cómo quieres buscarla? *</strong></label>
           <div class="tipo-proceso-row tipo-proceso-row-4col">
             <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoCodigo" value="codigo" checked> Por código</label>
-            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoEstadoFecha" value="estado_fecha"> Por estado y fecha</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoEstadoFecha" value="estado_fecha"> Por estado</label>
             <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoProveedor" value="proveedor"> Por proveedor (RUT)</label>
             <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModo" id="busquedaModoOrganismo" value="organismo"> Por organismo</label>
           </div>
           <select id="busquedaModoSelect" class="tipo-proceso-select">
             <option value="codigo" selected>Por código</option>
-            <option value="estado_fecha">Por estado y fecha</option>
+            <option value="estado_fecha">Por estado</option>
             <option value="proveedor">Por proveedor (RUT)</option>
             <option value="organismo">Por organismo</option>
           </select>
@@ -610,12 +610,12 @@
           <div id="busquedaOrganismosChips" class="categoria-chips"></div>
         </div>
 
-        <!-- 3e. Fecha — modos 'estado_fecha' / 'proveedor' / 'organismo' (Licitaciones) -->
+        <!-- 3e. Fecha — modos 'estado_fecha' / 'proveedor' / 'organismo' (Licitaciones) >
         <div class="field" id="busquedaFechaField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
           <label for="busquedaFecha">Fecha</label>
           <small>Opcional. Si no eliges una, se busca con la fecha del día en que ejecutes la búsqueda.</small>
           <input type="date" id="busquedaFecha">
-        </div>
+        </div-->
 
         <!-- 4. Texto libre — SOLO Compra Ágil, modo 'listado' -->
         <div class="field" id="busquedaTextoLibreField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">

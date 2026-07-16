@@ -1240,7 +1240,7 @@ const busquedaModoCompraAgilFieldEl = document.getElementById('busquedaModoCompr
 const busquedaCodigoFieldEl = document.getElementById('busquedaCodigoField');
 const busquedaEstadoFieldEl = document.getElementById('busquedaEstadoField');
 const busquedaRutProveedorFieldEl = document.getElementById('busquedaRutProveedorField');
-const busquedaFechaFieldEl = document.getElementById('busquedaFechaField');
+//const busquedaFechaFieldEl = document.getElementById('busquedaFechaField');
 const busquedaOrganismoFieldEl = document.getElementById('busquedaOrganismoField');
 const busquedaOrganismoSmallEl = document.getElementById('busquedaOrganismoSmall');
 const busquedaTextoLibreFieldEl = document.getElementById('busquedaTextoLibreField');
@@ -1251,9 +1251,9 @@ const busquedaAvisoLimitacionEl = document.getElementById('busquedaAvisoLimitaci
 
 const AVISOS_LIMITACION = {
   codigo: 'Busca una licitación puntual.',
-  estado_fecha: 'Busca licitaciones por estado y fecha.',
-  proveedor: 'Busca licitaciones por proveedor (RUT) y fecha.',
-  organismo: 'Busca licitaciones por organismo comprador (nombre) y fecha.',
+  estado_fecha: 'Busca licitaciones por estado.',
+  proveedor: 'Busca licitaciones por proveedor (RUT).',
+  organismo: 'Busca licitaciones por organismo comprador (nombre).',
 };
 
 function modoLicitacionSeleccionado() {
@@ -1283,7 +1283,7 @@ function actualizarCamposBusquedaSegunTipo() {
   // Exclusivo de Licitaciones:
   busquedaEstadoFieldEl.style.display = (!esCompraAgil && modo === 'estado_fecha') ? '' : 'none';
   busquedaRutProveedorFieldEl.style.display = (!esCompraAgil && modo === 'proveedor') ? '' : 'none';
-  busquedaFechaFieldEl.style.display = (!esCompraAgil && modo !== 'codigo') ? '' : 'none';
+  //busquedaFechaFieldEl.style.display = (!esCompraAgil && modo !== 'codigo') ? '' : 'none';
   busquedaOrganismoFieldEl.style.display = (!esCompraAgil && modo === 'organismo') ? '' : 'none';
   busquedaOrganismoSmallEl.textContent = 'Elige una institución compradora.';
 
@@ -1486,7 +1486,7 @@ function etiquetaTipoBusqueda(tipo) {
 
 const ETIQUETAS_MODO = {
   codigo: 'Por código',
-  estado_fecha: 'Por estado y fecha',
+  estado_fecha: 'Por estado',
   proveedor: 'Por proveedor',
   organismo: 'Por organismo',
   listado: 'Por texto/región/estado',
