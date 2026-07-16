@@ -133,6 +133,7 @@ section { margin-bottom: 56px; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+#head-new-search { justify-content: space-between; flex: 1 1 100%; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 
@@ -229,7 +230,6 @@ section { margin-bottom: 56px; }
 }
 @media (max-width: 880px) {
   .row { flex-direction: column; align-items: stretch; gap: 10px; }
-  .row > div:last-child { align-self: flex-end; }
 }
 @media (max-width: 480px) {
   .row { gap: 8px; padding: 12px 14px; }
@@ -279,6 +279,13 @@ section { margin-bottom: 56px; }
 }
 .modal-message { font-size: 14px; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.spinner {
+  width: 32px; height: 32px; margin: 0 auto;
+  border: 3px solid var(--border); border-top-color: var(--gold);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .error-bubble {
   position: fixed; transform: translate(-50%, -100%);
@@ -410,6 +417,12 @@ table.analisis-table a:hover { text-decoration: underline; }
 
 /* --- Tipo de proceso (Licitaciones / Compras Ágiles) --- */
 .tipo-proceso-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+.tipo-proceso-row.tipo-proceso-row-4col { display: grid; grid-template-columns: repeat(4, 1fr); flex-wrap: initial; }
+.tipo-proceso-select { display: none; margin-top: 4px; }
+@media (max-width: 720px) {
+  .tipo-proceso-row, .tipo-proceso-row.tipo-proceso-row-4col { display: none; }
+  .tipo-proceso-select { display: block; }
+}
 .checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .checkbox-row input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
 
@@ -492,6 +505,8 @@ table.analisis-table a:hover { text-decoration: underline; }
   font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
 }
+.stat-tile-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.stat-tile-head .stat-tile-label { margin-bottom: 0; }
 .stat-tile-value { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--gold); }
 .stat-tile-value.muted { color: var(--text); }
 .inicio-reporte-grupo { padding: 16px 20px; border-bottom: 1px solid var(--border); }
@@ -549,3 +564,14 @@ table.analisis-table a:hover { text-decoration: underline; }
     justify-content: center;
     }
  .icon-desc {height: 20px;}
+
+  .icon-stat {
+    height: 20px;
+    width: 20px;
+    background-color: #3ECF8E;
+    border-radius: 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+    .icon-stat-desc {height: 15px;}

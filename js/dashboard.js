@@ -21,6 +21,13 @@ function showErrorAlertas(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
+function showErrorBusquedas(msg) {
+  const el = document.getElementById('errorBannerBusquedas');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
 function showErrorModal(msg) {
   const el = document.getElementById('errorBannerModal');
   el.textContent = "❌ " + msg;
@@ -233,7 +240,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       } else {
         categoriaResultadosEl.innerHTML = data.resultados.map((r) => `
           <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
             <span class="cod">${r.codigo}</span>
           </div>
         `).join('');
@@ -248,7 +255,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       }
       categoriaResultadosEl.classList.add('open');
     } catch (err) {
-      console.warn('Error buscando categorías o productos:', err.message);
+      console.warn('Error buscando productos o rubros:', err.message);
     }
   }, 300);
 });
@@ -290,7 +297,7 @@ function crearBuscadorCategoriaUnico(inputId, resultadosId, alCambiar) {
           ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
           : data.resultados.map((r) => `
               <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
                 <span class="cod">${r.codigo}</span>
               </div>
             `).join('');
@@ -351,6 +358,79 @@ const buscadorCategoriaHist = crearBuscadorCategoriaUnico('filtroCategoriaHist',
   historialPaginaActual = 1;
   renderHistorial();
 });
+
+// --- Factory genérico para el modal de "Nueva Búsqueda" ---
+// El modal de "Nueva Alerta" ya tiene su propio selector de organismo hecho a
+// mano (organismoBuscar...) — para no duplicar exactamente esa misma lógica
+// una tercera vez, este factory generaliza el mismo patrón visual (buscador
+// con autocompletado + chips) para poder instanciarlo también en el modal de
+// búsquedas sin repetir código.
+
+// Buscador con autocompletado + selección MÚLTIPLE en chips (mismo patrón que
+// el organismoBuscar del modal de alertas, generalizado para reusarlo acá).
+function crearBuscadorMultiple(inputId, resultadosId, chipsId, apiPath, { soloUno = false } = {}) {
+  const input = document.getElementById(inputId);
+  const resultadosEl = document.getElementById(resultadosId);
+  const chipsEl = document.getElementById(chipsId);
+  let seleccionados = [];
+  let timeout = null;
+
+  function renderChips() {
+    chipsEl.innerHTML = seleccionados.map((o) => `
+      <span class="categoria-chip" data-organismo="${o.replace(/"/g, '&quot;')}">
+        ${o}
+        <span class="quitar" data-quitar="${o.replace(/"/g, '&quot;')}">✕</span>
+      </span>
+    `).join('');
+    chipsEl.querySelectorAll('[data-quitar]').forEach((el) => {
+      el.addEventListener('click', () => {
+        seleccionados = seleccionados.filter((o) => o !== el.dataset.quitar);
+        renderChips();
+      });
+    });
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timeout);
+    const texto = input.value.trim();
+    if (texto.length < 2) {
+      resultadosEl.classList.remove('open');
+      return;
+    }
+    timeout = setTimeout(async () => {
+      try {
+        const data = await apiFetch(`${apiPath}?q=${encodeURIComponent(texto)}`);
+        const disponibles = data.resultados.filter((o) => !seleccionados.includes(o));
+        resultadosEl.innerHTML = disponibles.length === 0
+          ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
+          : disponibles.map((o) => `<div class="categoria-resultado-item" data-organismo="${o.replace(/"/g, '&quot;')}"><span>${o}</span></div>`).join('');
+
+        resultadosEl.querySelectorAll('[data-organismo]').forEach((el) => {
+          el.addEventListener('click', () => {
+            seleccionados = soloUno ? [el.dataset.organismo] : [...seleccionados, el.dataset.organismo];
+            renderChips();
+            input.value = '';
+            resultadosEl.classList.remove('open');
+          });
+        });
+        resultadosEl.classList.add('open');
+      } catch (err) {
+        console.warn('Error buscando:', err.message);
+      }
+    }, 300);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !resultadosEl.contains(e.target)) {
+      resultadosEl.classList.remove('open');
+    }
+  });
+
+  return {
+    get: () => [...seleccionados],
+    reset: () => { seleccionados = []; renderChips(); input.value = ''; },
+  };
+}
 
 // --- Tabs "Buscar producto" / "Explorar por rubro" ---
 const categoriaModoTabs = document.getElementById('categoriaModoTabs');
@@ -552,6 +632,7 @@ async function cargarRegiones() {
     const opciones = data.regiones.map(r => `<option value="${r}">${r}</option>`).join('');
     filtroRegionConfigSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
     filtroRegionHistSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
+    busquedaRegionSelect.innerHTML = '<option value="">Todas las regiones</option>' + opciones;
   } catch (err) {
     console.warn('No se pudieron cargar las regiones:', err.message);
   }
@@ -662,11 +743,30 @@ function actualizarCamposSegunTipoProceso() {
   }
 }
 
+// Combobox equivalente para vista mobile — .tipo-proceso-row se oculta y este
+// <select> queda como único control visible, pero los checkboxes de arriba
+// siguen siendo la fuente de verdad (toda la lógica de campos depende de ellos).
+const tipoProcesoSelectEl = document.getElementById('tipoProcesoSelect');
+
+function syncTipoProcesoSelectDesdeCheckboxes() {
+  const lic = tipoProcesoLicitacionChk.checked;
+  const agil = tipoProcesoCompraAgilChk.checked;
+  tipoProcesoSelectEl.value = lic && agil ? 'ambas' : (agil ? 'compra_agil' : 'licitacion');
+}
+
+tipoProcesoSelectEl.addEventListener('change', () => {
+  const val = tipoProcesoSelectEl.value;
+  tipoProcesoLicitacionChk.checked = val !== 'compra_agil';
+  tipoProcesoCompraAgilChk.checked = val !== 'licitacion';
+  actualizarCamposSegunTipoProceso();
+});
+
 [tipoProcesoLicitacionChk, tipoProcesoCompraAgilChk].forEach((chk) => {
   chk.addEventListener('change', () => {
     if (!tipoProcesoLicitacionChk.checked && !tipoProcesoCompraAgilChk.checked) {
       chk.checked = true; // no se puede dejar los dos destildados
     }
+    syncTipoProcesoSelectDesdeCheckboxes();
     actualizarCamposSegunTipoProceso();
   });
 });
@@ -674,6 +774,7 @@ function actualizarCamposSegunTipoProceso() {
 function resetTipoProceso() {
   tipoProcesoLicitacionChk.checked = true;
   tipoProcesoCompraAgilChk.checked = true;
+  tipoProcesoSelectEl.value = 'ambas';
   actualizarCamposSegunTipoProceso();
 }
 
@@ -900,7 +1001,7 @@ async function cargarConfigs() {
         const detalle = await apiFetch(`/api/alerts/categorias/detalle?codigos=${codigosUnicos.join(',')}`);
         mapaCategorias = Object.fromEntries(detalle.categorias.map((c) => [c.codigo, { titulo: c.titulo, nivel: c.nivel }]));
       } catch (err) {
-        console.warn('No se pudieron resolver las descripciones de categorías o productos:', err.message);
+        console.warn('No se pudieron resolver las descripciones de rubros o productos:', err.message);
         mapaCategorias = {};
       }
     }
@@ -961,7 +1062,7 @@ function renderConfigs() {
     return `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todas las categorías y productos'}</div>
+        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todos los  rubros y productos'}</div>
         <div class="row-meta">
           <span style="font-size: 14px;">${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
           ${formatearTipoProcesoTag(c.tipos_proceso)}
@@ -1103,6 +1204,627 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
 });
 
 const HISTORIAL_POR_PAGINA = 10;
+
+// ============================================================
+// --- Sección: Búsquedas ---
+// ============================================================
+
+const newBusquedaModal = document.getElementById('newBusquedaModal');
+const busquedaRegionSelect = document.getElementById('busquedaRegionSelect');
+const busquedaRutProveedorInput = document.getElementById('busquedaRutProveedor');
+const busquedaTextoLibreInput = document.getElementById('busquedaTextoLibre');
+const busquedaHorasRecientesInput = document.getElementById('busquedaHorasRecientes');
+const busquedaCodigoLabelEl = document.getElementById('busquedaCodigoLabel');
+const busquedaEstadosCACheckboxes = document.querySelectorAll('input[name="busquedaEstadoCA"]');
+
+// Mismo formateo de RUT que ya usa la sección "Mi cuenta" (formatearRut, ver
+// más arriba en este archivo), aplicado en vivo mientras el usuario escribe.
+busquedaRutProveedorInput.addEventListener('input', () => {
+  const cursorAlFinal = busquedaRutProveedorInput.selectionStart === busquedaRutProveedorInput.value.length;
+  busquedaRutProveedorInput.value = formatearRut(busquedaRutProveedorInput.value);
+  if (cursorAlFinal) busquedaRutProveedorInput.setSelectionRange(busquedaRutProveedorInput.value.length, busquedaRutProveedorInput.value.length);
+});
+
+const buscadorOrganismosBusqueda = crearBuscadorMultiple(
+  'busquedaOrganismoBuscar', 'busquedaOrganismoResultados', 'busquedaOrganismosChips',
+  '/api/alerts/organismos/buscar',
+  { soloUno: true }
+);
+
+const busquedaTipoLicitacionRadio = document.getElementById('busquedaTipoLicitacion');
+const busquedaTipoCompraAgilRadio = document.getElementById('busquedaTipoCompraAgil');
+const busquedaModoRadios = document.querySelectorAll('input[name="busquedaModo"]');
+const busquedaModoCompraAgilRadios = document.querySelectorAll('input[name="busquedaModoCompraAgil"]');
+const busquedaModoFieldEl = document.getElementById('busquedaModoField');
+const busquedaModoCompraAgilFieldEl = document.getElementById('busquedaModoCompraAgilField');
+const busquedaCodigoFieldEl = document.getElementById('busquedaCodigoField');
+const busquedaEstadoFieldEl = document.getElementById('busquedaEstadoField');
+const busquedaRutProveedorFieldEl = document.getElementById('busquedaRutProveedorField');
+const busquedaFechaFieldEl = document.getElementById('busquedaFechaField');
+const busquedaOrganismoFieldEl = document.getElementById('busquedaOrganismoField');
+const busquedaOrganismoSmallEl = document.getElementById('busquedaOrganismoSmall');
+const busquedaTextoLibreFieldEl = document.getElementById('busquedaTextoLibreField');
+const busquedaRegionFieldEl = document.getElementById('busquedaRegionField');
+const busquedaEstadosCompraAgilFieldEl = document.getElementById('busquedaEstadosCompraAgilField');
+const busquedaHorasRecientesFieldEl = document.getElementById('busquedaHorasRecientesField');
+const busquedaAvisoLimitacionEl = document.getElementById('busquedaAvisoLimitacion');
+
+const AVISOS_LIMITACION = {
+  codigo: 'Busca una licitación puntual.',
+  estado_fecha: 'Busca licitaciones por estado y fecha.',
+  proveedor: 'Busca licitaciones por proveedor (RUT) y fecha.',
+  organismo: 'Busca licitaciones por organismo comprador (nombre) y fecha.',
+};
+
+function modoLicitacionSeleccionado() {
+  return document.querySelector('input[name="busquedaModo"]:checked')?.value || 'codigo';
+}
+function modoCompraAgilSeleccionado() {
+  return document.querySelector('input[name="busquedaModoCompraAgil"]:checked')?.value || 'codigo';
+}
+
+function actualizarCamposBusquedaSegunTipo() {
+  const esCompraAgil = busquedaTipoCompraAgilRadio.checked;
+  const modo = modoLicitacionSeleccionado();
+  const modoCA = modoCompraAgilSeleccionado();
+
+  // Grupo de "modo" según tipo — Licitaciones tiene 4 opciones excluyentes,
+  // Compra Ágil solo 2 (su API sí combina texto/región/estado libremente).
+  busquedaModoFieldEl.style.display = esCompraAgil ? 'none' : '';
+  busquedaModoCompraAgilFieldEl.style.display = esCompraAgil ? '' : 'none';
+
+  const modoActivo = esCompraAgil ? modoCA : modo;
+
+  // 'codigo' es compartido entre los dos tipos (mismo campo, label distinto).
+  busquedaCodigoFieldEl.style.display = (modoActivo === 'codigo') ? '' : 'none';
+  busquedaCodigoLabelEl.innerHTML = esCompraAgil ? '<strong>Código de la Compra Ágil *</strong>' : '<strong>Código de la licitación *</strong>';
+  document.getElementById('busquedaCodigoExterno').placeholder = esCompraAgil ? 'Ej: 1195-39-COT26' : 'Ej: 1509-5-L114';
+
+  // Exclusivo de Licitaciones:
+  busquedaEstadoFieldEl.style.display = (!esCompraAgil && modo === 'estado_fecha') ? '' : 'none';
+  busquedaRutProveedorFieldEl.style.display = (!esCompraAgil && modo === 'proveedor') ? '' : 'none';
+  busquedaFechaFieldEl.style.display = (!esCompraAgil && modo !== 'codigo') ? '' : 'none';
+  busquedaOrganismoFieldEl.style.display = (!esCompraAgil && modo === 'organismo') ? '' : 'none';
+  busquedaOrganismoSmallEl.textContent = 'Elige una institución compradora.';
+
+  // Exclusivo de Compra Ágil (modo 'listado'):
+  const listadoCA = esCompraAgil && modoCA === 'listado';
+  busquedaTextoLibreFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaRegionFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaEstadosCompraAgilFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaHorasRecientesFieldEl.style.display = listadoCA ? '' : 'none';
+
+  busquedaAvisoLimitacionEl.textContent = esCompraAgil ? '' : AVISOS_LIMITACION[modo];
+
+  // Limpia lo que quede oculto, para no guardar un criterio que el usuario ya no ve.
+  if (esCompraAgil) {
+    busquedaRutProveedorInput.value = '';
+    busquedaFechaInput.value = '';
+    if (modoCA !== 'organismo') buscadorOrganismosBusqueda.reset();
+  } else {
+    buscadorOrganismosBusqueda.reset();
+  }
+  if (!listadoCA) {
+    busquedaTextoLibreInput.value = '';
+    busquedaRegionSelect.value = '';
+    busquedaHorasRecientesInput.value = '';
+    busquedaEstadosCACheckboxes.forEach((chk) => { chk.checked = false; });
+    [...busquedaEstadosCompraAgilSelectEl.options].forEach((opt) => { opt.selected = false; });
+  }
+}
+
+const busquedaCodigoExternoInput = document.getElementById('busquedaCodigoExterno');
+const busquedaFechaInput = document.getElementById('busquedaFecha');
+
+[busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio, ...busquedaModoRadios, ...busquedaModoCompraAgilRadios].forEach((radio) => {
+  radio.addEventListener('change', actualizarCamposBusquedaSegunTipo);
+});
+
+// Combobox equivalente para vista mobile — mismo patrón que tipoProcesoSelect:
+// los radios de arriba siguen siendo la fuente de verdad, el <select> solo
+// refleja y escribe su estado.
+function vincularRadiosConSelect(radios, selectEl) {
+  selectEl.addEventListener('change', () => {
+    radios.forEach((r) => { r.checked = (r.value === selectEl.value); });
+    actualizarCamposBusquedaSegunTipo();
+  });
+  radios.forEach((r) => {
+    r.addEventListener('change', () => { if (r.checked) selectEl.value = r.value; });
+  });
+}
+
+const busquedaTipoSelectEl = document.getElementById('busquedaTipoSelect');
+const busquedaModoSelectEl = document.getElementById('busquedaModoSelect');
+const busquedaModoCompraAgilSelectEl = document.getElementById('busquedaModoCompraAgilSelect');
+vincularRadiosConSelect([busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio], busquedaTipoSelectEl);
+vincularRadiosConSelect([...busquedaModoRadios], busquedaModoSelectEl);
+vincularRadiosConSelect([...busquedaModoCompraAgilRadios], busquedaModoCompraAgilSelectEl);
+
+// Igual que vincularRadiosConSelect, pero para un grupo de checkboxes
+// independientes (0 o más marcados) — el equivalente mobile es un <select multiple>.
+function vincularCheckboxesConSelectMultiple(checkboxes, selectEl) {
+  selectEl.addEventListener('change', () => {
+    const seleccionados = new Set([...selectEl.selectedOptions].map((opt) => opt.value));
+    checkboxes.forEach((c) => { c.checked = seleccionados.has(c.value); });
+  });
+  checkboxes.forEach((c) => {
+    c.addEventListener('change', () => {
+      [...selectEl.options].forEach((opt) => {
+        opt.selected = [...checkboxes].some((chk) => chk.value === opt.value && chk.checked);
+      });
+    });
+  });
+}
+
+const busquedaEstadosCompraAgilSelectEl = document.getElementById('busquedaEstadosCompraAgilSelect');
+vincularCheckboxesConSelectMultiple([...busquedaEstadosCACheckboxes], busquedaEstadosCompraAgilSelectEl);
+
+function resetFormularioBusqueda() {
+  document.getElementById('newBusquedaForm').reset();
+  buscadorOrganismosBusqueda.reset();
+  busquedaTipoLicitacionRadio.checked = true;
+  document.getElementById('busquedaModoCodigo').checked = true;
+  document.getElementById('busquedaModoCACodigo').checked = true;
+  busquedaTipoSelectEl.value = 'licitacion';
+  busquedaModoSelectEl.value = 'codigo';
+  busquedaModoCompraAgilSelectEl.value = 'codigo';
+  actualizarCamposBusquedaSegunTipo();
+  document.getElementById('errorBannerBusquedaModal').style.display = 'none';
+}
+
+// Espejo de src/utils/planes.js (backend) — igual que LIMITES_ALERTAS_POR_PLAN,
+// solo para dar feedback inmediato antes de abrir el modal. El backend vuelve
+// a validar esto en POST /api/busquedas de todas formas.
+const LIMITES_BUSQUEDAS_POR_PLAN = { trial: 5, basico: 10, full: 20 };
+
+document.getElementById('abrirNuevaBusquedaBtn').addEventListener('click', () => {
+  const limite = LIMITES_BUSQUEDAS_POR_PLAN[window.usuarioActual?.plan];
+  if (limite !== undefined && busquedasData.length >= limite) {
+    showErrorBusquedas(`Tu plan (${window.usuarioActual?.plan}) permite guardar hasta ${limite} búsqueda${limite === 1 ? '' : 's'}. Elimina alguna antes de crear una nueva.`);
+    return;
+  }
+  resetFormularioBusqueda();
+  newBusquedaModal.classList.add('open');
+});
+document.getElementById('cerrarNuevaBusquedaBtn').addEventListener('click', () => {
+  newBusquedaModal.classList.remove('open');
+});
+newBusquedaModal.addEventListener('click', (e) => {
+  if (e.target === newBusquedaModal) newBusquedaModal.classList.remove('open');
+});
+
+document.getElementById('newBusquedaForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('crearBusquedaBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const nombre = document.getElementById('busquedaNombre').value.trim();
+  const tipo = busquedaTipoCompraAgilRadio.checked ? 'compra_agil' : 'licitacion';
+  const modo = tipo === 'compra_agil' ? modoCompraAgilSeleccionado() : modoLicitacionSeleccionado();
+  const organismos = buscadorOrganismosBusqueda.get();
+
+  const payload = { nombre, tipo, modo };
+
+  if (tipo === 'licitacion') {
+    payload.fecha = busquedaFechaInput.value || null;
+    if (modo === 'codigo') {
+      payload.codigoExterno = busquedaCodigoExternoInput.value.trim();
+    } else if (modo === 'estado_fecha') {
+      payload.estado = document.getElementById('busquedaEstadoSelect').value;
+    } else if (modo === 'proveedor') {
+      payload.rutProveedor = busquedaRutProveedorInput.value.trim();
+    } else if (modo === 'organismo') {
+      if (organismos.length === 0) {
+        mostrarErrorModalBusqueda('Elige un organismo para este modo de búsqueda.');
+        btn.disabled = false;
+        btn.textContent = '+ Guardar búsqueda';
+        return;
+      }
+      payload.organismos = organismos;
+    }
+  } else if (modo === 'codigo') {
+    payload.codigoExterno = busquedaCodigoExternoInput.value.trim();
+  } else {
+    payload.textoLibre = busquedaTextoLibreInput.value.trim() || null;
+    payload.regiones = busquedaRegionSelect.value ? [busquedaRegionSelect.value] : [];
+    payload.estados = [...busquedaEstadosCACheckboxes].filter((c) => c.checked).map((c) => c.value);
+    payload.horasRecientes = busquedaHorasRecientesInput.value ? Number(busquedaHorasRecientesInput.value) : null;
+  }
+
+  if (!nombre) {
+    mostrarErrorModalBusqueda('Debes ponerle un nombre a la búsqueda.');
+    btn.disabled = false;
+    btn.textContent = '+ Guardar búsqueda';
+    return;
+  }
+  if ((tipo === 'licitacion' && modo === 'codigo' || tipo === 'compra_agil' && modo === 'codigo') && !payload.codigoExterno) {
+    mostrarErrorModalBusqueda('Debes ingresar el código.');
+    btn.disabled = false;
+    btn.textContent = '+ Guardar búsqueda';
+    return;
+  }
+
+  try {
+    await apiFetch('/api/busquedas', { method: 'POST', body: JSON.stringify(payload) });
+    newBusquedaModal.classList.remove('open');
+    cargarBusquedas();
+  } catch (err) {
+    mostrarErrorModalBusqueda(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '+ Guardar búsqueda';
+  }
+});
+
+function mostrarErrorModalBusqueda(mensaje) {
+  const el = document.getElementById('errorBannerBusquedaModal');
+  el.textContent = '❌ ' + mensaje;
+  el.style.display = 'block';
+}
+
+let busquedasData = [];
+
+const BUSQUEDAS_POR_PAGINA = 10;
+let busquedasPaginaActual = 1;
+
+async function cargarBusquedas() {
+  const card = document.getElementById('busquedasCard');
+  try {
+    const data = await apiFetch('/api/busquedas');
+    busquedasData = data.busquedas;
+    busquedasPaginaActual = 1;
+    renderBusquedas();
+  } catch (err) {
+    card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function etiquetaTipoBusqueda(tipo) {
+  return tipo === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación';
+}
+
+const ETIQUETAS_MODO = {
+  codigo: 'Por código',
+  estado_fecha: 'Por estado y fecha',
+  proveedor: 'Por proveedor',
+  organismo: 'Por organismo',
+  listado: 'Por texto/región/estado',
+};
+
+const ETIQUETAS_ESTADO_BUSQUEDA = {
+  todos: 'Todos los estados', publicada: 'Publicada', cerrada: 'Cerrada',
+  desierta: 'Desierta', adjudicada: 'Adjudicada', revocada: 'Revocada', suspendida: 'Suspendida',
+  cancelada: 'Cancelada',
+};
+
+// Arma la línea de detalle de una búsqueda guardada según su tipo/modo — cada
+// combinación tiene un conjunto de campos totalmente distinto (ver migraciones 033/034).
+function describirBusquedaEnFila(b) {
+  const fechaTexto = b.fecha ? formatDate(b.fecha).split(',')[0] : 'Hoy (al ejecutar)';
+
+  if (b.tipo === 'compra_agil') {
+    if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
+    const partes = [];
+    if (b.texto_libre) partes.push(`<br><span>Texto: "${b.texto_libre}"</span>`);
+    partes.push(formatearRegionesTag(b.regiones));
+    if (b.estados && b.estados.length > 0) {
+      partes.push(`<br><span>Estado: ${b.estados.map((e) => ETIQUETAS_ESTADO_BUSQUEDA[e] || e).join(', ')}</span>`);
+    }
+    if (b.horas_recientes) partes.push(`<br><span>Últimas ${b.horas_recientes}h</span>`);
+    return partes.join('');
+  }
+
+  if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
+  if (b.modo === 'estado_fecha') return `<br><span>Estado: ${ETIQUETAS_ESTADO_BUSQUEDA[b.estado] || b.estado}</span><br><span>Fecha: ${fechaTexto}</span>`;
+  if (b.modo === 'proveedor') return `<br><span>Proveedor RUT: ${b.rut_proveedor}</span><br><span>Fecha: ${fechaTexto}</span>`;
+  if (b.modo === 'organismo') return `${formatearOrganismosTag(b.organismos)}<br><span>Fecha: ${fechaTexto}</span>`;
+  return '';
+}
+
+function renderBusquedas() {
+  const card = document.getElementById('busquedasCard');
+  if (busquedasData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no tienes búsquedas guardadas. Crea una arriba.</div>';
+    return;
+  }
+
+  const totalPaginas = Math.ceil(busquedasData.length / BUSQUEDAS_POR_PAGINA);
+  if (busquedasPaginaActual > totalPaginas) busquedasPaginaActual = totalPaginas;
+  const inicio = (busquedasPaginaActual - 1) * BUSQUEDAS_POR_PAGINA;
+  const pagina = busquedasData.slice(inicio, inicio + BUSQUEDAS_POR_PAGINA);
+
+  const filasHtml = pagina.map((b) => `
+    <div class="row" data-busqueda-id="${b.id}">
+      <div class="row-info">
+        <div class="row-title">${b.nombre}</div>
+        <div class="row-meta">
+          <span>${etiquetaTipoBusqueda(b.tipo)}</span>
+          <span>${ETIQUETAS_MODO[b.modo] || b.modo}</span>
+          ${describirBusquedaEnFila(b)}
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" data-ejecutar="${b.id}">▶ Ejecutar</button>
+        <button class="btn btn-danger" data-eliminar-busqueda="${b.id}">✖ Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+
+  const mostrarPaginador = busquedasData.length > BUSQUEDAS_POR_PAGINA;
+  const paginadorHtml = mostrarPaginador ? `
+    <div class="paginador">
+      <button type="button" class="btn btn-ghost" id="busquedasPrev" ${busquedasPaginaActual === 1 ? 'disabled' : ''}>‹ Anterior</button>
+      <span class="paginador-info">Página ${busquedasPaginaActual} de ${totalPaginas}</span>
+      <button type="button" class="btn btn-ghost" id="busquedasNext" ${busquedasPaginaActual === totalPaginas ? 'disabled' : ''}>Siguiente ›</button>
+    </div>
+  ` : '';
+
+  card.innerHTML = filasHtml + paginadorHtml;
+
+  if (mostrarPaginador) {
+    document.getElementById('busquedasPrev').addEventListener('click', () => {
+      busquedasPaginaActual--;
+      renderBusquedas();
+    });
+    document.getElementById('busquedasNext').addEventListener('click', () => {
+      busquedasPaginaActual++;
+      renderBusquedas();
+    });
+  }
+
+  card.querySelectorAll('.regiones-toggle').forEach((el) => {
+    el.addEventListener('click', () => {
+      const expandido = el.classList.toggle('expandido');
+      el.innerHTML = expandido ? el.dataset.completo : el.dataset.resumen;
+    });
+  });
+
+  card.querySelectorAll('[data-eliminar-busqueda]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Eliminar esta búsqueda guardada?');
+      if (!confirmado) return;
+      try {
+        await apiFetch(`/api/busquedas/${btn.dataset.eliminarBusqueda}`, { method: 'DELETE' });
+        cargarBusquedas();
+      } catch (err) { showErrorBusquedas(err.message); }
+    });
+  });
+
+  card.querySelectorAll('[data-ejecutar]').forEach((btn) => {
+    btn.addEventListener('click', () => ejecutarBusquedaGuardada(btn.dataset.ejecutar, btn));
+  });
+}
+
+let ultimoResultadoBusqueda = null; // { busqueda, tipo, modo, resultados, paginacion? } — para el export a PDF
+let ultimaBusquedaIdEjecutada = null; // para poder pedir la página siguiente sin re-clickear "Ejecutar"
+
+const BUSQUEDA_RESULTADOS_POR_PAGINA = 10;
+let busquedaResultadosPaginaActual = 1;
+
+// Compra Ágil en modo 'listado' pagina de verdad contra la API (ver
+// busqueda-ejecutor.service.js) — acá NO se cortan resultados en el cliente,
+// cada "página" ya viene lista desde el backend. Para el resto (Licitaciones,
+// y Compra Ágil modo 'codigo', que trae 1 solo resultado) se sigue paginando
+// en el cliente como antes, sobre el array completo ya traído.
+function esPaginacionServidor(data) {
+  return data.tipo === 'compra_agil' && data.modo === 'listado' && data.paginacion;
+}
+
+const buscandoModal = document.getElementById('buscandoModal');
+
+async function ejecutarBusquedaGuardada(id, btn, numeroPagina = 1) {
+  const textoOriginal = btn ? btn.textContent : null;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+  }
+  buscandoModal.classList.add('open');
+
+  const wrap = document.getElementById('busquedaResultadosWrap');
+
+  try {
+    const data = await apiFetch(`/api/busquedas/${id}/ejecutar`, {
+      method: 'POST',
+      body: JSON.stringify({ numeroPagina }),
+    });
+    ultimoResultadoBusqueda = data;
+    ultimaBusquedaIdEjecutada = id;
+    busquedaResultadosPaginaActual = 1;
+
+    document.getElementById('busquedaResultadosTitulo').textContent = `Resultados — ${data.busqueda.nombre}`;
+    wrap.style.display = '';
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    renderResultadosBusqueda(data);
+  } catch (err) {
+    showErrorBusquedas(err.message);
+  } finally {
+    buscandoModal.classList.remove('open');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
+  }
+}
+
+function urlFichaLicitacion(codigoExterno) {
+  return `http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(codigoExterno)}`;
+}
+function urlFichaCompraAgil(codigoExterno) {
+  return `https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(codigoExterno)}`;
+}
+
+function filaResultadoHtml(r, tipo) {
+  return `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">
+          <a href="${tipo === 'compra_agil' ? urlFichaCompraAgil(r.codigo_externo) : urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;">${r.nombre || r.codigo_externo} ↗</a>
+        </div>
+        <div class="row-meta">
+          <span>${etiquetaTipoBusqueda(tipo)}</span>
+          <br>
+          <span>Código: ${r.codigo_externo}</span>
+          <br><span>Estado: ${r.estado || 'Desconocido'}</span>
+          <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderResultadosBusqueda(data) {
+  const card = document.getElementById('busquedaResultadosCard');
+  const { tipo, resultados } = data;
+
+  if (resultados.length === 0) {
+    card.innerHTML = '<div class="empty-state">Sin resultados para esta búsqueda en este momento.</div>';
+    return;
+  }
+
+  if (esPaginacionServidor(data)) {
+    // Paginación real: cada página ya viene completa desde el backend — se
+    // muestra tal cual, sin recortar de nuevo en el cliente.
+    const { numero_pagina, total_paginas, total_resultados } = data.paginacion;
+    const filasHtml = resultados.map((r) => filaResultadoHtml(r, tipo)).join('');
+    const paginadorHtml = total_paginas > 1 ? `
+      <div class="paginador">
+        <button type="button" class="btn btn-ghost" id="busquedaResultadosPrev" ${numero_pagina === 1 ? 'disabled' : ''}>‹ Anterior</button>
+        <span class="paginador-info">Página ${numero_pagina} de ${total_paginas} (${total_resultados} resultados)</span>
+        <button type="button" class="btn btn-ghost" id="busquedaResultadosNext" ${numero_pagina === total_paginas ? 'disabled' : ''}>Siguiente ›</button>
+      </div>
+    ` : `<div class="paginador-info" style="padding:8px 0;">${total_resultados} resultado${total_resultados === 1 ? '' : 's'}</div>`;
+
+    card.innerHTML = filasHtml + paginadorHtml;
+
+    if (numero_pagina > 1) {
+      document.getElementById('busquedaResultadosPrev').addEventListener('click', () => {
+        ejecutarBusquedaGuardada(ultimaBusquedaIdEjecutada, null, numero_pagina - 1);
+      });
+    }
+    if (numero_pagina < total_paginas) {
+      document.getElementById('busquedaResultadosNext').addEventListener('click', () => {
+        // Al llegar al final de lo cargado, se lanza la consulta pidiendo la
+        // página siguiente REAL de la API (no hay más que cortar localmente).
+        ejecutarBusquedaGuardada(ultimaBusquedaIdEjecutada, null, numero_pagina + 1);
+      });
+    }
+    return;
+  }
+
+  // Sin paginación real de la API (Licitaciones, o Compra Ágil modo 'codigo')
+  // — se pagina en el cliente sobre el array completo ya traído, como antes.
+  const totalPaginas = Math.ceil(resultados.length / BUSQUEDA_RESULTADOS_POR_PAGINA);
+  if (busquedaResultadosPaginaActual > totalPaginas) busquedaResultadosPaginaActual = totalPaginas;
+  const inicio = (busquedaResultadosPaginaActual - 1) * BUSQUEDA_RESULTADOS_POR_PAGINA;
+  const pagina = resultados.slice(inicio, inicio + BUSQUEDA_RESULTADOS_POR_PAGINA);
+
+  const filasHtml = pagina.map((r) => filaResultadoHtml(r, tipo)).join('');
+
+  const mostrarPaginador = resultados.length > BUSQUEDA_RESULTADOS_POR_PAGINA;
+  const paginadorHtml = mostrarPaginador ? `
+    <div class="paginador">
+      <button type="button" class="btn btn-ghost" id="busquedaResultadosPrev" ${busquedaResultadosPaginaActual === 1 ? 'disabled' : ''}>‹ Anterior</button>
+      <span class="paginador-info">Página ${busquedaResultadosPaginaActual} de ${totalPaginas}</span>
+      <button type="button" class="btn btn-ghost" id="busquedaResultadosNext" ${busquedaResultadosPaginaActual === totalPaginas ? 'disabled' : ''}>Siguiente ›</button>
+    </div>
+  ` : '';
+
+  card.innerHTML = filasHtml + paginadorHtml;
+
+  if (mostrarPaginador) {
+    document.getElementById('busquedaResultadosPrev').addEventListener('click', () => {
+      busquedaResultadosPaginaActual--;
+      renderResultadosBusqueda(data);
+    });
+    document.getElementById('busquedaResultadosNext').addEventListener('click', () => {
+      busquedaResultadosPaginaActual++;
+      renderResultadosBusqueda(data);
+    });
+  }
+}
+
+// --- Exportar PDF (liviano — jsPDF + autotable vía CDN, se genera en el
+// navegador, sin pedirle nada al backend). Al comienzo de la página 1 van los
+// filtros con los que se armó la búsqueda, y después la tabla de resultados.
+// Nota: si la búsqueda tiene más páginas de resultados en el servidor
+// (Compra Ágil modo 'listado'), el PDF solo incluye la página actualmente
+// cargada en pantalla — no descarga todas las páginas de golpe. ---
+function describirCriteriosBusqueda(b) {
+  const partes = [];
+  partes.push(['Tipo de búsqueda', etiquetaTipoBusqueda(b.tipo)]);
+  partes.push(['Modo de búsqueda', ETIQUETAS_MODO[b.modo] || b.modo]);
+
+  if (b.tipo === 'compra_agil') {
+    if (b.modo === 'codigo') {
+      partes.push(['Código', b.codigo_externo]);
+      return partes;
+    }
+    partes.push(['Texto libre', b.texto_libre || '—']);
+    partes.push(['Región', b.regiones && b.regiones.length > 0 ? b.regiones.join(', ') : 'Todas']);
+    partes.push(['Estado', b.estados && b.estados.length > 0 ? b.estados.map((e) => ETIQUETAS_ESTADO_BUSQUEDA[e] || e).join(', ') : 'Todos']);
+    partes.push(['Nuevas en las últimas', b.horas_recientes ? `${b.horas_recientes} horas` : '—']);
+    return partes;
+  }
+
+  const fechaTexto = b.fecha ? formatDate(b.fecha).split(',')[0] : 'Hoy (al momento de ejecutar)';
+  if (b.modo === 'codigo') partes.push(['Código', b.codigo_externo]);
+  if (b.modo === 'estado_fecha') {
+    partes.push(['Estado', ETIQUETAS_ESTADO_BUSQUEDA[b.estado] || b.estado]);
+    partes.push(['Fecha', fechaTexto]);
+  }
+  if (b.modo === 'proveedor') {
+    partes.push(['RUT proveedor', b.rut_proveedor]);
+    partes.push(['Fecha', fechaTexto]);
+  }
+  if (b.modo === 'organismo') {
+    partes.push(['Organismo', b.organismos && b.organismos.length > 0 ? b.organismos.join(', ') : '—']);
+    partes.push(['Fecha', fechaTexto]);
+  }
+  return partes;
+}
+
+document.getElementById('descargarPdfBtn').addEventListener('click', () => {
+  if (!ultimoResultadoBusqueda) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt' });
+  const { busqueda, resultados } = ultimoResultadoBusqueda;
+
+  doc.setFontSize(14);
+  doc.text(`Búsqueda: ${busqueda.nombre}`, 40, 40);
+  doc.setFontSize(9);
+  doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, 56);
+
+  doc.autoTable({
+    startY: 70,
+    head: [['Filtro', 'Valor']],
+    body: describirCriteriosBusqueda(busqueda),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [30, 30, 40] },
+    columnStyles: { 0: { cellWidth: 130, fontStyle: 'bold' } },
+    margin: { left: 40, right: 40 },
+  });
+
+  const siguienteY = doc.lastAutoTable.finalY + 14;
+
+  doc.autoTable({
+    startY: siguienteY,
+    head: [['Nombre', 'Código', 'Estado', 'Cierre']],
+    body: resultados.map((r) => [r.nombre || '', r.codigo_externo || '', r.estado || '—', formatDate(r.fecha_cierre)]),
+    theme: 'striped',
+    styles: { fontSize: 7.5, cellPadding: 3, overflow: 'linebreak' },
+    headStyles: { fillColor: [30, 30, 40] },
+    margin: { left: 40, right: 40 },
+  });
+
+  const nombreArchivo = `busqueda-${busqueda.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50)}.pdf`;
+  doc.save(nombreArchivo);
+});
+
+
+
 let historialData = [];
 let historialPaginaActual = 1;
 
@@ -1197,8 +1919,8 @@ function renderHistorial() {
     <div class="row">
       <div class="row-info">
         <div class="row-title">${h.tipo_proceso === 'compra_agil'
-          ? `<a href="https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo}</a>`
-          : `<a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo}</a>`
+          ? `<a href="https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo} ↗</a>`
+          : `<a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo} ↗</a>`
         }</div>
         <div class="row-meta">
           <span>${h.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
@@ -1412,7 +2134,7 @@ if (analisisBuscarInput) {
         } else {
           analisisResultadosEl.innerHTML = data.resultados.map((r) => `
             <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
-              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Categoría' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
               <span class="cod">${r.codigo}</span>
             </div>
           `).join('');
@@ -1429,7 +2151,7 @@ if (analisisBuscarInput) {
         }
         analisisResultadosEl.classList.add('open');
       } catch (err) {
-        console.warn('Error buscando categorías:', err.message);
+        console.warn('Error buscando rubros:', err.message);
       }
     }, 300);
   });
@@ -2035,3 +2757,4 @@ cargarRegiones();
 cargarTramos();
 cargarConfigs();
 cargarHistorial();
+cargarBusquedas();
