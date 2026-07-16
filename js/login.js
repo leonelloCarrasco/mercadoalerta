@@ -15,10 +15,23 @@ if (new URLSearchParams(window.location.search).get('verificado') === '1') {
   noticeMsg.style.display = 'block';
 }
 
+// Si la sesión se cerró sola por inactividad (ver js/inactivity-logout.js),
+// avisamos por qué en vez de dejar al usuario preguntándose qué pasó.
+if (new URLSearchParams(window.location.search).get('sesion_expirada') === '1') {
+  noticeMsg.textContent = 'Tu sesión se cerró automáticamente por inactividad. Vuelve a iniciar sesión.';
+  noticeMsg.style.display = 'block';
+}
+
 const passwordInput = document.getElementById('password');
 const togglePassword = document.getElementById('togglePassword');
 const iconEye = togglePassword.querySelector('.icon-eye');
 const iconEyeOff = togglePassword.querySelector('.icon-eye-off');
+
+// El botón arranca deshabilitado (ver atributo en login.html) y solo se
+// habilita cuando Cloudflare Turnstile confirma "soy humano" — si el desafío
+// expira o falla, se vuelve a deshabilitar.
+window.onTurnstileSuccess = () => { submitBtn.disabled = false; };
+window.onTurnstileExpired = () => { submitBtn.disabled = true; };
 
 togglePassword.addEventListener('click', () => {
   const isHidden = passwordInput.type === 'password';
@@ -68,8 +81,10 @@ form.addEventListener('submit', async (e) => {
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
-    submitBtn.disabled = false;
     submitBtn.textContent = 'Iniciar sesión';
+    // El reset invalida el token ya usado, así que el botón vuelve a quedar
+    // deshabilitado hasta que se complete el desafío de nuevo (onTurnstileSuccess).
+    submitBtn.disabled = true;
     if (window.turnstile) window.turnstile.reset();
   }
 });
