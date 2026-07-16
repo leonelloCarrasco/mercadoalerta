@@ -48,9 +48,9 @@
       </button>
     </div>
 
-    <div class="cf-turnstile"  data-sitekey="0x4AAAAAADzjTvOcvm5sFsMU" style="margin-bottom: 18px;"></div>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAADzjTvOcvm5sFsMU" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired" data-error-callback="onTurnstileExpired" style="margin-bottom: 18px;"></div>
 
-    <button type="submit" id="submitBtn">Iniciar sesión</button>
+    <button type="submit" id="submitBtn" disabled>Iniciar sesión</button>
     <div class="error" id="errorMsg"></div>
     <div class="notice" id="noticeMsg"></div>
   </form>
