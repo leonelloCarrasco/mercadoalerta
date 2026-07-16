@@ -21,6 +21,13 @@ function showErrorAlertas(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
+function showErrorBusquedas(msg) {
+  const el = document.getElementById('errorBannerBusquedas');
+  el.textContent = "❌ " + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
 function showErrorModal(msg) {
   const el = document.getElementById('errorBannerModal');
   el.textContent = "❌ " + msg;
@@ -1203,10 +1210,12 @@ const HISTORIAL_POR_PAGINA = 10;
 // ============================================================
 
 const newBusquedaModal = document.getElementById('newBusquedaModal');
-const busquedaMontoMinimoInput = registrarInputMonto('busquedaMontoMinimo');
-const busquedaMontoMaximoInput = registrarInputMonto('busquedaMontoMaximo');
 const busquedaRegionSelect = document.getElementById('busquedaRegionSelect');
 const busquedaRutProveedorInput = document.getElementById('busquedaRutProveedor');
+const busquedaTextoLibreInput = document.getElementById('busquedaTextoLibre');
+const busquedaHorasRecientesInput = document.getElementById('busquedaHorasRecientes');
+const busquedaCodigoLabelEl = document.getElementById('busquedaCodigoLabel');
+const busquedaEstadosCACheckboxes = document.querySelectorAll('input[name="busquedaEstadoCA"]');
 
 // Mismo formateo de RUT que ya usa la sección "Mi cuenta" (formatearRut, ver
 // más arriba en este archivo), aplicado en vivo mientras el usuario escribe.
@@ -1225,15 +1234,19 @@ const buscadorOrganismosBusqueda = crearBuscadorMultiple(
 const busquedaTipoLicitacionRadio = document.getElementById('busquedaTipoLicitacion');
 const busquedaTipoCompraAgilRadio = document.getElementById('busquedaTipoCompraAgil');
 const busquedaModoRadios = document.querySelectorAll('input[name="busquedaModo"]');
+const busquedaModoCompraAgilRadios = document.querySelectorAll('input[name="busquedaModoCompraAgil"]');
 const busquedaModoFieldEl = document.getElementById('busquedaModoField');
+const busquedaModoCompraAgilFieldEl = document.getElementById('busquedaModoCompraAgilField');
 const busquedaCodigoFieldEl = document.getElementById('busquedaCodigoField');
 const busquedaEstadoFieldEl = document.getElementById('busquedaEstadoField');
 const busquedaRutProveedorFieldEl = document.getElementById('busquedaRutProveedorField');
 const busquedaFechaFieldEl = document.getElementById('busquedaFechaField');
 const busquedaOrganismoFieldEl = document.getElementById('busquedaOrganismoField');
 const busquedaOrganismoSmallEl = document.getElementById('busquedaOrganismoSmall');
+const busquedaTextoLibreFieldEl = document.getElementById('busquedaTextoLibreField');
 const busquedaRegionFieldEl = document.getElementById('busquedaRegionField');
-const busquedaMontoFieldEl = document.getElementById('busquedaMontoField');
+const busquedaEstadosCompraAgilFieldEl = document.getElementById('busquedaEstadosCompraAgilField');
+const busquedaHorasRecientesFieldEl = document.getElementById('busquedaHorasRecientesField');
 const busquedaAvisoLimitacionEl = document.getElementById('busquedaAvisoLimitacion');
 
 const AVISOS_LIMITACION = {
@@ -1241,47 +1254,69 @@ const AVISOS_LIMITACION = {
   estado_fecha: 'Busca licitaciones por estado y fecha.',
   proveedor: 'Busca licitaciones por proveedor (RUT) y fecha.',
   organismo: 'Busca licitaciones por organismo comprador (nombre) y fecha.',
-  compra_agil: 'Busca Compra ágil por región, monto y organismo.',
 };
 
 function modoLicitacionSeleccionado() {
   return document.querySelector('input[name="busquedaModo"]:checked')?.value || 'codigo';
 }
+function modoCompraAgilSeleccionado() {
+  return document.querySelector('input[name="busquedaModoCompraAgil"]:checked')?.value || 'codigo';
+}
 
 function actualizarCamposBusquedaSegunTipo() {
   const esCompraAgil = busquedaTipoCompraAgilRadio.checked;
   const modo = modoLicitacionSeleccionado();
+  const modoCA = modoCompraAgilSeleccionado();
 
+  // Grupo de "modo" según tipo — Licitaciones tiene 4 opciones excluyentes,
+  // Compra Ágil solo 2 (su API sí combina texto/región/estado libremente).
   busquedaModoFieldEl.style.display = esCompraAgil ? 'none' : '';
-  busquedaCodigoFieldEl.style.display = (!esCompraAgil && modo === 'codigo') ? '' : 'none';
+  busquedaModoCompraAgilFieldEl.style.display = esCompraAgil ? '' : 'none';
+
+  const modoActivo = esCompraAgil ? modoCA : modo;
+
+  // 'codigo' es compartido entre los dos tipos (mismo campo, label distinto).
+  busquedaCodigoFieldEl.style.display = (modoActivo === 'codigo') ? '' : 'none';
+  busquedaCodigoLabelEl.innerHTML = esCompraAgil ? '<strong>Código de la Compra Ágil *</strong>' : '<strong>Código de la licitación *</strong>';
+  document.getElementById('busquedaCodigoExterno').placeholder = esCompraAgil ? 'Ej: 1195-39-COT26' : 'Ej: 1509-5-L114';
+
+  // Exclusivo de Licitaciones:
   busquedaEstadoFieldEl.style.display = (!esCompraAgil && modo === 'estado_fecha') ? '' : 'none';
   busquedaRutProveedorFieldEl.style.display = (!esCompraAgil && modo === 'proveedor') ? '' : 'none';
   busquedaFechaFieldEl.style.display = (!esCompraAgil && modo !== 'codigo') ? '' : 'none';
-  busquedaOrganismoFieldEl.style.display = (esCompraAgil || modo === 'organismo') ? '' : 'none';
+  busquedaOrganismoFieldEl.style.display = (!esCompraAgil && modo === 'organismo') ? '' : 'none';
   busquedaOrganismoSmallEl.textContent = 'Elige una institución compradora.';
-  busquedaRegionFieldEl.style.display = esCompraAgil ? '' : 'none';
-  busquedaMontoFieldEl.style.display = esCompraAgil ? '' : 'none';
 
-  busquedaAvisoLimitacionEl.textContent = esCompraAgil ? AVISOS_LIMITACION.compra_agil : AVISOS_LIMITACION[modo];
+  // Exclusivo de Compra Ágil (modo 'listado'):
+  const listadoCA = esCompraAgil && modoCA === 'listado';
+  busquedaTextoLibreFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaRegionFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaEstadosCompraAgilFieldEl.style.display = listadoCA ? '' : 'none';
+  busquedaHorasRecientesFieldEl.style.display = listadoCA ? '' : 'none';
 
+  busquedaAvisoLimitacionEl.textContent = esCompraAgil ? '' : AVISOS_LIMITACION[modo];
+
+  // Limpia lo que quede oculto, para no guardar un criterio que el usuario ya no ve.
   if (esCompraAgil) {
-    busquedaCodigoExternoInput.value = '';
     busquedaRutProveedorInput.value = '';
     busquedaFechaInput.value = '';
+    if (modoCA !== 'organismo') buscadorOrganismosBusqueda.reset();
   } else {
-    if (modo !== 'organismo' && modo !== 'compra_agil') buscadorOrganismosBusqueda.reset();
-    if (esCompraAgil !== true) {
-      busquedaRegionSelect.value = '';
-      busquedaMontoMinimoInput.value = '';
-      busquedaMontoMaximoInput.value = '';
-    }
+    buscadorOrganismosBusqueda.reset();
+  }
+  if (!listadoCA) {
+    busquedaTextoLibreInput.value = '';
+    busquedaRegionSelect.value = '';
+    busquedaHorasRecientesInput.value = '';
+    busquedaEstadosCACheckboxes.forEach((chk) => { chk.checked = false; });
+    [...busquedaEstadosCompraAgilSelectEl.options].forEach((opt) => { opt.selected = false; });
   }
 }
 
 const busquedaCodigoExternoInput = document.getElementById('busquedaCodigoExterno');
 const busquedaFechaInput = document.getElementById('busquedaFecha');
 
-[busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio, ...busquedaModoRadios].forEach((radio) => {
+[busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio, ...busquedaModoRadios, ...busquedaModoCompraAgilRadios].forEach((radio) => {
   radio.addEventListener('change', actualizarCamposBusquedaSegunTipo);
 });
 
@@ -1300,16 +1335,39 @@ function vincularRadiosConSelect(radios, selectEl) {
 
 const busquedaTipoSelectEl = document.getElementById('busquedaTipoSelect');
 const busquedaModoSelectEl = document.getElementById('busquedaModoSelect');
+const busquedaModoCompraAgilSelectEl = document.getElementById('busquedaModoCompraAgilSelect');
 vincularRadiosConSelect([busquedaTipoLicitacionRadio, busquedaTipoCompraAgilRadio], busquedaTipoSelectEl);
 vincularRadiosConSelect([...busquedaModoRadios], busquedaModoSelectEl);
+vincularRadiosConSelect([...busquedaModoCompraAgilRadios], busquedaModoCompraAgilSelectEl);
+
+// Igual que vincularRadiosConSelect, pero para un grupo de checkboxes
+// independientes (0 o más marcados) — el equivalente mobile es un <select multiple>.
+function vincularCheckboxesConSelectMultiple(checkboxes, selectEl) {
+  selectEl.addEventListener('change', () => {
+    const seleccionados = new Set([...selectEl.selectedOptions].map((opt) => opt.value));
+    checkboxes.forEach((c) => { c.checked = seleccionados.has(c.value); });
+  });
+  checkboxes.forEach((c) => {
+    c.addEventListener('change', () => {
+      [...selectEl.options].forEach((opt) => {
+        opt.selected = [...checkboxes].some((chk) => chk.value === opt.value && chk.checked);
+      });
+    });
+  });
+}
+
+const busquedaEstadosCompraAgilSelectEl = document.getElementById('busquedaEstadosCompraAgilSelect');
+vincularCheckboxesConSelectMultiple([...busquedaEstadosCACheckboxes], busquedaEstadosCompraAgilSelectEl);
 
 function resetFormularioBusqueda() {
   document.getElementById('newBusquedaForm').reset();
   buscadorOrganismosBusqueda.reset();
   busquedaTipoLicitacionRadio.checked = true;
   document.getElementById('busquedaModoCodigo').checked = true;
+  document.getElementById('busquedaModoCACodigo').checked = true;
   busquedaTipoSelectEl.value = 'licitacion';
   busquedaModoSelectEl.value = 'codigo';
+  busquedaModoCompraAgilSelectEl.value = 'codigo';
   actualizarCamposBusquedaSegunTipo();
   document.getElementById('errorBannerBusquedaModal').style.display = 'none';
 }
@@ -1322,7 +1380,7 @@ const LIMITES_BUSQUEDAS_POR_PLAN = { trial: 5, basico: 10, full: 20 };
 document.getElementById('abrirNuevaBusquedaBtn').addEventListener('click', () => {
   const limite = LIMITES_BUSQUEDAS_POR_PLAN[window.usuarioActual?.plan];
   if (limite !== undefined && busquedasData.length >= limite) {
-    showErrorAlertas(`Tu plan (${window.usuarioActual?.plan}) permite guardar hasta ${limite} búsqueda${limite === 1 ? '' : 's'}. Elimina alguna antes de crear una nueva.`);
+    showErrorBusquedas(`Tu plan (${window.usuarioActual?.plan}) permite guardar hasta ${limite} búsqueda${limite === 1 ? '' : 's'}. Elimina alguna antes de crear una nueva.`);
     return;
   }
   resetFormularioBusqueda();
@@ -1343,13 +1401,12 @@ document.getElementById('newBusquedaForm').addEventListener('submit', async (e) 
 
   const nombre = document.getElementById('busquedaNombre').value.trim();
   const tipo = busquedaTipoCompraAgilRadio.checked ? 'compra_agil' : 'licitacion';
-  const modo = modoLicitacionSeleccionado();
+  const modo = tipo === 'compra_agil' ? modoCompraAgilSeleccionado() : modoLicitacionSeleccionado();
   const organismos = buscadorOrganismosBusqueda.get();
 
-  const payload = { nombre, tipo };
+  const payload = { nombre, tipo, modo };
 
   if (tipo === 'licitacion') {
-    payload.modo = modo;
     payload.fecha = busquedaFechaInput.value || null;
     if (modo === 'codigo') {
       payload.codigoExterno = busquedaCodigoExternoInput.value.trim();
@@ -1358,25 +1415,31 @@ document.getElementById('newBusquedaForm').addEventListener('submit', async (e) 
     } else if (modo === 'proveedor') {
       payload.rutProveedor = busquedaRutProveedorInput.value.trim();
     } else if (modo === 'organismo') {
-      if (organismos.length !== 1) {
-        mostrarErrorModalBusqueda('Elige exactamente un organismo para este modo de búsqueda.');
+      if (organismos.length === 0) {
+        mostrarErrorModalBusqueda('Elige un organismo para este modo de búsqueda.');
         btn.disabled = false;
         btn.textContent = '+ Guardar búsqueda';
         return;
       }
       payload.organismos = organismos;
     }
+  } else if (modo === 'codigo') {
+    payload.codigoExterno = busquedaCodigoExternoInput.value.trim();
   } else {
-    const montoMinimo = soloDigitos(busquedaMontoMinimoInput.value);
-    const montoMaximo = soloDigitos(busquedaMontoMaximoInput.value);
-    payload.montoMinimo = montoMinimo ? Number(montoMinimo) : null;
-    payload.montoMaximo = montoMaximo ? Number(montoMaximo) : null;
+    payload.textoLibre = busquedaTextoLibreInput.value.trim() || null;
     payload.regiones = busquedaRegionSelect.value ? [busquedaRegionSelect.value] : [];
-    payload.organismos = organismos;
+    payload.estados = [...busquedaEstadosCACheckboxes].filter((c) => c.checked).map((c) => c.value);
+    payload.horasRecientes = busquedaHorasRecientesInput.value ? Number(busquedaHorasRecientesInput.value) : null;
   }
 
   if (!nombre) {
     mostrarErrorModalBusqueda('Debes ponerle un nombre a la búsqueda.');
+    btn.disabled = false;
+    btn.textContent = '+ Guardar búsqueda';
+    return;
+  }
+  if ((tipo === 'licitacion' && modo === 'codigo' || tipo === 'compra_agil' && modo === 'codigo') && !payload.codigoExterno) {
+    mostrarErrorModalBusqueda('Debes ingresar el código.');
     btn.disabled = false;
     btn.textContent = '+ Guardar búsqueda';
     return;
@@ -1426,24 +1489,32 @@ const ETIQUETAS_MODO = {
   estado_fecha: 'Por estado y fecha',
   proveedor: 'Por proveedor',
   organismo: 'Por organismo',
+  listado: 'Por texto/región/estado',
 };
 
 const ETIQUETAS_ESTADO_BUSQUEDA = {
   todos: 'Todos los estados', publicada: 'Publicada', cerrada: 'Cerrada',
   desierta: 'Desierta', adjudicada: 'Adjudicada', revocada: 'Revocada', suspendida: 'Suspendida',
+  cancelada: 'Cancelada',
 };
 
 // Arma la línea de detalle de una búsqueda guardada según su tipo/modo — cada
-// combinación tiene un conjunto de campos totalmente distinto (ver migración 033).
+// combinación tiene un conjunto de campos totalmente distinto (ver migraciones 033/034).
 function describirBusquedaEnFila(b) {
-  if (b.tipo === 'compra_agil') {
-    return `
-      ${formatearMontoTag(b.monto_minimo, b.monto_maximo)}
-      ${formatearRegionesTag(b.regiones)}
-      ${formatearOrganismosTag(b.organismos)}
-    `;
-  }
   const fechaTexto = b.fecha ? formatDate(b.fecha).split(',')[0] : 'Hoy (al ejecutar)';
+
+  if (b.tipo === 'compra_agil') {
+    if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
+    const partes = [];
+    if (b.texto_libre) partes.push(`<br><span>Texto: "${b.texto_libre}"</span>`);
+    partes.push(formatearRegionesTag(b.regiones));
+    if (b.estados && b.estados.length > 0) {
+      partes.push(`<br><span>Estado: ${b.estados.map((e) => ETIQUETAS_ESTADO_BUSQUEDA[e] || e).join(', ')}</span>`);
+    }
+    if (b.horas_recientes) partes.push(`<br><span>Últimas ${b.horas_recientes}h</span>`);
+    return partes.join('');
+  }
+
   if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
   if (b.modo === 'estado_fecha') return `<br><span>Estado: ${ETIQUETAS_ESTADO_BUSQUEDA[b.estado] || b.estado}</span><br><span>Fecha: ${fechaTexto}</span>`;
   if (b.modo === 'proveedor') return `<br><span>Proveedor RUT: ${b.rut_proveedor}</span><br><span>Fecha: ${fechaTexto}</span>`;
@@ -1469,7 +1540,7 @@ function renderBusquedas() {
         <div class="row-title">${b.nombre}</div>
         <div class="row-meta">
           <span>${etiquetaTipoBusqueda(b.tipo)}</span>
-          ${b.tipo === 'licitacion' ? `<span>${ETIQUETAS_MODO[b.modo] || b.modo}</span>` : ''}
+          <span>${ETIQUETAS_MODO[b.modo] || b.modo}</span>
           ${describirBusquedaEnFila(b)}
         </div>
       </div>
@@ -1516,7 +1587,7 @@ function renderBusquedas() {
       try {
         await apiFetch(`/api/busquedas/${btn.dataset.eliminarBusqueda}`, { method: 'DELETE' });
         cargarBusquedas();
-      } catch (err) { showErrorAlertas(err.message); }
+      } catch (err) { showErrorBusquedas(err.message); }
     });
   });
 
@@ -1525,21 +1596,40 @@ function renderBusquedas() {
   });
 }
 
-let ultimoResultadoBusqueda = null; // { busqueda, tipo, modo, resultados } — para el export a PDF
+let ultimoResultadoBusqueda = null; // { busqueda, tipo, modo, resultados, paginacion? } — para el export a PDF
+let ultimaBusquedaIdEjecutada = null; // para poder pedir la página siguiente sin re-clickear "Ejecutar"
 
 const BUSQUEDA_RESULTADOS_POR_PAGINA = 10;
 let busquedaResultadosPaginaActual = 1;
 
-async function ejecutarBusquedaGuardada(id, btn) {
-  const textoOriginal = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Buscando...';
+// Compra Ágil en modo 'listado' pagina de verdad contra la API (ver
+// busqueda-ejecutor.service.js) — acá NO se cortan resultados en el cliente,
+// cada "página" ya viene lista desde el backend. Para el resto (Licitaciones,
+// y Compra Ágil modo 'codigo', que trae 1 solo resultado) se sigue paginando
+// en el cliente como antes, sobre el array completo ya traído.
+function esPaginacionServidor(data) {
+  return data.tipo === 'compra_agil' && data.modo === 'listado' && data.paginacion;
+}
+
+const buscandoModal = document.getElementById('buscandoModal');
+
+async function ejecutarBusquedaGuardada(id, btn, numeroPagina = 1) {
+  const textoOriginal = btn ? btn.textContent : null;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+  }
+  buscandoModal.classList.add('open');
 
   const wrap = document.getElementById('busquedaResultadosWrap');
 
   try {
-    const data = await apiFetch(`/api/busquedas/${id}/ejecutar`, { method: 'POST' });
+    const data = await apiFetch(`/api/busquedas/${id}/ejecutar`, {
+      method: 'POST',
+      body: JSON.stringify({ numeroPagina }),
+    });
     ultimoResultadoBusqueda = data;
+    ultimaBusquedaIdEjecutada = id;
     busquedaResultadosPaginaActual = 1;
 
     document.getElementById('busquedaResultadosTitulo').textContent = `Resultados — ${data.busqueda.nombre}`;
@@ -1548,10 +1638,13 @@ async function ejecutarBusquedaGuardada(id, btn) {
 
     renderResultadosBusqueda(data);
   } catch (err) {
-    showErrorAlertas(err.message);
+    showErrorBusquedas(err.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = textoOriginal;
+    buscandoModal.classList.remove('open');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
   }
 }
 
@@ -1560,6 +1653,25 @@ function urlFichaLicitacion(codigoExterno) {
 }
 function urlFichaCompraAgil(codigoExterno) {
   return `https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(codigoExterno)}`;
+}
+
+function filaResultadoHtml(r, tipo) {
+  return `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">
+          <a href="${tipo === 'compra_agil' ? urlFichaCompraAgil(r.codigo_externo) : urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;">${r.nombre || r.codigo_externo} ↗</a>
+        </div>
+        <div class="row-meta">
+          <span>${etiquetaTipoBusqueda(tipo)}</span>
+          <br>
+          <span>Código: ${r.codigo_externo}</span>
+          <br><span>Estado: ${r.estado || 'Desconocido'}</span>
+          <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderResultadosBusqueda(data) {
@@ -1571,30 +1683,44 @@ function renderResultadosBusqueda(data) {
     return;
   }
 
+  if (esPaginacionServidor(data)) {
+    // Paginación real: cada página ya viene completa desde el backend — se
+    // muestra tal cual, sin recortar de nuevo en el cliente.
+    const { numero_pagina, total_paginas, total_resultados } = data.paginacion;
+    const filasHtml = resultados.map((r) => filaResultadoHtml(r, tipo)).join('');
+    const paginadorHtml = total_paginas > 1 ? `
+      <div class="paginador">
+        <button type="button" class="btn btn-ghost" id="busquedaResultadosPrev" ${numero_pagina === 1 ? 'disabled' : ''}>‹ Anterior</button>
+        <span class="paginador-info">Página ${numero_pagina} de ${total_paginas} (${total_resultados} resultados)</span>
+        <button type="button" class="btn btn-ghost" id="busquedaResultadosNext" ${numero_pagina === total_paginas ? 'disabled' : ''}>Siguiente ›</button>
+      </div>
+    ` : `<div class="paginador-info" style="padding:8px 0;">${total_resultados} resultado${total_resultados === 1 ? '' : 's'}</div>`;
+
+    card.innerHTML = filasHtml + paginadorHtml;
+
+    if (numero_pagina > 1) {
+      document.getElementById('busquedaResultadosPrev').addEventListener('click', () => {
+        ejecutarBusquedaGuardada(ultimaBusquedaIdEjecutada, null, numero_pagina - 1);
+      });
+    }
+    if (numero_pagina < total_paginas) {
+      document.getElementById('busquedaResultadosNext').addEventListener('click', () => {
+        // Al llegar al final de lo cargado, se lanza la consulta pidiendo la
+        // página siguiente REAL de la API (no hay más que cortar localmente).
+        ejecutarBusquedaGuardada(ultimaBusquedaIdEjecutada, null, numero_pagina + 1);
+      });
+    }
+    return;
+  }
+
+  // Sin paginación real de la API (Licitaciones, o Compra Ágil modo 'codigo')
+  // — se pagina en el cliente sobre el array completo ya traído, como antes.
   const totalPaginas = Math.ceil(resultados.length / BUSQUEDA_RESULTADOS_POR_PAGINA);
   if (busquedaResultadosPaginaActual > totalPaginas) busquedaResultadosPaginaActual = totalPaginas;
   const inicio = (busquedaResultadosPaginaActual - 1) * BUSQUEDA_RESULTADOS_POR_PAGINA;
   const pagina = resultados.slice(inicio, inicio + BUSQUEDA_RESULTADOS_POR_PAGINA);
 
-  const filasHtml = pagina.map((r) => `
-    <div class="row">
-      <div class="row-info">
-        <div class="row-title">
-          <a href="${tipo === 'compra_agil' ? urlFichaCompraAgil(r.codigo_externo) : urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;">${r.nombre || r.codigo_externo} ↗</a>
-        </div>
-        <div class="row-meta">
-          <span>${etiquetaTipoBusqueda(tipo)}</span>
-          <br>
-          <span>Código: ${r.codigo_externo}</span>
-          ${tipo === 'licitacion' ? `<br><span>Estado: ${r.estado}</span>` : ''}
-          ${tipo === 'compra_agil' ? `<br><span>Monto: ${r.monto_estimado != null ? formatMoney(r.monto_estimado) : 'No disponible'}</span>` : ''}
-          ${tipo === 'compra_agil' ? `<br><span>Región: ${r.region || 'No disponible'}</span>` : ''}
-          ${tipo === 'compra_agil' ? `<br><span>Organismo: ${r.organismo || 'No disponible'}</span>` : ''}
-          <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  const filasHtml = pagina.map((r) => filaResultadoHtml(r, tipo)).join('');
 
   const mostrarPaginador = resultados.length > BUSQUEDA_RESULTADOS_POR_PAGINA;
   const paginadorHtml = mostrarPaginador ? `
@@ -1621,22 +1747,27 @@ function renderResultadosBusqueda(data) {
 
 // --- Exportar PDF (liviano — jsPDF + autotable vía CDN, se genera en el
 // navegador, sin pedirle nada al backend). Al comienzo de la página 1 van los
-// filtros con los que se armó la búsqueda, y después la tabla de resultados. ---
+// filtros con los que se armó la búsqueda, y después la tabla de resultados.
+// Nota: si la búsqueda tiene más páginas de resultados en el servidor
+// (Compra Ágil modo 'listado'), el PDF solo incluye la página actualmente
+// cargada en pantalla — no descarga todas las páginas de golpe. ---
 function describirCriteriosBusqueda(b) {
   const partes = [];
   partes.push(['Tipo de búsqueda', etiquetaTipoBusqueda(b.tipo)]);
+  partes.push(['Modo de búsqueda', ETIQUETAS_MODO[b.modo] || b.modo]);
 
   if (b.tipo === 'compra_agil') {
-    partes.push(['Organismos', b.organismos && b.organismos.length > 0 ? b.organismos.join(', ') : 'Todos']);
+    if (b.modo === 'codigo') {
+      partes.push(['Código', b.codigo_externo]);
+      return partes;
+    }
+    partes.push(['Texto libre', b.texto_libre || '—']);
     partes.push(['Región', b.regiones && b.regiones.length > 0 ? b.regiones.join(', ') : 'Todas']);
-    const montos = [];
-    if (b.monto_minimo) montos.push(`desde ${formatMoney(b.monto_minimo)}`);
-    if (b.monto_maximo) montos.push(`hasta ${formatMoney(b.monto_maximo)}`);
-    partes.push(['Monto', montos.length ? montos.join(' — ') : 'Sin restricción']);
+    partes.push(['Estado', b.estados && b.estados.length > 0 ? b.estados.map((e) => ETIQUETAS_ESTADO_BUSQUEDA[e] || e).join(', ') : 'Todos']);
+    partes.push(['Nuevas en las últimas', b.horas_recientes ? `${b.horas_recientes} horas` : '—']);
     return partes;
   }
 
-  partes.push(['Modo de búsqueda', ETIQUETAS_MODO[b.modo] || b.modo]);
   const fechaTexto = b.fecha ? formatDate(b.fecha).split(',')[0] : 'Hoy (al momento de ejecutar)';
   if (b.modo === 'codigo') partes.push(['Código', b.codigo_externo]);
   if (b.modo === 'estado_fecha') {
@@ -1658,7 +1789,7 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
   if (!ultimoResultadoBusqueda) return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt' });
-  const { busqueda, tipo, resultados } = ultimoResultadoBusqueda;
+  const { busqueda, resultados } = ultimoResultadoBusqueda;
 
   doc.setFontSize(14);
   doc.text(`Búsqueda: ${busqueda.nombre}`, 40, 40);
@@ -1677,19 +1808,11 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
   });
 
   const siguienteY = doc.lastAutoTable.finalY + 14;
-  const columnas = tipo === 'compra_agil'
-    ? ['Nombre', 'Código', 'Organismo', 'Región', 'Monto', 'Cierre']
-    : ['Nombre', 'Código', 'Estado', 'Cierre'];
-
-  const filas = resultados.map((r) => tipo === 'compra_agil'
-    ? [r.nombre || '', r.codigo_externo || '', r.organismo || '—', r.region || '—', r.monto_estimado != null ? formatMoney(r.monto_estimado) : '—', formatDate(r.fecha_cierre)]
-    : [r.nombre || '', r.codigo_externo || '', r.estado || '—', formatDate(r.fecha_cierre)]
-  );
 
   doc.autoTable({
     startY: siguienteY,
-    head: [columnas],
-    body: filas,
+    head: [['Nombre', 'Código', 'Estado', 'Cierre']],
+    body: resultados.map((r) => [r.nombre || '', r.codigo_externo || '', r.estado || '—', formatDate(r.fecha_cierre)]),
     theme: 'striped',
     styles: { fontSize: 7.5, cellPadding: 3, overflow: 'linebreak' },
     headStyles: { fillColor: [30, 30, 40] },
@@ -1699,6 +1822,7 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
   const nombreArchivo = `busqueda-${busqueda.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50)}.pdf`;
   doc.save(nombreArchivo);
 });
+
 
 
 let historialData = [];

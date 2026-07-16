@@ -280,6 +280,13 @@ section { margin-bottom: 56px; }
 .modal-message { font-size: 14px; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
+.spinner {
+  width: 32px; height: 32px; margin: 0 auto;
+  border: 3px solid var(--border); border-top-color: var(--gold);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .error-bubble {
   position: fixed; transform: translate(-50%, -100%);
   background: var(--danger); color: var(--bg);

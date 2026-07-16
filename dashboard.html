@@ -192,7 +192,7 @@
         <div class="section-head">
           <p class="section-sub" style="margin-bottom: 20px;">Guarda combinaciones de filtros que uses seguido y vuelve a ejecutarlas con un clic, sin tener que armarlas de nuevo cada vez.</p>
           <div class="section-head" id="head-new-search">
-            <h3 id="busquedaTitulo">Búsqeudas Guardadas</h3>
+            <h3 id="busquedaTitulo">Búsquedas Guardadas</h3>
             <button type="button" class="btn" id="abrirNuevaBusquedaBtn">+ Nueva búsqueda</button>
           </div>
         </div>
@@ -535,8 +535,9 @@
           </select>
         </div>
 
-        <!-- 3. Modo de búsqueda — SOLO Licitaciones. La API solo admite estas
-             4 combinaciones de filtro, así que cada una oculta el resto. -->
+        <!-- 3. Modo de búsqueda — Licitaciones (4 combinaciones documentadas
+             por la API, mutuamente excluyentes) o Compra Ágil (solo 2: por
+             código, o por texto/región/estado — que sí se combinan libremente). -->
         <div class="field" id="busquedaModoField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
           <label><strong>¿Cómo quieres buscarla? *</strong></label>
           <div class="tipo-proceso-row tipo-proceso-row-4col">
@@ -557,15 +558,30 @@
           </div>
         </div>
 
-        <!-- 3a. Modo 'codigo' -->
+        <!-- 3' Modo de búsqueda — Compra Ágil (oculto por defecto, se muestra
+             cuando arriba se elige "Compras Ágiles") -->
+        <div class="field" id="busquedaModoCompraAgilField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px; display: none;">
+          <label><strong>¿Cómo quieres buscarla? *</strong></label>
+          <div class="tipo-proceso-row">
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModoCompraAgil" id="busquedaModoCACodigo" value="codigo" checked> Por código</label>
+            <label class="checkbox-row" style="margin:0;"><input type="radio" name="busquedaModoCompraAgil" id="busquedaModoCAListado" value="listado"> Por texto, región y/o estado</label>
+          </div>
+          <select id="busquedaModoCompraAgilSelect" class="tipo-proceso-select">
+            <option value="codigo" selected>Por código</option>
+            <option value="listado">Por texto, región y/o estado</option>
+          </select>
+        </div>
+
+        <!-- 3a. Modo 'codigo' — compartido entre Licitaciones y Compra Ágil
+             (mismo campo, cambia el label/placeholder según el tipo elegido). -->
         <div class="field" id="busquedaCodigoField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
-          <label for="busquedaCodigoExterno">Código de la licitación *</label>
+          <label for="busquedaCodigoExterno" id="busquedaCodigoLabel">Código de la licitación *</label>
           <input type="text" id="busquedaCodigoExterno" placeholder="Ej: 1509-5-L114">
         </div>
 
-        <!-- 3b. Modo 'estado_fecha' -->
+        <!-- 3b. Modo 'estado_fecha' (Licitaciones) -->
         <div class="field" id="busquedaEstadoField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
-          <label for="busquedaEstadoSelect">Estado *</label>
+          <label for="busquedaEstadoSelect"><strong>Estado *</strong></label>
           <select id="busquedaEstadoSelect">
             <option value="todos" selected>Todos</option>
             <option value="publicada">Publicada</option>
@@ -577,14 +593,15 @@
           </select>
         </div>
 
-        <!-- 3c. Modo 'proveedor' -->
+        <!-- 3c. Modo 'proveedor' (Licitaciones) -->
         <div class="field" id="busquedaRutProveedorField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
-          <label for="busquedaRutProveedor">RUT del proveedor *</label>
+          <label for="busquedaRutProveedor"><strong>RUT del proveedor *</strong></label>
           <small>Con puntos y guión, ej. 70.017.820-k.</small>
           <input type="text" id="busquedaRutProveedor" placeholder="70.017.820-k">
         </div>
 
-        <!-- 3d./Compra Ágil: Organismo comprador -->
+        <!-- 3d. Organismo comprador — SOLO modo 'organismo' de Licitaciones
+             (Compra Ágil ya no filtra por organismo). -->
         <div class="field" id="busquedaOrganismoField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px; display: none;">
           <label for="busquedaOrganismoBuscar"><strong>Organismo comprador *</strong></label>
           <small id="busquedaOrganismoSmall">Elige una institución compradora.</small>
@@ -593,32 +610,55 @@
           <div id="busquedaOrganismosChips" class="categoria-chips"></div>
         </div>
 
-        <!-- 3e. Fecha — modos 'estado_fecha' / 'proveedor' / 'organismo' -->
+        <!-- 3e. Fecha — modos 'estado_fecha' / 'proveedor' / 'organismo' (Licitaciones) -->
         <div class="field" id="busquedaFechaField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
           <label for="busquedaFecha">Fecha</label>
           <small>Opcional. Si no eliges una, se busca con la fecha del día en que ejecutes la búsqueda.</small>
           <input type="date" id="busquedaFecha">
         </div>
 
-        <!-- 4. Región — SOLO Compra Ágil -->
-        <div class="field" id="busquedaRegionField" style="grid-column: 1 / -1; display: none;">
-          <label for="busquedaRegionSelect"><strong>Región</strong></label>
-          <small>Opcional. La API de Compra Ágil acepta una región por búsqueda.</small>
+        <!-- 4. Texto libre — SOLO Compra Ágil, modo 'listado' -->
+        <div class="field" id="busquedaTextoLibreField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaTextoLibre">Texto libre</label>
+          <small>Opcional. Busca por palabras dentro del nombre/descripción de la Compra Ágil.</small>
+          <input type="text" id="busquedaTextoLibre" placeholder="Ej: materiales eléctricos">
+        </div>
+
+        <!-- 5. Región — SOLO Compra Ágil, modo 'listado' -->
+        <div class="field" id="busquedaRegionField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaRegionSelect">Región</label>
+          <small>Opcional.</small>
           <select id="busquedaRegionSelect">
             <option value="">Todas las regiones</option>
           </select>
         </div>
 
-        <!-- 5. Monto mínimo / máximo — SOLO Compra Ágil -->
-        <div class="field" id="busquedaMontoField" style="grid-column: 1 / -1; display: none;">
-          <div class="field" id="busquedaMontoMinimoField">
-            <label for="busquedaMontoMinimo">Monto mínimo (CLP)</label>
-            <input type="text" inputmode="numeric" id="busquedaMontoMinimo" placeholder="$1">
+        <!-- 6. Estado (1 o más) — SOLO Compra Ágil, modo 'listado' -->
+        <div class="field" id="busquedaEstadosCompraAgilField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label><strong>Estado *</strong></label>
+          <small>Opcional. Puedes marcar más de uno — si no marcas ninguno, se buscan todos.</small>
+          <div class="tipo-proceso-row">
+            <label class="checkbox-row" style="margin:0;"><input type="checkbox" name="busquedaEstadoCA" value="publicada"> Publicada</label>
+            <label class="checkbox-row" style="margin:0;"><input type="checkbox" name="busquedaEstadoCA" value="cerrada"> Cerrada</label>
+            <label class="checkbox-row" style="margin:0;"><input type="checkbox" name="busquedaEstadoCA" value="desierta"> Desierta</label>
+            <label class="checkbox-row" style="margin:0;"><input type="checkbox" name="busquedaEstadoCA" value="cancelada"> Cancelada</label>
+            <label class="checkbox-row" style="margin:0;"><input type="checkbox" name="busquedaEstadoCA" value="proveedor_seleccionado"> Proveedor Seleccionado</label>
+
           </div>
-          <div class="field" id="busquedaMontoMaximoField">
-            <label for="busquedaMontoMaximo">Monto máximo (CLP)</label>
-            <input type="text" inputmode="numeric" id="busquedaMontoMaximo" placeholder="$7.164.900">
-          </div>
+          <select id="busquedaEstadosCompraAgilSelect" class="tipo-proceso-select" multiple size="5">
+            <option value="publicada">Publicada</option>
+            <option value="cerrada">Cerrada</option>
+            <option value="desierta">Desierta</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="proveedor_seleccionado">Proveedor Seleccionado</option>
+          </select>
+        </div>
+
+        <!-- 7. Nuevas en las últimas N horas — SOLO Compra Ágil, modo 'listado' -->
+        <div class="field" id="busquedaHorasRecientesField" style="grid-column: 1 / -1; display: none; border: 1px solid var(--border); padding: 10px;">
+          <label for="busquedaHorasRecientes">Últimas horas</label>
+          <small>Opcional. Se combina con los filtros de arriba si los llenaste.</small>
+          <input type="number" min="1" id="busquedaHorasRecientes" placeholder="Ej: 2">
         </div>
 
       </div>
@@ -628,6 +668,13 @@
         <button type="submit" class="btn" id="crearBusquedaBtn">+ Guardar búsqueda</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="buscandoModal">
+  <div class="modal" style="max-width:280px; text-align:center;">
+    <div class="spinner"></div>
+    <p class="modal-message" style="margin: 16px 0 0;">Buscando...</p>
   </div>
 </div>
 
