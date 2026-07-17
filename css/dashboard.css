@@ -134,6 +134,7 @@ section { margin-bottom: 56px; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 #head-new-search { justify-content: space-between; flex: 1 1 100%; }
+#head-result-search { justify-content: space-between; flex: 1 1 100%; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 

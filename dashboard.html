@@ -116,13 +116,10 @@
         </div>
 
         <div class="section-head" style="margin-top: 32px;">
-          <h3>Búsquedas guardadas</h3>
+          <h3>Recordatorios y seguimientos</h3>
         </div>
-        <div class="card">
-          <div class="empty-state">
-            <span class="analisis-badge-mockup">Próximamente</span>
-            <p>Vas a poder guardar tus búsquedas de categorías y productos para volver a ellas con un clic.</p>
-          </div>
+        <div class="card" id="inicioOportunidadesCard">
+          <div class="loading">Cargando...</div>
         </div>
       </section>
     </div>
@@ -206,7 +203,7 @@
         </div>
 
         <div id="busquedaResultadosWrap" style="display:none; margin-top: 28px;">
-          <div class="section-head">
+          <div class="section-head" id="head-result-search">
             <h3 id="busquedaResultadosTitulo">Resultados</h3>
             <button type="button" class="btn btn-ghost" id="descargarPdfBtn">📄 Descargar PDF</button>
           </div>
@@ -723,6 +720,13 @@
   <div class="modal" style="max-width:280px; text-align:center;">
     <div class="spinner"></div>
     <p class="modal-message" style="margin: 16px 0 0;">Buscando...</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="procesandoModal">
+  <div class="modal" style="max-width:280px; text-align:center;">
+    <div class="spinner"></div>
+    <p class="modal-message" id="procesandoModalMensaje" style="margin: 16px 0 0;">Procesando...</p>
   </div>
 </div>
 

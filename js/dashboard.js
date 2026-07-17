@@ -891,6 +891,20 @@ function confirmDialog(mensaje) {
   });
 }
 
+// Modal bloqueante genérico (mismo patrón que #buscandoModal) para cualquier
+// operación breve donde conviene impedir doble clic / navegación a mitad de
+// camino — el texto cambia según la acción (eliminar, agregar seguimiento, etc.).
+const procesandoModal = document.getElementById('procesandoModal');
+const procesandoModalMensaje = document.getElementById('procesandoModalMensaje');
+
+function mostrarProcesando(mensaje) {
+  procesandoModalMensaje.textContent = mensaje;
+  procesandoModal.classList.add('open');
+}
+function ocultarProcesando() {
+  procesandoModal.classList.remove('open');
+}
+
 async function cargarUsuario() {
   try {
     const data = await apiFetch('/api/auth/me');
@@ -1116,10 +1130,11 @@ function renderConfigs() {
     btn.addEventListener('click', async () => {
       const confirmado = await confirmDialog('¿Eliminar esta alerta?');
       if (!confirmado) return;
+      mostrarProcesando('Eliminando...');
       try {
         await apiFetch(`/api/alerts/config/${btn.dataset.delete}`, { method: 'DELETE' });
         cargarConfigs();
-      } catch (err) { showErrorAlertas(err.message); }
+      } catch (err) { showErrorAlertas(err.message); } finally { ocultarProcesando(); }
     });
   });
 
@@ -1598,10 +1613,11 @@ function renderBusquedas() {
     btn.addEventListener('click', async () => {
       const confirmado = await confirmDialog('¿Eliminar esta búsqueda guardada?');
       if (!confirmado) return;
+      mostrarProcesando('Eliminando...');
       try {
         await apiFetch(`/api/busquedas/${btn.dataset.eliminarBusqueda}`, { method: 'DELETE' });
         cargarBusquedas();
-      } catch (err) { showErrorBusquedas(err.message); }
+      } catch (err) { showErrorBusquedas(err.message); } finally { ocultarProcesando(); }
     });
   });
 
@@ -1778,7 +1794,9 @@ function renderResultadosBusqueda(data) {
 // cargada en pantalla — no descarga todas las páginas de golpe. ---
 function describirCriteriosBusqueda(b) {
   const partes = [];
-  partes.push(['Tipo de búsqueda', etiquetaTipoBusqueda(b.tipo)]);
+  // Sin emoji: las fuentes estándar de jsPDF (Helvetica/Times/Courier) no
+  // tienen esos glifos y los muestran como caracteres inválidos en el PDF.
+  partes.push(['Tipo de búsqueda', b.tipo === 'compra_agil' ? 'Compra Ágil' : 'Licitación']);
   partes.push(['Modo de búsqueda', ETIQUETAS_MODO[b.modo] || b.modo]);
 
   if (b.tipo === 'compra_agil') {
@@ -1810,8 +1828,53 @@ function describirCriteriosBusqueda(b) {
   return partes;
 }
 
-document.getElementById('descargarPdfBtn').addEventListener('click', () => {
+// jsPDF/autotable se cargan por <script> normal en dashboard.html, así que
+// deberían estar listos para cuando este archivo corre — pero si un
+// bloqueador de anuncios o un corte de red impidió que cargaran, el clic
+// tiraba un TypeError sin ningún aviso. Acá se reintenta cargarlos on-demand
+// antes de generar el PDF, y si igual falla se muestra un error legible.
+function cargarScriptExterno(src) {
+  // Siempre se agrega un <script> nuevo (en vez de reusar el que ya está en
+  // el HTML) — si ese ya falló, su evento 'error' ya disparó una sola vez y
+  // no hay forma de "reengancharse" a un reintento que el navegador no hará solo.
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function asegurarJsPDFDisponible() {
+  if (window.jspdf?.jsPDF?.API?.autoTable) return;
+  try {
+    await cargarScriptExterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.0.0/jspdf.umd.min.js');
+    await cargarScriptExterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js');
+  } catch {
+    // se valida abajo con un mensaje uniforme, sin importar en qué script falló
+  }
+  if (!window.jspdf?.jsPDF?.API?.autoTable) {
+    throw new Error('No se pudo cargar la librería para generar el PDF. Revisa tu conexión a internet o si un bloqueador de anuncios está impidiendo cargar cdnjs.cloudflare.com, y vuelve a intentar.');
+  }
+}
+
+document.getElementById('descargarPdfBtn').addEventListener('click', async () => {
   if (!ultimoResultadoBusqueda) return;
+  const btn = document.getElementById('descargarPdfBtn');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+
+  try {
+    await asegurarJsPDFDisponible();
+  } catch (err) {
+    showErrorBusquedas(err.message);
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt' });
   const { busqueda, resultados } = ultimoResultadoBusqueda;
@@ -1846,6 +1909,9 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
 
   const nombreArchivo = `busqueda-${busqueda.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50)}.pdf`;
   doc.save(nombreArchivo);
+
+  btn.disabled = false;
+  btn.textContent = textoOriginal;
 });
 
 // ============================================================
@@ -1937,6 +2003,7 @@ document.addEventListener('click', async (e) => {
   if (btnSeguir) {
     btnSeguir.disabled = true;
     btnSeguir.textContent = 'Agregando...';
+    mostrarProcesando('Agregando Seguimiento...');
     try {
       await apiFetch('/api/oportunidades/seguimientos', {
         method: 'POST',
@@ -1952,6 +2019,8 @@ document.addEventListener('click', async (e) => {
       }else{
         showErrorBusquedasOp(err.message);
       }
+    } finally {
+      ocultarProcesando();
     }
   }
 });
@@ -1980,6 +2049,7 @@ async function cargarOportunidades() {
     recordatoriosData = recordatoriosRes.recordatorios;
     seguimientosData = seguimientosRes.seguimientos;
     renderOportunidadesActiva();
+    renderInicioOportunidades();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
   }
@@ -2020,6 +2090,7 @@ function renderRecordatorios() {
       const confirmado = await confirmDialog('¿Eliminar este recordatorio de cierre?');
       if (!confirmado) return;
       const id = btn.dataset.eliminarRecordatorio;
+      mostrarProcesando('Eliminando...');
       try {
         await apiFetch(`/api/oportunidades/recordatorios/${id}`, { method: 'DELETE' });
         // Actualiza el array local YA (no depende de que el refresh de abajo
@@ -2030,6 +2101,8 @@ function renderRecordatorios() {
       } catch (err) {
         document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
         document.getElementById('errorBannerOportunidades').style.display = 'block';
+      } finally {
+        ocultarProcesando();
       }
     });
   });
@@ -2067,6 +2140,7 @@ function renderSeguimientos() {
       const confirmado = await confirmDialog('¿Dejar de seguir esta licitación?');
       if (!confirmado) return;
       const id = btn.dataset.eliminarSeguimiento;
+      mostrarProcesando('Eliminando...');
       try {
         await apiFetch(`/api/oportunidades/seguimientos/${id}`, { method: 'DELETE' });
         // Actualiza el array local YA (no depende de que el refresh de abajo
@@ -2077,6 +2151,8 @@ function renderSeguimientos() {
       } catch (err) {
         document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
         document.getElementById('errorBannerOportunidades').style.display = 'block';
+      } finally {
+        ocultarProcesando();
       }
     });
   });
@@ -2110,6 +2186,8 @@ function renderInicio() {
   document.getElementById('statNotifTotal').textContent = historialData.length;
   document.getElementById('statNotif7d').textContent = notif7d;
 
+  renderInicioOportunidades();
+
   const reporteCard = document.getElementById('inicioReporteCard');
   if (historialData.length === 0) {
     reporteCard.innerHTML = '<div class="empty-state">Aún no se te ha enviado ninguna notificación.</div>';
@@ -2134,6 +2212,35 @@ function renderInicio() {
       ${Object.entries(porCanal).map(([canal, cantidad]) => `
         <div class="inicio-reporte-fila"><span>${canal === 'telegram' ? '✈️ Telegram' : '✉️ Email'}</span><strong>${cantidad}</strong></div>
       `).join('')}
+    </div>
+  `;
+}
+
+// Resumen de "Oportunidades" (recordatorios + seguimientos) en Inicio — usa
+// los mismos arrays que la pestaña Oportunidades (recordatoriosData /
+// seguimientosData, cargados en cargarOportunidades) en vez de pedirlos de nuevo.
+function renderInicioOportunidades() {
+  const card = document.getElementById('inicioOportunidadesCard');
+  if (!card) return;
+
+  if (recordatoriosData.length === 0 && seguimientosData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no agregaste recordatorios ni seguimientos. Hazlo desde Notificaciones o Búsquedas con "🔔 Recordarme" / "➕ Seguir".</div>';
+    return;
+  }
+
+  const recordatoriosPendientes = recordatoriosData.filter((r) => !r.notificado_at).length;
+  const seguimientosActivos = seguimientosData.filter((s) => !s.resuelta).length;
+
+  card.innerHTML = `
+    <div class="inicio-reporte-grupo">
+      <h4>🔔 Recordatorios</h4>
+      <div class="inicio-reporte-fila"><span>Pendientes de avisar</span><strong>${recordatoriosPendientes}</strong></div>
+      <div class="inicio-reporte-fila"><span>Total</span><strong>${recordatoriosData.length}</strong></div>
+    </div>
+    <div class="inicio-reporte-grupo">
+      <h4>➕ Seguimientos</h4>
+      <div class="inicio-reporte-fila"><span>Licitaciones activas</span><strong>${seguimientosActivos}</strong></div>
+      <div class="inicio-reporte-fila"><span>Total</span><strong>${seguimientosData.length}</strong></div>
     </div>
   `;
 }
