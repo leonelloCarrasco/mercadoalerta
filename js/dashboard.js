@@ -1921,13 +1921,15 @@ document.getElementById('descargarPdfBtn').addEventListener('click', async () =>
 // Botones que aparecen en cada fila de Notificaciones y de resultados de
 // Búsquedas — "Seguir" solo tiene sentido para Licitaciones (ver diseño:
 // Compra Ágil tiene un ciclo de vida demasiado corto para que valga la pena
-// avisar en cada cambio de estado intermedio).
+// avisar en cada cambio de estado intermedio). "Pipeline" aplica a los dos
+// tipos — gestionar tu propio proceso no depende de la API de Mercado Público.
 function botonesOportunidadHtml(tipoProceso, codigoExterno, nombre, origen) {
   const nombreEscapado = (nombre || codigoExterno || '').replace(/"/g, '&quot;');
   let html = `<button data-from="${origen}" type="button" class="btn btn-ghost" data-recordatorio-tipo="${tipoProceso}" data-recordatorio-codigo="${codigoExterno}" data-recordatorio-nombre="${nombreEscapado}">🔔 Recordarme</button>`;
   if (tipoProceso === 'licitacion') {
     html += ` <button data-from="${origen}" type="button" class="btn btn-ghost" data-seguir-codigo="${codigoExterno}" data-seguir-nombre="${nombreEscapado}">➕ Seguir</button>`;
   }
+  html += ` <button data-from="${origen}" type="button" class="btn btn-ghost" data-pipeline-tipo="${tipoProceso}" data-pipeline-codigo="${codigoExterno}" data-pipeline-nombre="${nombreEscapado}">🗂️ Portafolio</button>`;
   return html;
 }
 
@@ -2022,32 +2024,70 @@ document.addEventListener('click', async (e) => {
     } finally {
       ocultarProcesando();
     }
+    return;
+  }
+
+  const btnPipeline = e.target.closest('[data-pipeline-codigo]');
+  if (btnPipeline) {
+    btnPipeline.disabled = true;
+    btnPipeline.textContent = 'Agregando...';
+    mostrarProcesando('Agregando al Pipeline...');
+    try {
+      await apiFetch('/api/pipeline', {
+        method: 'POST',
+        body: JSON.stringify({ tipoProceso: btnPipeline.dataset.pipelineTipo, codigoExterno: btnPipeline.dataset.pipelineCodigo }),
+      });
+      btnPipeline.textContent = '✓ En pipeline';
+      if (typeof cargarOportunidades === 'function') cargarOportunidades();
+    } catch (err) {
+      btnPipeline.disabled = false;
+      btnPipeline.textContent = '🗂️ Portafolio';
+      if (btnPipeline.dataset.from === 'notificaciones') {
+        showErrorNotificaciones(err.message);
+      } else {
+        showErrorBusquedasOp(err.message);
+      }
+    } finally {
+      ocultarProcesando();
+    }
   }
 });
 
 // --- Listado dentro de "Oportunidades" ---
 let recordatoriosData = [];
 let seguimientosData = [];
+let pipelineData = [];
 let oportunidadesSubtabActiva = 'recordatorios';
+
+const oportunidadesSubTabSelect = document.getElementById('oportunidadesSubTabSelect');
 
 document.querySelectorAll('#oportunidadesSubTabs .tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#oportunidadesSubTabs .tab-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
+    oportunidadesSubTabSelect.value = btn.dataset.subtab;
     oportunidadesSubtabActiva = btn.dataset.subtab;
     renderOportunidadesActiva();
   });
 });
 
+oportunidadesSubTabSelect.addEventListener('change', () => {
+  document.querySelectorAll('#oportunidadesSubTabs .tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.subtab === oportunidadesSubTabSelect.value));
+  oportunidadesSubtabActiva = oportunidadesSubTabSelect.value;
+  renderOportunidadesActiva();
+});
+
 async function cargarOportunidades() {
   const card = document.getElementById('oportunidadesCard');
   try {
-    const [recordatoriosRes, seguimientosRes] = await Promise.all([
+    const [recordatoriosRes, seguimientosRes, pipelineRes] = await Promise.all([
       apiFetch('/api/oportunidades/recordatorios'),
       apiFetch('/api/oportunidades/seguimientos'),
+      apiFetch('/api/pipeline'),
     ]);
     recordatoriosData = recordatoriosRes.recordatorios;
     seguimientosData = seguimientosRes.seguimientos;
+    pipelineData = pipelineRes.pipeline;
     renderOportunidadesActiva();
     renderInicioOportunidades();
   } catch (err) {
@@ -2056,8 +2096,16 @@ async function cargarOportunidades() {
 }
 
 function renderOportunidadesActiva() {
+  const card = document.getElementById('oportunidadesCard');
+  // El kanban (desktop) necesita scroll horizontal — .card tiene overflow:hidden,
+  // que lo recortaría. En mobile el pipeline es una lista vertical normal
+  // (igual que Recordatorios/Seguimiento), así que ahí SÍ conviene .card.
+  const esKanbanDesktop = oportunidadesSubtabActiva === 'pipeline' && !MEDIA_QUERY_MOBILE.matches;
+  card.classList.toggle('card', !esKanbanDesktop);
+
   if (oportunidadesSubtabActiva === 'recordatorios') renderRecordatorios();
-  else renderSeguimientos();
+  else if (oportunidadesSubtabActiva === 'seguimiento') renderSeguimientos();
+  else renderPipeline();
 }
 
 function renderRecordatorios() {
@@ -2158,6 +2206,248 @@ function renderSeguimientos() {
   });
 }
 
+// --- Pipeline (mini-CRM) — kanban por estado_personal en desktop (con drag
+// & drop nativo de HTML5 entre columnas); en mobile, en vez de 7 columnas
+// angostas imposibles de usar, pasa a una lista vertical filtrable por
+// estado — mismo patrón `.row` que ya usan Recordatorios y Seguimiento, con
+// un <select> arriba para elegir qué estado ver (o "Todos"). El punto de
+// corte es el mismo breakpoint (720px) que ya usa .tipo-proceso-select en
+// el modal de Búsquedas — no es un concepto de mobile nuevo, es el mismo.
+const ESTADOS_PIPELINE = [
+  { valor: 'por_evaluar', emoji: '🆕', etiqueta: 'Por evaluar' },
+  { valor: 'evaluando', emoji: '🔍', etiqueta: 'Evaluando' },
+  { valor: 'preparando_oferta', emoji: '✍️', etiqueta: 'Preparando oferta' },
+  { valor: 'oferta_enviada', emoji: '📤', etiqueta: 'Oferta enviada' },
+  { valor: 'ganada', emoji: '🏆', etiqueta: 'Ganada' },
+  { valor: 'perdida', emoji: '❌', etiqueta: 'Perdida' },
+  { valor: 'descartada', emoji: '🗑️', etiqueta: 'Descartada' },
+];
+
+const MEDIA_QUERY_MOBILE = window.matchMedia('(max-width: 720px)');
+let pipelineFiltroMobileActivo = ''; // '' = todos los estados — se conserva entre renders
+
+function urlFichaPipeline(item) {
+  return item.tipo_proceso === 'compra_agil' ? urlFichaCompraAgil(item.codigo_externo) : urlFichaLicitacion(item.codigo_externo);
+}
+
+function selectEstadoPipelineHtml(item) {
+  const opciones = ESTADOS_PIPELINE.map((e) => `<option value="${e.valor}" ${e.valor === item.estado_personal ? 'selected' : ''}>${e.emoji} ${e.etiqueta}</option>`).join('');
+  return `<select class="select-pipeline" data-pipeline-select="${item.id}">${opciones}</select>`;
+}
+
+// Tarjeta del kanban (desktop).
+function tarjetaPipelineHtml(item) {
+  return `
+    <div class="kanban-card" draggable="true" data-pipeline-id="${item.id}">
+      <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer" class="kanban-card-title">${item.nombre || item.codigo_externo} ↗</a>
+      <div class="kanban-card-meta">
+        ${item.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}<br>
+        ${item.organismo || 'Organismo no especificado'}<br>
+        ${item.monto != null ? formatMoney(item.monto) : 'Monto no especificado'}<br>
+        Cierra: ${formatDate(item.fecha_cierre)}
+      </div>
+      ${selectEstadoPipelineHtml(item)}
+      <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${item.nota || ''}</textarea>
+      <div class="kanban-card-actions">
+        <button type="button" data-eliminar-pipeline="${item.id}">✖ Quitar</button>
+      </div>
+    </div>
+  `;
+}
+
+// Fila de la lista mobile — mismo `.row` que Recordatorios/Seguimiento, con
+// los mismos controles (select de estado + nota + eliminar) que la tarjeta
+// del kanban, así que comparten el mismo cableado de eventos (ver
+// wirePipelineControles más abajo).
+function filaPipelineHtml(item) {
+  const estadoInfo = ESTADOS_PIPELINE.find((e) => e.valor === item.estado_personal);
+  return `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">
+          <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer">${item.nombre || item.codigo_externo} ↗</a>
+        </div>
+        <div class="row-meta">
+          <span>${item.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
+          <br><span>Organismo: ${item.organismo || 'No especificado'}</span>
+          <br><span>Monto: ${item.monto != null ? formatMoney(item.monto) : 'No especificado'}</span>
+          <br><span>Cierra: ${formatDate(item.fecha_cierre)}</span>
+          <br><span>Estado: ${estadoInfo ? `${estadoInfo.emoji} ${estadoInfo.etiqueta}` : item.estado_personal}</span>
+        </div>
+        <div class="field kanban-card" style="margin-top: 8px; max-width: 100%;">
+          ${selectEstadoPipelineHtml(item)}
+          <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${item.nota || ''}</textarea>
+        </div>
+      </div>
+      <button class="btn btn-danger" data-eliminar-pipeline="${item.id}">✖ Quitar</button>
+    </div>
+  `;
+}
+
+async function moverTarjetaPipeline(id, nuevoEstado) {
+  mostrarProcesando('Moviendo...');
+  try {
+    await apiFetch(`/api/pipeline/${id}`, { method: 'PUT', body: JSON.stringify({ estadoPersonal: nuevoEstado }) });
+    const item = pipelineData.find((it) => String(it.id) === String(id));
+    if (item) item.estado_personal = nuevoEstado;
+    renderPipeline();
+  } catch (err) {
+    document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
+    document.getElementById('errorBannerOportunidades').style.display = 'block';
+    renderPipeline(); // vuelve a pintar como estaba antes, por si el drag/select ya cambió el DOM
+  } finally {
+    ocultarProcesando();
+  }
+}
+
+// Cableado compartido entre el kanban (desktop) y la lista (mobile) — los
+// dos usan los mismos atributos data-pipeline-select/nota/eliminar-pipeline,
+// así que este mismo código sirve para ambos.
+function wirePipelineControles(contenedor) {
+  contenedor.querySelectorAll('[data-pipeline-select]').forEach((select) => {
+    select.addEventListener('change', () => moverTarjetaPipeline(select.dataset.pipelineSelect, select.value));
+    select.addEventListener('click', (e) => e.stopPropagation()); // no dispara el drag al abrir el combo
+  });
+
+  contenedor.querySelectorAll('[data-pipeline-nota]').forEach((textarea) => {
+    textarea.addEventListener('blur', async () => {
+      const id = textarea.dataset.pipelineNota;
+      try {
+        await apiFetch(`/api/pipeline/${id}`, { method: 'PUT', body: JSON.stringify({ nota: textarea.value }) });
+        const item = pipelineData.find((it) => String(it.id) === String(id));
+        if (item) item.nota = textarea.value;
+      } catch (err) {
+        document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
+        document.getElementById('errorBannerOportunidades').style.display = 'block';
+      }
+    });
+  });
+
+  contenedor.querySelectorAll('[data-eliminar-pipeline]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Quitar esto del pipeline?');
+      if (!confirmado) return;
+      const id = btn.dataset.eliminarPipeline;
+      mostrarProcesando('Eliminando...');
+      try {
+        await apiFetch(`/api/pipeline/${id}`, { method: 'DELETE' });
+        pipelineData = pipelineData.filter((it) => String(it.id) !== String(id));
+        renderPipeline();
+        cargarOportunidades();
+      } catch (err) {
+        document.getElementById('errorBannerOportunidades').textContent = '❌ ' + err.message;
+        document.getElementById('errorBannerOportunidades').style.display = 'block';
+      } finally {
+        ocultarProcesando();
+      }
+    });
+  });
+}
+
+function renderPipeline() {
+  const card = document.getElementById('oportunidadesCard');
+  if (pipelineData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no tienes nada en tu portafolio. Agrega ítems desde Notificaciones o Búsquedas con el botón "🗂️ Portafolio".</div>';
+    return;
+  }
+
+  if (MEDIA_QUERY_MOBILE.matches) renderPipelineMobile(card);
+  else renderPipelineKanban(card);
+}
+
+function renderPipelineKanban(card) {
+  card.innerHTML = `
+    <div class="kanban-board">
+      ${ESTADOS_PIPELINE.map((estado) => {
+        const items = pipelineData.filter((it) => it.estado_personal === estado.valor);
+        return `
+          <div class="kanban-column" data-columna="${estado.valor}">
+            <div class="kanban-column-header">
+              <span>${estado.emoji} ${estado.etiqueta}</span>
+              <span class="kanban-column-count">${items.length}</span>
+            </div>
+            <div class="kanban-column-body">${items.map(tarjetaPipelineHtml).join('')}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  wirePipelineControles(card);
+
+  // Drag & drop nativo — enhancement de desktop, el select de cada tarjeta ya alcanza por sí solo.
+  let idArrastrando = null;
+  card.querySelectorAll('.kanban-card').forEach((el) => {
+    el.addEventListener('dragstart', () => {
+      idArrastrando = el.dataset.pipelineId;
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+  });
+  card.querySelectorAll('.kanban-column').forEach((columna) => {
+    columna.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      columna.classList.add('drag-over');
+    });
+    columna.addEventListener('dragleave', () => columna.classList.remove('drag-over'));
+    columna.addEventListener('drop', (e) => {
+      e.preventDefault();
+      columna.classList.remove('drag-over');
+      if (idArrastrando) moverTarjetaPipeline(idArrastrando, columna.dataset.columna);
+    });
+  });
+}
+
+function renderPipelineMobile(card) {
+  const opcionesFiltro = ESTADOS_PIPELINE.map((e) => {
+    const n = pipelineData.filter((it) => it.estado_personal === e.valor).length;
+    return `<option value="${e.valor}" ${e.valor === pipelineFiltroMobileActivo ? 'selected' : ''}>${e.emoji} ${e.etiqueta} (${n})</option>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div style="padding: 16px 16px 0 16px;">
+      <div class="field">
+        <label for="pipelineFiltroEstadoMobile">Ver</label>
+        <select id="pipelineFiltroEstadoMobile">
+          <option value="" ${pipelineFiltroMobileActivo === '' ? 'selected' : ''}>Todos los estados (${pipelineData.length})</option>
+          ${opcionesFiltro}
+        </select>
+      </div>
+    </div>
+    <div id="pipelineListaMobile"></div>
+  `;
+
+  document.getElementById('pipelineFiltroEstadoMobile').addEventListener('change', (e) => {
+    pipelineFiltroMobileActivo = e.target.value;
+    renderPipelineListaMobile();
+  });
+
+  renderPipelineListaMobile();
+}
+
+function renderPipelineListaMobile() {
+  const contenedor = document.getElementById('pipelineListaMobile');
+  if (!contenedor) return;
+
+  const items = pipelineFiltroMobileActivo
+    ? pipelineData.filter((it) => it.estado_personal === pipelineFiltroMobileActivo)
+    : pipelineData;
+
+  contenedor.innerHTML = items.length === 0
+    ? '<div class="empty-state">Nada en este estado todavía.</div>'
+    : items.map(filaPipelineHtml).join('');
+
+  wirePipelineControles(contenedor);
+}
+
+// Si la pantalla cruza el breakpoint mobile/desktop mientras se está viendo
+// el pipeline (ej. rotar el celular, achicar la ventana), se vuelve a
+// renderizar con el layout que corresponda (vía renderOportunidadesActiva,
+// que además ajusta la clase .card según haga falta).
+MEDIA_QUERY_MOBILE.addEventListener('change', () => {
+  if (oportunidadesSubtabActiva === 'pipeline') renderOportunidadesActiva();
+});
+
 let historialData = [];
 let historialPaginaActual = 1;
 
@@ -2223,17 +2513,20 @@ function renderInicioOportunidades() {
   const card = document.getElementById('inicioOportunidadesCard');
   if (!card) return;
 
-  if (recordatoriosData.length === 0 && seguimientosData.length === 0) {
-    card.innerHTML = '<div class="empty-state">Todavía no agregaste recordatorios ni seguimientos. Hazlo desde Notificaciones o Búsquedas con "🔔 Recordarme" / "➕ Seguir".</div>';
+  if (recordatoriosData.length === 0 && seguimientosData.length === 0 && pipelineData.length === 0) {
+    card.innerHTML = '<div class="empty-state">Todavía no agregaste recordatorios, seguimientos ni ítems al portafolio. Hazlo desde Notificaciones o Búsquedas con "🔔 Recordarme" / "➕ Seguir" / "🗂️ Portafolio".</div>';
     return;
   }
 
   const recordatoriosPendientes = recordatoriosData.filter((r) => !r.notificado_at).length;
   const seguimientosActivos = seguimientosData.filter((s) => !s.resuelta).length;
+  const ESTADOS_EN_CURSO = ['por_evaluar', 'evaluando', 'preparando_oferta', 'oferta_enviada'];
+  const pipelineEnCurso = pipelineData.filter((it) => ESTADOS_EN_CURSO.includes(it.estado_personal)).length;
+  const pipelineGanadas = pipelineData.filter((it) => it.estado_personal === 'ganada').length;
 
   card.innerHTML = `
     <div class="inicio-reporte-grupo">
-      <h4>🔔 Recordatorios</h4>
+      <h4>⏰ Recordatorios</h4>
       <div class="inicio-reporte-fila"><span>Pendientes de avisar</span><strong>${recordatoriosPendientes}</strong></div>
       <div class="inicio-reporte-fila"><span>Total</span><strong>${recordatoriosData.length}</strong></div>
     </div>
@@ -2241,6 +2534,12 @@ function renderInicioOportunidades() {
       <h4>➕ Seguimientos</h4>
       <div class="inicio-reporte-fila"><span>Licitaciones activas</span><strong>${seguimientosActivos}</strong></div>
       <div class="inicio-reporte-fila"><span>Total</span><strong>${seguimientosData.length}</strong></div>
+    </div>
+    <div class="inicio-reporte-grupo">
+      <h4>🗂️ Portafolio</h4>
+      <div class="inicio-reporte-fila"><span>En curso</span><strong>${pipelineEnCurso}</strong></div>
+      <div class="inicio-reporte-fila"><span>Ganadas</span><strong>${pipelineGanadas}</strong></div>
+      <div class="inicio-reporte-fila"><span>Total</span><strong>${pipelineData.length}</strong></div>
     </div>
   `;
 }
