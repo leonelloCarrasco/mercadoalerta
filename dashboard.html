@@ -278,12 +278,20 @@
         </div>
 
         <div class="section-head">
-          <p class="section-sub" style="margin-bottom: 16px;">Licitaciones y Compras Ágiles que marcaste desde Notificaciones o Búsquedas para recordatorio de cierre o seguimiento de cambio de estado.</p>
+          <p class="section-sub" style="margin-bottom: 16px;">Licitaciones y Compras Ágiles que marcaste desde Notificaciones o Búsquedas para recordatorio de cierre, seguimiento de cambio de estado, o gestión en tu portafolio de proyectos.</p>
         </div>
 
         <div class="tabs" id="oportunidadesSubTabs" style="margin-bottom: 16px;">
           <button type="button" class="tab-btn active" data-subtab="recordatorios">⏰ Recordatorios de Cierre</button>
-          <button type="button" class="tab-btn" data-subtab="seguimiento">👁️ Seguimiento de Estado</button>
+          <button type="button" class="tab-btn" data-subtab="seguimiento">➕ Seguimiento de Estado</button>
+          <button type="button" class="tab-btn" data-subtab="pipeline">🗂️ Portafolio</button>
+        </div>
+        <div class="field">
+          <select id="oportunidadesSubTabSelect" class="tipo-proceso-select" style="margin-bottom: 16px;">
+            <option value="recordatorios">⏰ Recordatorios de Cierre</option>
+            <option value="seguimiento">➕ Seguimiento de Estado</option>
+            <option value="pipeline">🗂️ Portafolio</option>
+          </select>
         </div>
 
         <div class="error-banner" id="errorBannerOportunidades"></div>

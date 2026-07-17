@@ -322,6 +322,51 @@ section { margin-bottom: 56px; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* --- Kanban del Pipeline (mini-CRM, sección Oportunidades) --- */
+.kanban-board {
+  display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 12px 2px;
+}
+.kanban-column {
+  flex: 0 0 240px; background: var(--surface-2); border-radius: 10px; padding: 10px;
+  min-height: 120px; transition: background 0.15s ease;
+}
+.kanban-column.drag-over { background: var(--gold-soft); outline: 1px dashed var(--gold); }
+.kanban-column-header {
+  font-size: 13px; font-weight: 600; margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+}
+.kanban-column-count {
+  background: var(--surface); color: var(--text-muted); border-radius: 10px;
+  font-size: 11px; padding: 1px 7px;
+}
+.kanban-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; margin-bottom: 8px; cursor: grab;
+}
+.kanban-card:active { cursor: grabbing; }
+.kanban-card.dragging { opacity: 0.35; }
+.kanban-card-title {
+  font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 6px;
+  display: block; text-decoration: none; line-height: 1.35;
+}
+.kanban-card-meta { font-size: 11px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px; }
+.kanban-card select {
+  width: 100%; font-size: 11px; margin-bottom: 6px; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 4px;
+}
+.kanban-card textarea {
+  width: 100%; font-size: 11px; resize: vertical; min-height: 36px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 5px; font-family: var(--font-body); margin-bottom: 6px;
+}
+.kanban-card-actions { display: flex; justify-content: flex-end; }
+.kanban-card-actions button {
+  background: none; border: none; color: var(--danger); font-size: 11px; cursor: pointer; padding: 2px 4px;
+}
+@media (max-width: 720px) {
+  .kanban-column { flex: 0 0 200px; }
+}
+
 /* --- Modal ancho (para el formulario de nueva alerta) --- */
 .modal-wide { max-width: 640px; text-align: left; }
 .modal-wide .form-grid { padding: 0; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
@@ -423,6 +468,10 @@ table.analisis-table a:hover { text-decoration: underline; }
 @media (max-width: 720px) {
   .tipo-proceso-row, .tipo-proceso-row.tipo-proceso-row-4col { display: none; }
   .tipo-proceso-select { display: block; }
+  /* Sub-pestañas de Oportunidades: en mobile se ocultan los botones (habría
+     que deslizar para verlos todos) y queda solo el <select> de arriba,
+     que ya usa .tipo-proceso-select — mismo patrón que el modal de Búsquedas. */
+  #oportunidadesSubTabs { display: none; }
 }
 .checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .checkbox-row input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; width: 15px; height: 15px; flex-shrink: 0; }
