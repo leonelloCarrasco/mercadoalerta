@@ -1810,8 +1810,53 @@ function describirCriteriosBusqueda(b) {
   return partes;
 }
 
-document.getElementById('descargarPdfBtn').addEventListener('click', () => {
+// jsPDF/autotable se cargan por <script> normal en dashboard.html, así que
+// deberían estar listos para cuando este archivo corre — pero si un
+// bloqueador de anuncios o un corte de red impidió que cargaran, el clic
+// tiraba un TypeError sin ningún aviso. Acá se reintenta cargarlos on-demand
+// antes de generar el PDF, y si igual falla se muestra un error legible.
+function cargarScriptExterno(src) {
+  // Siempre se agrega un <script> nuevo (en vez de reusar el que ya está en
+  // el HTML) — si ese ya falló, su evento 'error' ya disparó una sola vez y
+  // no hay forma de "reengancharse" a un reintento que el navegador no hará solo.
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function asegurarJsPDFDisponible() {
+  if (window.jspdf?.jsPDF?.API?.autoTable) return;
+  try {
+    await cargarScriptExterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.0.0/jspdf.umd.min.js');
+    await cargarScriptExterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js');
+  } catch {
+    // se valida abajo con un mensaje uniforme, sin importar en qué script falló
+  }
+  if (!window.jspdf?.jsPDF?.API?.autoTable) {
+    throw new Error('No se pudo cargar la librería para generar el PDF. Revisa tu conexión a internet o si un bloqueador de anuncios está impidiendo cargar cdnjs.cloudflare.com, y vuelve a intentar.');
+  }
+}
+
+document.getElementById('descargarPdfBtn').addEventListener('click', async () => {
   if (!ultimoResultadoBusqueda) return;
+  const btn = document.getElementById('descargarPdfBtn');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+
+  try {
+    await asegurarJsPDFDisponible();
+  } catch (err) {
+    showErrorBusquedas(err.message);
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt' });
   const { busqueda, resultados } = ultimoResultadoBusqueda;
@@ -1846,6 +1891,9 @@ document.getElementById('descargarPdfBtn').addEventListener('click', () => {
 
   const nombreArchivo = `busqueda-${busqueda.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50)}.pdf`;
   doc.save(nombreArchivo);
+
+  btn.disabled = false;
+  btn.textContent = textoOriginal;
 });
 
 // ============================================================
