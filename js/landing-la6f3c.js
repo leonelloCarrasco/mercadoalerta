@@ -21,6 +21,26 @@ const buildTicker = () => tickerData.map(i =>
 ).join('');
 track.innerHTML = buildTicker() + buildTicker();
 
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', () => {
+  const open = navLinks.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', open);
+  navToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+});
+navLinks.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => {
+  navLinks.classList.remove('open');
+  navToggle.setAttribute('aria-expanded', 'false');
+  navToggle.setAttribute('aria-label', 'Abrir menú');
+}));
+document.addEventListener('click', (e) => {
+  if (!navLinks.contains(e.target) && e.target !== navToggle && !navToggle.contains(e.target)) {
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+    navToggle.setAttribute('aria-label', 'Abrir menú');
+  }
+});
+
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
