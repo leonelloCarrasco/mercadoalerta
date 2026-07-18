@@ -1707,7 +1707,7 @@ function filaResultadoHtml(r, tipo) {
           <br><span>Estado: ${r.estado || 'Desconocido'}</span>
           <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div class="oportunidad-botones">
           ${botonesOportunidadHtml(tipo, r.codigo_externo, r.nombre, "busqueda")}
         </div>
       </div>
@@ -2480,6 +2480,7 @@ function renderInicio() {
 
   const reporteCard = document.getElementById('inicioReporteCard');
   if (historialData.length === 0) {
+    reporteCard.className = 'card';
     reporteCard.innerHTML = '<div class="empty-state">Aún no se te ha enviado ninguna notificación.</div>';
     return;
   }
@@ -2491,6 +2492,7 @@ function renderInicio() {
     porCanal[h.canal] = (porCanal[h.canal] || 0) + 1;
   });
 
+  reporteCard.className = 'inicio-cards-grid';
   reporteCard.innerHTML = `
     <div class="inicio-reporte-grupo">
       <h4>Por tipo de proceso</h4>
@@ -2514,6 +2516,7 @@ function renderInicioOportunidades() {
   if (!card) return;
 
   if (recordatoriosData.length === 0 && seguimientosData.length === 0 && pipelineData.length === 0) {
+    card.className = 'card';
     card.innerHTML = '<div class="empty-state">Todavía no agregaste recordatorios, seguimientos ni ítems al portafolio. Hazlo desde Notificaciones o Búsquedas con "🔔 Recordarme" / "➕ Seguir" / "🗂️ Portafolio".</div>';
     return;
   }
@@ -2524,6 +2527,7 @@ function renderInicioOportunidades() {
   const pipelineEnCurso = pipelineData.filter((it) => ESTADOS_EN_CURSO.includes(it.estado_personal)).length;
   const pipelineGanadas = pipelineData.filter((it) => it.estado_personal === 'ganada').length;
 
+  card.className = 'inicio-cards-grid';
   card.innerHTML = `
     <div class="inicio-reporte-grupo">
       <h4>⏰ Recordatorios</h4>
@@ -2598,7 +2602,7 @@ function renderHistorial() {
           <br>
           <span>Cierra: ${formatDate(h.fecha_cierre)}</span>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div class="oportunidad-botones">
           ${botonesOportunidadHtml(h.tipo_proceso, h.codigo_externo, h.nombre, "notificaciones")}
         </div>
       </div>

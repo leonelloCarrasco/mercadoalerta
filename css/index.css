@@ -52,6 +52,30 @@ nav .logo { padding: 0; text-align: left; }
   font-size: 14px; color: var(--text-muted); text-decoration: none;
 }
 .nav-links a.plain:hover { color: var(--text); }
+.nav-toggle {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  width: 36px; height: 36px; background: none; border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; flex-shrink: 0;
+}
+.nav-toggle span { width: 18px; height: 2px; background: var(--text); border-radius: 2px; transition: transform .2s ease, opacity .2s ease; }
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+@media (max-width: 640px) {
+  nav { position: relative; }
+  .nav-toggle { display: flex; }
+  .nav-links {
+    display: none;
+    position: absolute; top: calc(100% + 1px); left: 0; right: 0;
+    flex-direction: column; align-items: flex-start; gap: 4px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; z-index: 40;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a.plain { width: 100%; padding: 10px 8px; }
+  .nav-links .nav-cta { width: 100%; text-align: center; margin-top: 4px; }
+}
 .nav-cta {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -158,7 +182,27 @@ h2 { font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 34px); font
 .step h3 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-bottom: 8px; }
 .step p { color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
 .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
-@media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
+@media (max-width: 900px) {
+  .pricing-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    gap: 16px;
+    max-width: 100%;
+    margin: 0;
+    padding: 4px 24px 16px;
+    scrollbar-width: none;
+  }
+  .pricing-grid::-webkit-scrollbar { display: none; }
+  .price-card {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    flex: 0 0 85%;
+    max-width: 340px;
+  }
+}
 .price-card {
   background: var(--surface);
   border: 1px solid var(--border);
