@@ -93,7 +93,16 @@ form.addEventListener('submit', async (e) => {
         && meData.usuario?.fecha_expiracion_trial
         && new Date(meData.usuario.fecha_expiracion_trial) < new Date();
 
-      window.location.href = trialVencido ? 'trial-vencido.html' : 'dashboard.html';
+      // Mismo mecanismo, otro motivo: canceló su suscripción y ya pasó el
+      // período que había pagado (ver migración 039 y POST /api/pagos/cancelar).
+      // trial-vencido.html decide qué texto mostrar mirando estos mismos
+      // campos — no hace falta una página aparte para esto.
+      const accesoCanceladoTerminado = meRes.ok
+        && meData.usuario?.suscripcion_cancelada_en
+        && meData.usuario?.acceso_hasta
+        && new Date(meData.usuario.acceso_hasta) < new Date();
+
+      window.location.href = (trialVencido || accesoCanceladoTerminado) ? 'trial-vencido.html' : 'dashboard.html';
     } catch {
       // Si el chequeo mismo falla (ej. sin conexión un instante), no vale
       // la pena bloquear el login por eso — el dashboard igual va a mostrar

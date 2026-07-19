@@ -23,15 +23,31 @@ async function cargarUsuario() {
 
     empresaId = data.usuario.empresa_id;
 
-    // Si alguien llega acá con el link guardado pero su trial en realidad
-    // sigue vigente (o ya está en un plan pago), no tiene sentido mostrarle
-    // esta pantalla — lo mandamos derecho al dashboard.
     const trialVencido = data.usuario.plan === 'trial'
       && data.usuario.fecha_expiracion_trial
       && new Date(data.usuario.fecha_expiracion_trial) < new Date();
 
-    if (!trialVencido && data.usuario.estado_pago !== 'pendiente') {
+    // Mismo mecanismo que el trial, otro motivo: canceló su suscripción y ya
+    // pasó el período que había pagado (ver migración 039).
+    const accesoCanceladoTerminado = data.usuario.suscripcion_cancelada_en
+      && data.usuario.acceso_hasta
+      && new Date(data.usuario.acceso_hasta) < new Date();
+
+    // Si alguien llega acá con el link guardado pero en realidad ninguno de
+    // los dos motivos aplica (su trial sigue vigente, o no canceló nada), no
+    // tiene sentido mostrarle esta pantalla — lo mandamos al dashboard.
+    if (!trialVencido && !accesoCanceladoTerminado && data.usuario.estado_pago !== 'pendiente') {
       window.location.href = 'dashboard.html';
+      return;
+    }
+
+    if (accesoCanceladoTerminado && !trialVencido) {
+      document.title = 'Tu acceso terminó — MercadoAlerta';
+      document.getElementById('trialVencidoTitulo').textContent = 'Tu acceso a MercadoAlerta terminó.';
+      document.getElementById('trialVencidoTexto').textContent =
+        'El período que ya habías pagado antes de cancelar tu suscripción llegó a su fin. ' +
+        'Toda tu configuración — alertas, búsquedas guardadas, recordatorios, pipeline — sigue guardada ' +
+        'tal cual la dejaste; al reactivar un plan, vuelves a tener acceso a todo, sin perder nada.';
     }
   } catch (err) {
     mostrarError(err.message);

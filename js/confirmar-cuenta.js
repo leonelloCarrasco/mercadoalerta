@@ -55,9 +55,9 @@ async function confirmarCuenta() {
     );
     noticeMsg.style.display = 'block';
     footerLink.style.display = 'block';
-    //setTimeout(() => {
-    //  window.location.href = 'login.html?verificado=1';
-    //}, 5000);
+    setTimeout(() => {
+      window.location.href = 'login.html?verificado=1';
+    }, 5000);
   } catch (err) {
     mensajeEl.textContent = 'No pudimos confirmar tu cuenta.';
     errorMsg.textContent = err.message;
