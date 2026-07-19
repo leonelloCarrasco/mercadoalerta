@@ -949,7 +949,7 @@ function mostrarBannerPlan(usuario) {
     banner.innerHTML = `
       <p>Tu pago está pendiente de confirmación. Completa el pago para poder usar MercadoAlerta.</p>
       <div class="btn-group">
-        <button class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', '${usuario.plan}')">Completar pago</button>
+        <button class="btn" id="btn-completar-pago" onclick="iniciarUpgrade('${usuario.empresa_id}', '${usuario.plan}', 'btn-completar-pago')">Completar pago</button>
       </div>
     `;
     banner.style.display = 'flex';
@@ -975,8 +975,31 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Tu período de prueba termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Elige un plan para no perder tus alertas.</p>
         <div class="btn-group">
-          <button class="btn btn-ghost" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico')">Elegir Basic</button>
-          <button class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full')">Elegir Full</button>
+          <button class="btn btn-ghost" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">Elegir Basic</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">Elegir Full</button>
+        </div>
+      `;
+      banner.style.display = 'flex';
+    }
+    return;
+  }
+
+  // Suscripción cancelada, acceso por vencer — mismo criterio que el aviso
+  // de trial (2 días), ver migración 039. El caso "ya venció" no necesita
+  // banner propio acá: para ese momento estado_pago ya pasó a 'pendiente'
+  // (lo hace el job avisos-trial.js al cortar el acceso) y cae en el primer
+  // bloque de esta función (el de "pago pendiente"), que ya cubre avisar.
+  if (usuario.suscripcion_cancelada_en && usuario.acceso_hasta) {
+    const msRestantes = new Date(usuario.acceso_hasta) - new Date();
+    const diasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60 * 24));
+
+    if (diasRestantes > 0 && diasRestantes <= 2) {
+      banner.className = 'plan-banner aviso';
+      banner.innerHTML = `
+        <p>Cancelaste tu suscripción — tu acceso termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Si te arrepentiste, puedes reactivarlo.</p>
+        <div class="btn-group">
+          <button class="btn btn-ghost" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">Elegir Basic</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">Elegir Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -984,7 +1007,12 @@ function mostrarBannerPlan(usuario) {
   }
 }
 
-async function iniciarUpgrade(empresaId, plan) {
+async function iniciarUpgrade(empresaId, plan, btnId) {
+  const btn = document.getElementById(btnId);
+  const textoOriginal = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = 'Redirigiendo a MercadoPago...';
   try {
     const data = await apiFetch(`/api/empresas/${empresaId}/upgrade`, {
       method: 'POST',
@@ -995,6 +1023,8 @@ async function iniciarUpgrade(empresaId, plan) {
     }
   } catch (err) {
     showError('No se pudo iniciar el pago: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
   }
 }
 
@@ -3371,6 +3401,102 @@ function poblarSeccionCuenta() {
   profileInfoMsg.style.display = 'none';
   passwordInfoMsg.style.display = 'none';
   passwordForm.reset();
+  cargarSuscripcion();
+}
+
+// --- Mi Suscripción (dentro de Mi Perfil) ---
+// Trial no tiene nada que mostrar acá (no hay suscripción real todavía) —
+// la tarjeta completa se oculta en ese caso.
+async function cargarSuscripcion() {
+  const card = document.getElementById('suscripcionCard');
+  const contenedor = document.getElementById('suscripcionContenido');
+
+  if (window.usuarioActual?.plan === 'trial') {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  contenedor.innerHTML = '<div class="loading">Cargando...</div>';
+
+  try {
+    const data = await apiFetch('/api/pagos/mi-suscripcion');
+    renderSuscripcion(data);
+  } catch (err) {
+    contenedor.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function renderSuscripcion(data) {
+  const contenedor = document.getElementById('suscripcionContenido');
+  const nombrePlan = data.plan === 'full' ? 'Full' : 'Básico';
+  const montoTexto = data.monto != null ? `${formatMoney(data.monto)} / mes` : 'No especificado';
+
+  let estadoHtml;
+  if (data.canceladaEn) {
+    estadoHtml = `<p style="color: var(--danger); font-size: 13px; margin: 10px 0 0 0;">Cancelada el ${formatDate(data.canceladaEn)} — mantienes acceso hasta que termine el período que ya pagaste. No se te va a volver a cobrar después de eso.</p>`;
+  } else if (data.estadoPago === 'activo') {
+    estadoHtml = `<p style="color: var(--down); font-size: 13px; margin: 10px 0 0 0;">✅ Activa</p>`;
+  } else {
+    estadoHtml = `<p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Pendiente de confirmación de pago.</p>`;
+  }
+
+  const tarjetaTexto = data.tarjeta?.ultimosDigitos
+    ? `Tarjeta terminada en ${data.tarjeta.ultimosDigitos}${data.tarjeta.marca ? ` (${data.tarjeta.marca})` : ''}`
+    : 'No disponible';
+
+  const historialHtml = (data.historialPagos && data.historialPagos.length > 0)
+    ? `
+      <table style="width:100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom: 1px solid var(--border); color: var(--text-muted);">
+            <th style="padding: 6px 4px; font-weight: 500;">Fecha</th>
+            <th style="padding: 6px 4px; font-weight: 500;">Monto</th>
+            <th style="padding: 6px 4px; font-weight: 500;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.historialPagos.map((p) => `
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 6px 4px;">${formatDate(p.fecha)}</td>
+              <td style="padding: 6px 4px;">${p.monto != null ? formatMoney(p.monto) : '—'}</td>
+              <td style="padding: 6px 4px;">${p.estado || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+    : '<p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Todavía no hay cobros registrados.</p>';
+
+  contenedor.innerHTML = `
+    <div style="font-size: 14px; line-height: 1.9;">
+      <span>Plan: <strong>${nombrePlan}</strong></span><br>
+      <span>Valor: ${montoTexto}</span><br>
+      <span>Forma de pago: ${tarjetaTexto}</span>
+    </div>
+    ${estadoHtml}
+    <h4 style="margin: 20px 0 6px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-mono);">Historial de pagos</h4>
+    ${historialHtml}
+    ${!data.canceladaEn ? '<div class="modal-actions" style="justify-content: flex-start; margin-top:20px;"><button type="button" class="btn btn-danger" id="btnCancelarSuscripcion">Cancelar suscripción</button></div>' : ''}
+  `;
+
+  const btnCancelar = document.getElementById('btnCancelarSuscripcion');
+  if (!btnCancelar) return;
+
+  btnCancelar.addEventListener('click', async () => {
+    const confirmado = await confirmDialog('¿Cancelar tu suscripción? Vas a mantener el acceso hasta que termine el período que ya pagaste — no se te va a volver a cobrar después de eso.');
+    if (!confirmado) return;
+
+    btnCancelar.disabled = true;
+    btnCancelar.textContent = 'Cancelando...';
+    try {
+      await apiFetch('/api/pagos/cancelar', { method: 'POST' });
+      cargarSuscripcion();
+    } catch (err) {
+      mostrarMensajeForm(document.getElementById('suscripcionMsg'), '❌ ' + err.message, false);
+      btnCancelar.disabled = false;
+      btnCancelar.textContent = 'Cancelar suscripción';
+    }
+  });
 }
 
 // Celular chileno: +56 9 seguido de 8 dígitos (el "56" es opcional para

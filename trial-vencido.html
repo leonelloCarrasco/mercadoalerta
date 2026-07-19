@@ -15,8 +15,8 @@
 
 <div class="card" id="trialVencidoCard">
   <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
-  <p class="sub" style="margin-bottom: 8px;">Tu período de prueba de 14 días terminó.</p>
-  <p class="sub" style="margin-top: -20px; font-size: 13px;">
+  <p class="sub" id="trialVencidoTitulo">Tu período de prueba de 14 días terminó.</p>
+  <p class="sub" id="trialVencidoTexto" style="margin-top: -20px; font-size: 13px;">
     Elige un plan para seguir recibiendo alertas. Todo lo que configuraste durante la
     prueba — alertas, búsquedas guardadas, recordatorios, pipeline — sigue guardado
     tal cual lo dejaste; apenas actives un plan, vuelves a tener acceso a todo, sin perder nada.
@@ -24,13 +24,13 @@
 
   <div id="errorTrialVencido" class="error" style="display:none; margin-bottom: 16px;"></div>
 
-  <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-    <button type="button" class="btn btn-ghost" id="btnElegirBasico" style="width: 100%;">Elegir plan Básico — $8.990/mes</button>
-    <button type="button" class="btn btn-primary" id="btnElegirFull" style="width: 100%;">Elegir plan Full — $14.990/mes</button>
+  <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button type="button" class="btn btn-ghost" id="btnElegirBasico" style="width: 100%;">Elegir Plan Básico $8.990 CLP/mes</button>
+    <button type="button" class="btn btn-primary" id="btnElegirFull" style="width: 100%;">Elegir Plan Full $14.990 CLP/mes</button>
   </div>
 
   <div class="footer-link">
-    <a href="#" id="cerrarSesionTrialVencido">Cerrar sesión</a>
+    <a href="#" id="cerrarSesionTrialVencido">← Volver</a>
   </div>
 </div>
 
