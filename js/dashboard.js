@@ -929,13 +929,13 @@ async function cargarUsuario() {
     // Solo visible para el usuario admin (users.es_admin, migración 028) —
     // se inyecta por JS en vez de dejarlo fijo en el HTML para que no
     // "parpadee" visible antes de saber si el usuario es admin o no.
-    if (data.usuario.es_admin) {
+    /*if (data.usuario.es_admin) {
       const linkAdmin = document.createElement('a');
       linkAdmin.href = 'admin.html';
       linkAdmin.className = 'sidebar-link';
       linkAdmin.innerHTML = '<div class="icon"><img src="/assets/icons/alt-administrador.svg" class="icon-desc"></img></div> Panel Admin';
       document.querySelector('.sidebar-nav').appendChild(linkAdmin);
-    }
+    }*/
   } catch (err) {
     showError('No se pudo cargar tu sesión: ' + err.message);
   }
@@ -2532,7 +2532,7 @@ function renderInicio() {
     <div class="inicio-reporte-grupo">
       <h4>Por canal de envío</h4>
       ${Object.entries(porCanal).map(([canal, cantidad]) => `
-        <div class="inicio-reporte-fila"><span>${canal === 'telegram' ? '✈️ Telegram' : '✉️ Email'}</span><strong>${cantidad}</strong></div>
+        <div class="inicio-reporte-fila"><span>${canal === 'telegram' ? '📲 Telegram' : '✉️ Email'}</span><strong>${cantidad}</strong></div>
       `).join('')}
     </div>
   `;
@@ -2636,7 +2636,10 @@ function renderHistorial() {
           ${botonesOportunidadHtml(h.tipo_proceso, h.codigo_externo, h.nombre, "notificaciones")}
         </div>
       </div>
-      <span class="tag ${h.canal === 'telegram' ? 'telegram' : ''}">${h.canal} · ${formatDate(h.sent_at)}</span>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+        <span class="tag ${h.canal === 'telegram' ? 'telegram' : ''}">${h.canal === 'telegram' ? '📲' : '✉️'} ${h.canal} · ${formatDate(h.sent_at)}</span>
+        <button type="button" class="btn btn-danger" data-eliminar-notificacion="${h.id}">✖ Eliminar</button>
+      </div>
     </div>
   `).join('');
 
@@ -2661,6 +2664,27 @@ function renderHistorial() {
       renderHistorial();
     });
   }
+
+  // Eliminar del historial — no afecta recordatorios/seguimiento/portafolio
+  // en Oportunidades (tablas totalmente independientes, ver
+  // eliminarDelHistorial en el backend).
+  card.querySelectorAll('[data-eliminar-notificacion]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Eliminar esta notificación del historial? No afecta ningún recordatorio, seguimiento ni ítem de tu portafolio.');
+      if (!confirmado) return;
+      const id = btn.dataset.eliminarNotificacion;
+      mostrarProcesando('Eliminando...');
+      try {
+        await apiFetch(`/api/alerts/history/${id}`, { method: 'DELETE' });
+        historialData = historialData.filter((h) => String(h.id) !== String(id));
+        renderHistorial();
+      } catch (err) {
+        showErrorNotificaciones(err.message);
+      } finally {
+        ocultarProcesando();
+      }
+    });
+  });
 }
 
 ['filtroEstado', 'filtroTipoProcesoConfig', 'filtroRegionConfig'].forEach(id => {
