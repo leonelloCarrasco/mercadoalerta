@@ -15,14 +15,20 @@
 
 <div class="card">
   <div class="logo"><img src="/assets/mercadoalerta-icon.svg" class="logo-seal"/>MercadoAlerta</div>
-  <p class="sub">¡Listo! Recibimos tu pago y tu registro quedó completo.</p>
-  <p class="sub" style="margin-top: -20px; font-size: 13px;">
+  <p class="sub" id="pagoTitulo">¡Listo! Recibimos tu pago.</p>
+
+  <div id="pagoDetalle" style="display:none; text-align:left; background: var(--surface-2, #1B2140); border-radius: 10px; padding: 16px 20px; margin: -8px 0 24px 0; font-size: 14px; line-height: 1.9;">
+    <div><strong>Plan:</strong> <span id="pagoDetallePlan"></span></div>
+    <div><strong>Monto:</strong> <span id="pagoDetalleMonto"></span></div>
+    <div id="pagoDetalleTarjetaFila" style="display:none;"><strong>Forma de pago:</strong> <span id="pagoDetalleTarjeta"></span></div>
+  </div>
+
+  <p class="sub" id="pagoSubtexto" style="margin-top: -8px; font-size: 13px;">
     Puede tomar unos segundos en activarse mientras confirmamos el pago con MercadoPago.
-    Te redirigimos al inicio de sesión...
   </p>
 
   <div class="footer-link">
-    <a href="login.html">Ir a iniciar sesión ahora</a>
+    <a href="login.html" id="pagoVolverLogin">Iniciar sesión</a>
   </div>
 </div>
 
@@ -30,12 +36,60 @@
   // NOTA: el back_url de MercadoPago llega acá independiente del resultado real
   // del pago (autorizado, rechazado, pendiente) — la activación real de la
   // cuenta ocurre vía el webhook (ver POST /api/pagos/webhook en el backend),
-  // no se debe confiar en la sola llegada a esta página. Este mensaje es
-  // informativo; si el pago fue rechazado, el usuario simplemente no podrá
-  // iniciar sesión todavía (quedará en estado 'pendiente_pago') y deberá
-  // reintentar el pago. Pendiente de validar esto de punta a punta cuando
-  // se prueben las credenciales reales de MercadoPago.
-  setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+  // no se debe confiar en la sola llegada a esta página.
+  //
+  // Esta página se usa en DOS flujos distintos:
+  //  1. Registro nuevo (paga antes de haber iniciado sesión nunca) — acá NO
+  //     hay token en sessionStorage todavía, así que se muestra el mensaje
+  //     genérico de siempre y se redirige a login.html a los pocos segundos.
+  //  2. Upgrade desde trial vencido (YA estaba logueado antes de ir a pagar,
+  //     sessionStorage conserva el token porque es la misma pestaña) — acá SÍ
+  //     se puede pedir el detalle real (plan/monto/tarjeta) vía
+  //     GET /api/pagos/mi-suscripcion y mostrarlo en vez del mensaje genérico.
+  const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3000'
+    : 'https://api.mercadoalerta.cl';
+
+  const token = sessionStorage.getItem('token');
+
+  if (!token) {
+    // Flujo 1: registro nuevo, sin sesión — mensaje genérico + redirect automático.
+    setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+  } else {
+    // Flujo 2: ya logueado — intenta traer el detalle real. Si por lo que sea
+    // el pago todavía no se confirmó del lado de MercadoPago (el webhook
+    // puede tardar unos segundos más que el redirect), no se rompe la
+    // página — simplemente se deja el mensaje genérico.
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/pagos/mi-suscripcion`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+
+        if (data.estadoPago === 'activo') {
+          document.getElementById('pagoTitulo').textContent = '✅ Tu suscripción está activa';
+          document.getElementById('pagoSubtexto').textContent = 'Ya puedes volver a usar MercadoAlerta sin interrupciones.';
+
+          document.getElementById('pagoDetallePlan').textContent = data.plan === 'full' ? 'Full' : 'Básico';
+          document.getElementById('pagoDetalleMonto').textContent = data.monto
+            ? `$${Number(data.monto).toLocaleString('es-CL')} / mes`
+            : 'No especificado';
+
+          if (data.tarjeta?.ultimosDigitos) {
+            document.getElementById('pagoDetalleTarjeta').textContent =
+              `Tarjeta terminada en ${data.tarjeta.ultimosDigitos}${data.tarjeta.marca ? ` (${data.tarjeta.marca})` : ''}`;
+            document.getElementById('pagoDetalleTarjetaFila').style.display = 'block';
+          }
+
+          document.getElementById('pagoDetalle').style.display = 'block';
+        }
+      } catch {
+        // Sin conexión o error de red — se deja el mensaje genérico, no es grave.
+      }
+    })();
+  }
 </script>
 
 </body>

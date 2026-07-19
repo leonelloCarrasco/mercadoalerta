@@ -77,7 +77,29 @@ form.addEventListener('submit', async (e) => {
     // por seguridad frente a XSS; para persistencia entre pestañas se puede
     // evaluar sessionStorage más adelante según necesidad real).
     sessionStorage.setItem('token', data.token);
-    window.location.href = 'dashboard.html';
+
+    // Chequeo de trial vencido: se hace UNA vez, acá, justo después del
+    // login — no en cada llamada a la API mientras la sesión ya está abierta
+    // (si vence a mitad de una sesión, el usuario sigue navegando hasta que
+    // vuelva a loguearse; el resto de las llamadas del dashboard igual van a
+    // fallar con 402 vía requireEmpresaActiva, pero eso es un caso aparte).
+    try {
+      const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
+      const meData = await meRes.json();
+      const trialVencido = meRes.ok
+        && meData.usuario?.plan === 'trial'
+        && meData.usuario?.fecha_expiracion_trial
+        && new Date(meData.usuario.fecha_expiracion_trial) < new Date();
+
+      window.location.href = trialVencido ? 'trial-vencido.html' : 'dashboard.html';
+    } catch {
+      // Si el chequeo mismo falla (ej. sin conexión un instante), no vale
+      // la pena bloquear el login por eso — el dashboard igual va a mostrar
+      // su propio banner de trial vencido si corresponde.
+      window.location.href = 'dashboard.html';
+    }
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
