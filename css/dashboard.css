@@ -285,7 +285,7 @@ section { margin-bottom: 56px; }
   max-height: calc(100vh - 48px); overflow-y: auto;
 }
 .modal-message { font-size: 14px; margin-bottom: 20px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px;}
 
 .spinner {
   width: 32px; height: 32px; margin: 0 auto;
@@ -469,6 +469,8 @@ table.analisis-table a:hover { text-decoration: underline; }
 
 /* --- Tipo de proceso (Licitaciones / Compras Ágiles) --- */
 .tipo-proceso-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+.tipo-proceso-row-analisis { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+
 .tipo-proceso-row.tipo-proceso-row-4col { display: grid; grid-template-columns: repeat(4, 1fr); flex-wrap: initial; }
 .tipo-proceso-select { display: none; margin-top: 4px; }
 @media (max-width: 720px) {
@@ -636,3 +638,29 @@ table.analisis-table a:hover { text-decoration: underline; }
     justify-content: center;
     }
     .icon-stat-desc {height: 15px;}
+
+/* --- Análisis de Procesos (IA) --- */
+.warning-box-inline {
+  background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #92400e;
+}
+.analisis-seccion { margin-top: 22px; }
+.analisis-seccion h4 {
+  font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.06em; font-family: var(--font-mono); margin-bottom: 10px;
+}
+.analisis-checklist-item {
+  display: flex; gap: 10px; align-items: flex-start; padding: 8px 0;
+  border-bottom: 1px solid var(--border); font-size: 14px;
+}
+.analisis-checklist-item:last-child { border-bottom: none; }
+.analisis-checklist-item .badge-obligatorio { color: var(--danger); font-size: 11px; flex-shrink: 0; }
+.analisis-checklist-item .badge-opcional { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+.analisis-punto-atencion {
+  background: var(--gold-soft); border-left: 3px solid var(--gold);
+  padding: 8px 12px; margin-bottom: 8px; font-size: 13px; border-radius: 0 6px 6px 0;
+}
+.analisis-fecha-fila, .analisis-criterio-fila {
+  display: flex; justify-content: space-between; padding: 6px 0;
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}

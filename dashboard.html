@@ -26,7 +26,7 @@
       <button type="button" class="sidebar-link" data-section="busquedas"><div class="icon"><img src="/assets/icons/busqueda.svg" class="icon-desc"></img></div> Búsquedas</button>
       <button type="button" class="sidebar-link" data-section="oportunidades"><div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div> Oportunidades</button>
       <button type="button" class="sidebar-link" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
-      <!--button type="button" class="sidebar-link" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button-->
+      <button type="button" class="sidebar-link" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> Análisis de Procesos</button>
     </nav>
 
     <div class="sidebar-bottom">
@@ -58,7 +58,7 @@
     <div class="topbar-menu bottombar-mas-menu" id="bottombarMasMenu">
       <button type="button" class="topbar-menu-item" data-section="oportunidades"><div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div> Oportunidades</button>
       <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
-      <!--button type="button" class="topbar-menu-item" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> IA</button-->
+      <button type="button" class="topbar-menu-item" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> Análisis de Procesos</button>
     </div>
   </nav>
 
@@ -339,22 +339,103 @@
     <div class="tab-content" id="secIA">
       <section>
         <div class="section-head">
-          <h2>IA</h2>
+          <h2>Análisis de Procesos</h2>
         </div>
-        <span class="analisis-badge-mockup">Próximamente</span>
-        <p class="section-sub" style="margin-bottom: 20px;">Un asistente que responde preguntas sobre tus alertas y el historial de precios en lenguaje natural.</p>
+        <p class="section-sub" style="margin-bottom: 8px;">
+          Ingresa el código de una Licitación o Compra Ágil para recibir un resumen en lenguaje simple
+          y un checklist de los documentos que exige — apoyo para decidir y prepararte, no reemplaza tu propio criterio.
+        </p>
+        <p class="section-sub" id="analisisCupoInfo" style="margin-bottom: 20px; font-size: 13px;"></p>
 
-        <div class="card mockup-locked">
-          <div class="ia-mock-chat">
-            <div class="ia-mock-msg user">¿Cuál fue el precio promedio de adjudicación de antibióticos este año?</div>
-            <div class="ia-mock-msg bot">El precio promedio de adjudicación para "Antibióticos" en lo que va del año fue de <strong>$842.500</strong>, con un mínimo de $310.000 y un máximo de $1.450.000, en 34 procesos resueltos.</div>
+        <div class="card" style="padding: 24px; margin-bottom: 20px;" id="analisisMisAnalisisCard">
+          <div class="section-head">
+            <h3 style="font-size: 15px;">Mis Análisis</h3>
           </div>
-          <div class="ia-mock-input-bar">
-            <input type="text" placeholder="Escribe tu pregunta..." disabled>
-            <button type="button" class="btn" disabled>Enviar</button>
+          <div id="analisisMisAnalisisLista"><div class="loading">Cargando...</div></div>
+        </div>
+
+        <div class="card" style="padding: 24px; margin-bottom: 20px;">
+          <div class="form-grid">
+            <div class="field">
+              <label for="analisisCodigo"><strong>Código del proceso</strong></label>
+              <input type="text" id="analisisCodigo" placeholder="Ej: 1509-5-L114 o 1195-39-COT26">
+            </div>
+            <div class="field">
+              <label><strong>Tipo</strong></label>
+              <div class="tipo-proceso-row-analisis">
+                <label class="checkbox-row" style="margin:0;"><input type="radio" name="analisisTipo" value="licitacion" checked> Licitación</label>
+                <label class="checkbox-row" style="margin:0;"><input type="radio" name="analisisTipo" value="compra_agil"> Compra Ágil</label>
+              </div>
+            </div>
           </div>
+          <div class="modal-actions" style="justify-content: flex-start; margin-top: 16px;">
+            <button type="button" class="btn" id="analisisBuscarBtn">🔍 Buscar / Analizar</button>
+          </div>
+          <div class="error-banner" id="errorAnalisis" style="display:none; margin-top: 12px;"></div>
+        </div>
+
+        <!-- Se muestra cuando no hay análisis cacheado: pedir archivo o "sin adjuntos" -->
+        <div class="card" id="analisisUploadCard" style="display:none; padding: 24px; margin-bottom: 20px;">
+          <h3 style="margin-bottom: 8px; font-size: 15px;">Aún no hay un análisis para este proceso</h3>
+          <p class="section-sub" style="margin-bottom: 16px; font-size: 13px;">
+            Sube el PDF o Word de las bases (descárgalo desde
+            <a href="#" id="analisisLinkFicha" target="_blank" rel="noopener noreferrer">la ficha en Mercado Público</a>,
+            botón "Adjuntos") — sin las bases completas, el análisis va a estar incompleto.
+          </p>
+          <div class="field">
+            <input type="file" id="analisisArchivo" accept=".pdf,.docx">
+          </div>
+          <label class="checkbox-row" style="margin-top: 10px;">
+            <input type="checkbox" id="analisisSinAdjuntos"> No tengo o no existen archivos — analizar solo con la ficha pública
+          </label>
+          <div class="modal-actions" style="justify-content: flex-start; margin-top: 16px;">
+            <button type="button" class="btn" id="analisisEjecutarBtn">✨ Analizar con IA</button>
+          </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="card" id="analisisResultadoWrap" style="display:none; padding: 24px;">
+          <div id="analisisAvisoDesactualizado" class="warning-box-inline" style="display:none;"></div>
+          <div class="section-head">
+            <h3 id="analisisResultadoTitulo">Resultado</h3>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-ghost" id="analisisDescargarPdfBtn">📄 Descargar PDF</button>
+              <button type="button" class="btn btn-ghost" id="analisisEnviarCorreoBtn">✉️ Enviar por correo</button>
+              <button type="button" class="btn btn-ghost" id="analisisRehacerBtn">🔄 Rehacer análisis</button>
+            </div>
+          </div>
+          <div id="analisisContenido"></div>
         </div>
       </section>
+    </div>
+
+    <!-- Modal: confirmar cuando el documento no parece corresponder -->
+    <div class="modal-overlay" id="analisisMismatchModal">
+      <div class="modal">
+        <h3>⚠️ El documento no parece corresponder</h3>
+        <p class="modal-message" id="analisisMismatchRazon"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="analisisMismatchCancelar">Cancelar</button>
+          <button type="button" class="btn" id="analisisMismatchContinuar">Continuar de todas formas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: enviar por correo -->
+    <div class="modal-overlay" id="analisisCorreoModal">
+      <div class="modal">
+        <h3>Enviar análisis por correo</h3>
+        <br>
+        <div class="field">
+          <label for="analisisCorreoInput">Correo de destino</label>
+          <input type="email" id="analisisCorreoInput">
+        </div>
+        <div class="error" id="errorAnalisisCorreo" style="display:none;"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="analisisCorreoCancelar">Cancelar</button>
+          <button type="button" class="btn" id="analisisCorreoConfirmar">Enviar</button>
+        </div>
+      </div>
     </div>
 
     <!-- Sección: Mi Perfil -->
@@ -759,8 +840,8 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/inactivity-logout.js"></script>
 

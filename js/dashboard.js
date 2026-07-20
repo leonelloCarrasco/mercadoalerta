@@ -2754,6 +2754,7 @@ sectionLinks.forEach((link) => {
   link.addEventListener('click', () => {
     mostrarSeccion(link.dataset.section);
     if (link.dataset.section === 'cuenta') poblarSeccionCuenta();
+    if (link.dataset.section === 'ia') cargarMisAnalisis();
     topbarMenu.classList.remove('open');
     bottombarMasMenu.classList.remove('open');
   });
@@ -3411,6 +3412,355 @@ document.querySelectorAll('.toggle-password').forEach((toggleBtn) => {
     toggleBtn.setAttribute('aria-pressed', String(isHidden));
     toggleBtn.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
   });
+});
+
+// ============================================================
+// --- Sección: Análisis de Procesos (IA) ---
+// ============================================================
+
+let analisisActual = null; // { analisis, tipoProceso, codigo }
+let forzarContinuarPendiente = false;
+
+async function cargarMisAnalisis() {
+  const contenedor = document.getElementById('analisisMisAnalisisLista');
+  try {
+    const data = await apiFetch('/api/analisis-ia/mios');
+    renderMisAnalisis(data.analisis);
+  } catch (err) {
+    contenedor.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function renderMisAnalisis(lista) {
+  const contenedor = document.getElementById('analisisMisAnalisisLista');
+  if (!lista || lista.length === 0) {
+    contenedor.innerHTML = '<div class="empty-state">Todavía no analizaste ningún proceso. Usá el buscador de abajo para empezar.</div>';
+    return;
+  }
+
+  contenedor.innerHTML = lista.map((a) => `
+    <div class="row">
+      <div class="row-info">
+        <div class="row-title">${a.nombre || a.codigo_externo}</div>
+        <div class="row-meta">
+          <span>${a.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
+          <br><span>Código: ${a.codigo_externo}</span>
+          <br><span>${a.sin_adjuntos ? '⚠️ Sin adjuntos' : '📄 Con bases'}</span>
+          <br><span>Analizado: ${formatDate(a.updated_at)}</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost" data-ver-analisis="${a.id}">Ver →</button>
+    </div>
+  `).join('');
+
+  contenedor.querySelectorAll('[data-ver-analisis]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const a = lista.find((x) => String(x.id) === btn.dataset.verAnalisis);
+      if (!a) return;
+      document.getElementById('analisisCodigo').value = a.codigo_externo;
+      document.querySelector(`input[name="analisisTipo"][value="${a.tipo_proceso}"]`).checked = true;
+      document.getElementById('analisisUploadCard').style.display = 'none';
+      document.getElementById('analisisCupoInfo').textContent = '';
+      mostrarResultadoAnalisis(a, a.tipo_proceso, a.codigo_externo, false);
+    });
+  });
+}
+
+function mostrarCupoInfoNuevo(cupoRestante) {
+  document.getElementById('analisisCupoInfo').textContent = `Te quedan ${cupoRestante} análisis de IA este mes.`;
+}
+
+function mostrarResultadoAnalisis(analisis, tipoProceso, codigo, posiblementeDesactualizado) {
+  analisisActual = { analisis, tipoProceso, codigo };
+  const wrap = document.getElementById('analisisResultadoWrap');
+  const c = analisis.contenido;
+
+  document.getElementById('analisisResultadoTitulo').textContent = analisis.nombre? codigo +' - '+ analisis.nombre : codigo;
+
+  const avisoDesact = document.getElementById('analisisAvisoDesactualizado');
+  if (posiblementeDesactualizado) {
+    avisoDesact.textContent = '⚠️ La fecha de cierre de este proceso cambió desde que se hizo este análisis — es señal de que las bases pueden haber sido modificadas. Te recomendamos rehacer el análisis.';
+    avisoDesact.style.display = 'block';
+  } else {
+    avisoDesact.style.display = 'none';
+  }
+
+  const sinAdjuntosHtml = analisis.sin_adjuntos
+    ? '<div class="warning-box-inline">⚠️ Este análisis se hizo sin las bases completas — puede faltar información relevante.</div>'
+    : '';
+
+  const fechasHtml = (c.fechasClave || []).map((f) => `
+    <div class="analisis-fecha-fila"><span>${f.nombre}</span><strong>${f.fecha}</strong></div>
+  `).join('') || '<p class="section-sub">No se identificaron fechas.</p>';
+
+  const checklistHtml = (c.checklistDocumentos || []).map((d) => `
+    <div class="analisis-checklist-item">
+      <span class="${d.obligatorio ? 'badge-obligatorio' : 'badge-opcional'}">${d.obligatorio ? '● OBLIGATORIO' : '○ opcional'}</span>
+      <div>
+        <div>${d.documento}</div>
+        ${d.notas ? `<div class="section-sub" style="font-size:12px; margin-top:2px;">${d.notas}</div>` : ''}
+      </div>
+    </div>
+  `).join('') || '<p class="section-sub">No se identificaron documentos exigidos.</p>';
+
+  const criteriosHtml = (c.criteriosEvaluacion || []).map((cr) => `
+    <div class="analisis-criterio-fila"><span>${cr.criterio}</span><strong>${cr.ponderacion || ''}</strong></div>
+    ${cr.detalle ? `<p class="section-sub" style="font-size:12px; margin: 2px 0 8px 0;">${cr.detalle}</p>` : ''}
+  `).join('') || '<p class="section-sub">No se identificaron criterios de evaluación.</p>';
+
+  const puntosHtml = (c.puntosDeAtencion || []).map((p) => `<div class="analisis-punto-atencion">⚠️ ${p}</div>`).join('')
+    || '<p class="section-sub">Sin puntos de atención identificados.</p>';
+
+  document.getElementById('analisisContenido').innerHTML = `
+    ${sinAdjuntosHtml}
+    <p style="white-space:pre-line; line-height:1.7;">${c.resumen || ''}</p>
+
+    <div class="analisis-seccion">
+      <h4>Fechas clave</h4>
+      ${fechasHtml}
+    </div>
+
+    <div class="analisis-seccion">
+      <h4>Checklist de documentos</h4>
+      ${checklistHtml}
+    </div>
+
+    <div class="analisis-seccion">
+      <h4>Criterios de evaluación</h4>
+      ${criteriosHtml}
+    </div>
+
+    <div class="analisis-seccion">
+      <h4>Puntos de atención</h4>
+      ${puntosHtml}
+    </div>
+  `;
+
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function mostrarCardSubida(tipoProceso, codigo) {
+  const urlFicha = tipoProceso === 'compra_agil' ? urlFichaCompraAgil(codigo) : urlFichaLicitacion(codigo);
+  document.getElementById('analisisLinkFicha').href = urlFicha;
+  document.getElementById('analisisArchivo').value = '';
+  document.getElementById('analisisSinAdjuntos').checked = false;
+  document.getElementById('analisisUploadCard').style.display = 'block';
+  document.getElementById('analisisUploadCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('analisisBuscarBtn').addEventListener('click', async () => {
+  const codigo = document.getElementById('analisisCodigo').value.trim();
+  const tipoProceso = document.querySelector('input[name="analisisTipo"]:checked').value;
+  const errorEl = document.getElementById('errorAnalisis');
+  errorEl.style.display = 'none';
+
+  if (!codigo) {
+    errorEl.textContent = 'Ingresa un código.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('analisisUploadCard').style.display = 'none';
+  document.getElementById('analisisResultadoWrap').style.display = 'none';
+  document.getElementById('analisisCupoInfo').textContent = '';
+
+  const btn = document.getElementById('analisisBuscarBtn');
+  btn.disabled = true;
+  btn.textContent = 'Buscando...';
+  mostrarProcesando('Buscando análisis existente...');
+
+  try {
+    const data = await apiFetch(`/api/analisis-ia/buscar?tipoProceso=${tipoProceso}&codigo=${encodeURIComponent(codigo)}`);
+    if (data.encontrado) {
+      mostrarResultadoAnalisis(data.analisis, tipoProceso, codigo, data.posiblementeDesactualizado);
+      document.getElementById('analisisCupoInfo').textContent = '';
+    } else {
+      mostrarCardSubida(tipoProceso, codigo);
+    }
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 Buscar / Analizar';
+    ocultarProcesando();
+  }
+});
+
+async function ejecutarAnalisis() {
+  const codigo = document.getElementById('analisisCodigo').value.trim();
+  const tipoProceso = document.querySelector('input[name="analisisTipo"]:checked').value;
+  const archivo = document.getElementById('analisisArchivo').files[0];
+  const sinAdjuntos = document.getElementById('analisisSinAdjuntos').checked;
+  const errorEl = document.getElementById('errorAnalisis');
+  errorEl.style.display = 'none';
+
+  if (!archivo && !sinAdjuntos) {
+    errorEl.textContent = 'Sube un archivo, o marca "No tengo o no existen archivos".';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('analisisEjecutarBtn');
+  btn.disabled = true;
+  btn.textContent = 'Analizando...';
+  mostrarProcesando('Analizando con IA... puede tardar unos segundos');
+
+  const formData = new FormData();
+  formData.append('tipoProceso', tipoProceso);
+  formData.append('codigo', codigo);
+  if (archivo) formData.append('archivo', archivo);
+  formData.append('sinAdjuntos', sinAdjuntos ? 'true' : 'false');
+  if (forzarContinuarPendiente) formData.append('forzarContinuar', 'true');
+
+  try {
+    const token = sessionStorage.getItem('token');
+    const res = await fetch(`${API_BASE}/api/analisis-ia`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }, // sin Content-Type — FormData lo arma solo con el boundary
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al analizar');
+
+    if (data.requiereConfirmacion) {
+      document.getElementById('analisisMismatchRazon').textContent =
+        data.razonNoCoincide || 'El documento no parece corresponder al código ingresado.';
+      document.getElementById('analisisMismatchModal').classList.add('open');
+      return;
+    }
+
+    forzarContinuarPendiente = false;
+    document.getElementById('analisisUploadCard').style.display = 'none';
+    mostrarResultadoAnalisis(data.analisis, tipoProceso, codigo, false);
+    mostrarCupoInfoNuevo(data.cupoRestante);
+    cargarMisAnalisis();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Analizar con IA';
+    ocultarProcesando();
+  }
+}
+document.getElementById('analisisEjecutarBtn').addEventListener('click', ejecutarAnalisis);
+
+document.getElementById('analisisRehacerBtn').addEventListener('click', () => {
+  if (!analisisActual) return;
+  mostrarCardSubida(analisisActual.tipoProceso, analisisActual.codigo);
+});
+
+// --- Modal: documento no corresponde ---
+const analisisMismatchModal = document.getElementById('analisisMismatchModal');
+document.getElementById('analisisMismatchCancelar').addEventListener('click', () => {
+  analisisMismatchModal.classList.remove('open');
+  forzarContinuarPendiente = false;
+});
+document.getElementById('analisisMismatchContinuar').addEventListener('click', () => {
+  analisisMismatchModal.classList.remove('open');
+  forzarContinuarPendiente = true;
+  ejecutarAnalisis(); // el <input type="file"> conserva el archivo elegido, no hace falta pedirlo de nuevo
+});
+analisisMismatchModal.addEventListener('click', (e) => {
+  if (e.target === analisisMismatchModal) {
+    analisisMismatchModal.classList.remove('open');
+    forzarContinuarPendiente = false;
+  }
+});
+
+// --- Descargar PDF (mismo patrón que Búsquedas: jsPDF + autotable, cliente) ---
+document.getElementById('analisisDescargarPdfBtn').addEventListener('click', () => {
+  if (!analisisActual) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt' });
+  const { analisis, codigo } = analisisActual;
+  const c = analisis.contenido;
+  const nombreProceso = analisis.nombre? codigo +' - '+ analisis.nombre : codigo;
+
+  doc.setFontSize(14);
+  const tituloLineas = doc.splitTextToSize(`Análisis: ${nombreProceso}` , 500);
+  doc.text(tituloLineas, 40, 40, { 
+    align: 'justify', 
+    maxWidth: 500 
+  });
+  
+  let y = 40 + tituloLineas.length * 12 + 10;
+
+  doc.setFontSize(9);
+  doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, y);
+
+  doc.setFontSize(10);
+  const resumenLineas = doc.splitTextToSize(c.resumen || '', 500);
+  doc.text(resumenLineas, 40, (y+20) )
+
+  y = (y+20) + resumenLineas.length * 12 + 20;
+
+  doc.autoTable({
+    startY: y,
+    head: [['Documento exigido', 'Obligatorio', 'Notas']],
+    body: (c.checklistDocumentos || []).map((d) => [d.documento, d.obligatorio ? 'Sí' : 'No', d.notas || '']),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [30, 30, 40] },
+    margin: { left: 40, right: 40 },
+  });
+
+  y = doc.lastAutoTable.finalY + 20;
+  doc.autoTable({
+    startY: y,
+    head: [['Puntos de atención']],
+    body: (c.puntosDeAtencion || []).map((p) => [p]),
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [30, 30, 40] },
+    margin: { left: 40, right: 40 },
+  });
+
+  const nombreArchivo = `Analisis-${nombreProceso.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50)}.pdf`;
+  doc.save(nombreArchivo);
+});
+
+// --- Enviar por correo ---
+const analisisCorreoModal = document.getElementById('analisisCorreoModal');
+document.getElementById('analisisEnviarCorreoBtn').addEventListener('click', () => {
+  if (!analisisActual) return;
+  document.getElementById('analisisCorreoInput').value = window.usuarioActual?.email || '';
+  document.getElementById('errorAnalisisCorreo').style.display = 'none';
+  analisisCorreoModal.classList.add('open');
+});
+document.getElementById('analisisCorreoCancelar').addEventListener('click', () => {
+  analisisCorreoModal.classList.remove('open');
+});
+analisisCorreoModal.addEventListener('click', (e) => {
+  if (e.target === analisisCorreoModal) analisisCorreoModal.classList.remove('open');
+});
+document.getElementById('analisisCorreoConfirmar').addEventListener('click', async () => {
+  const email = document.getElementById('analisisCorreoInput').value.trim();
+  const errorEl = document.getElementById('errorAnalisisCorreo');
+  if (!email) {
+    errorEl.textContent = 'Ingresa un correo.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('analisisCorreoConfirmar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    await apiFetch(`/api/analisis-ia/${analisisActual.analisis.id}/enviar-correo`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    analisisCorreoModal.classList.remove('open');
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar';
+  }
 });
 
 function poblarSeccionCuenta() {
