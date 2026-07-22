@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="js/clean-url.js"></script>
 <title>Dashboard — MercadoAlerta</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#12172B" id="theme-meta"> 
@@ -79,7 +80,7 @@
 
         <div class="card" id="inicioOnboardingBanner" style="display:none; padding: 24px; margin-bottom: 28px; border-color: var(--gold);">
           <h3 style="font-size: 16px; margin-bottom: 6px;">👋 Todavía no tienes ninguna alerta configurada</h3>
-          <p class="section-sub" style="margin-bottom: 16px;">Cree tu primera alerta para que MercadoAlerta empiece a avisarte apenas se publique algo de tu rubro en Mercado Público.</p>
+          <p class="section-sub" style="margin-bottom: 16px;">Creá tu primera alerta para que MercadoAlerta empiece a avisarte apenas se publique algo de tu rubro en Mercado Público.</p>
           <button type="button" class="btn" id="inicioOnboardingCrearAlertaBtn">+ Crear mi primera alerta</button>
         </div>
 
@@ -488,6 +489,7 @@
               <div>
                 <label for="profileEmail" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Email</label>
                 <input type="email" id="profileEmail" disabled style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 12px; border-radius: 6px; cursor: not-allowed;">
+                <small style="display:block; margin-top: 4px; color: var(--text-muted); font-size: 11px;">No editable — escríbenos si necesitas cambiarlo.</small>
               </div>
             </div>
 
@@ -590,51 +592,55 @@
           </select>
         </div>
 
-        <!-- 3. Tipo de licitación (tramo UTM) — solo visible si "Licitaciones" está marcado -->
-        <div class="field" id="tramoField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px;">
-          <label for="tramoDropdownBtn"><strong>Tipo de licitación (tramo UTM)</strong></label>
-          <small>Es el criterio de monto para Licitaciones (cada tramo ya define un rango de monto).</small>
-          </br>
+        <details class="filter-toggle" style="grid-column: 1 / -1;">
+          <summary>Opciones avanzadas (opcional)</summary>
 
-          <button type="button" id="tramoDropdownBtn" class="region-dropdown-btn">Todos los tramos</button>
-          <div id="tramoDropdownPanel" class="region-dropdown-panel"></div>
-        </div>
+          <!-- 3. Tipo de licitación (tramo UTM) — solo visible si "Licitaciones" está marcado -->
+          <div class="field" id="tramoField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
+            <label for="tramoDropdownBtn"><strong>Tipo de licitación (tramo UTM)</strong></label>
+            <small>Es el criterio de monto para Licitaciones (cada tramo ya define un rango de monto).</small>
+            </br>
 
-        <!-- 4. Monto mínimo / máximo — solo visible si "Compras Ágiles" está marcado -->
-        <div class="field" id="montoField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px;">
-          <div id="title-field">
-            <label><strong>Tramo de monto para Compras Ágiles</strong></label>
-            <small>Define un tramo de monto para Compras Ágiles (máximo 100 UTM).</small>
+            <button type="button" id="tramoDropdownBtn" class="region-dropdown-btn">Todos los tramos</button>
+            <div id="tramoDropdownPanel" class="region-dropdown-panel"></div>
           </div>
 
-          <div class="field" id="montoMinimoField" >
-            <label for="montoMinimo">Monto mínimo (CLP)</label>
-            <input type="text" inputmode="numeric" id="montoMinimo" placeholder="$1">
-          </div>
-          <div class="field" id="montoMaximoField">
-            <label for="montoMaximo">Monto máximo (CLP)</label>
-            <input type="text" inputmode="numeric" id="montoMaximo" placeholder="$7.164.900">
-          </div>
-        </div>
+          <!-- 4. Monto mínimo / máximo — solo visible si "Compras Ágiles" está marcado -->
+          <div class="field" id="montoField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
+            <div id="title-field">
+              <label><strong>Tramo de monto para Compras Ágiles</strong></label>
+              <small>Define un tramo de monto para Compras Ágiles (máximo 100 UTM).</small>
+            </div>
 
-        <!-- 5. Regiones -->
-        <div class="field" id="regionField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px;">
-          <label for="regionDropdownBtn"><strong>Ubicación</strong></label>
-          <small>Filtra por la región del organismo comprador (no de tu empresa). Si no marcas ninguna, se monitorean todas las regiones del país.</small>
-          <br>
-          <button type="button" id="regionDropdownBtn" class="region-dropdown-btn">Todas las regiones</button>
-          <div id="regionDropdownPanel" class="region-dropdown-panel"></div>
-        </div>
+            <div class="field" id="montoMinimoField" >
+              <label for="montoMinimo">Monto mínimo (CLP)</label>
+              <input type="text" inputmode="numeric" id="montoMinimo" placeholder="$1">
+            </div>
+            <div class="field" id="montoMaximoField">
+              <label for="montoMaximo">Monto máximo (CLP)</label>
+              <input type="text" inputmode="numeric" id="montoMaximo" placeholder="$7.164.900">
+            </div>
+          </div>
 
-        <!-- 6. Organismo comprador -->
-        <div class="field" id="organismoField" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px;">
-          <label for="organismoBuscar"><strong>Organismo comprador</strong> </label>
-          <small>Puedes elegir varias instituciones compradoras.</small>
-          <br>
-          <input type="text" id="organismoBuscar" placeholder="Busca por nombre (ej. Municipalidad de...)" autocomplete="off">
-          <div id="organismoResultados" class="categoria-resultados"></div>
-          <div id="organismosChips" class="categoria-chips"></div>
-        </div>
+          <!-- 5. Regiones -->
+          <div class="field" id="regionField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
+            <label for="regionDropdownBtn"><strong>Ubicación</strong></label>
+            <small>Filtra por la región del organismo comprador (no de tu empresa). Si no marcas ninguna, se monitorean todas las regiones del país.</small>
+            <br>
+            <button type="button" id="regionDropdownBtn" class="region-dropdown-btn">Todas las regiones</button>
+            <div id="regionDropdownPanel" class="region-dropdown-panel"></div>
+          </div>
+
+          <!-- 6. Organismo comprador -->
+          <div class="field" id="organismoField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
+            <label for="organismoBuscar"><strong>Organismo comprador</strong> </label>
+            <small>Puedes elegir varias instituciones compradoras.</small>
+            <br>
+            <input type="text" id="organismoBuscar" placeholder="Busca por nombre (ej. Municipalidad de...)" autocomplete="off">
+            <div id="organismoResultados" class="categoria-resultados"></div>
+            <div id="organismosChips" class="categoria-chips"></div>
+          </div>
+        </details>
 
       </div>
       <div class="error-banner" id="errorBannerModal"></div>

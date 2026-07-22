@@ -2819,6 +2819,10 @@ document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
   resetTramoDropdown();
   resetTipoProceso();
   resetOrganismos();
+  // El <details> de "Opciones avanzadas" queda como DOM real entre una
+  // apertura y otra del modal (no se recrea) — sin esto, se acordaría solo
+  // de haber quedado abierto la vez anterior.
+  document.querySelector('#newAlertModal .filter-toggle')?.removeAttribute('open');
   newAlertModal.classList.add('open');
 });
 document.getElementById('cerrarNuevaAlertaBtn').addEventListener('click', () => {
