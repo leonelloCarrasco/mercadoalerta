@@ -2745,6 +2745,7 @@ const secciones = {
   analisis: document.getElementById('tabAnalisis'),
   ia: document.getElementById('secIA'),
   cuenta: document.getElementById('secCuenta'),
+  ayuda: document.getElementById('secAyuda'),
 };
 
 const bottombarMasBtn = document.getElementById('bottombarMasBtn');
@@ -3837,6 +3838,47 @@ document.getElementById('analisisCorreoConfirmar').addEventListener('click', asy
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar';
+  }
+});
+
+// --- Ayuda: formulario de contacto ---
+document.getElementById('ayudaContactoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const asunto = document.getElementById('ayudaAsunto').value.trim();
+  const mensaje = document.getElementById('ayudaMensaje').value.trim();
+  const errorEl = document.getElementById('errorAyudaContacto');
+  const noticeEl = document.getElementById('ayudaContactoMsg');
+  const btn = document.getElementById('ayudaContactoBtn');
+
+  errorEl.style.display = 'none';
+  noticeEl.style.display = 'none';
+
+  if (!asunto || !mensaje) {
+    errorEl.textContent = 'Completa el asunto y el mensaje.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  mostrarProcesando('Enviando tu mensaje...');
+
+  try {
+    await apiFetch('/api/soporte/contacto', {
+      method: 'POST',
+      body: JSON.stringify({ asunto, mensaje }),
+    });
+    noticeEl.textContent = '✅ Mensaje enviado — te responderemos a tu correo a la brevedad.';
+    noticeEl.style.display = 'block';
+    document.getElementById('ayudaContactoForm').reset();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar mensaje';
+    ocultarProcesando();
   }
 });
 

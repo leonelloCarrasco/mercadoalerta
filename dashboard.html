@@ -34,6 +34,7 @@
     <div class="sidebar-bottom">
       <div class="stat-tile-label">Cuenta</div>
       <button type="button" class="sidebar-link" data-section="cuenta"><div class="icon-2"><img src="/assets/icons/usuario.svg" class="icon-desc"></img></div> Mi Perfil</button>
+      <button type="button" class="sidebar-link" data-section="ayuda"><div class="icon-2"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div> Ayuda</button>
       <button type="button" class="sidebar-link logout-btn"><div class="icon-2"><img src="/assets/icons/salida.svg" class="icon-desc"></img></div> Cerrar sesión</button>
     </div>
   </aside>
@@ -47,6 +48,7 @@
         <div class="topbar-menu-email" id="topbarMenuEmail"></div>
       </div>
       <button type="button" class="topbar-menu-item" data-section="cuenta"><div class="icon-2"><img src="/assets/icons/usuario.svg" class="icon-desc"></img></div> Mi Perfil</button>
+      <button type="button" class="topbar-menu-item" data-section="ayuda"><div class="icon-2"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div> Ayuda</button>
       <button type="button" class="topbar-menu-item logout-btn"><div class="icon-2"><img src="/assets/icons/salida.svg" class="icon-desc"></img></div> Cerrar sesión</button>
     </div>
   </header>
@@ -61,6 +63,7 @@
       <button type="button" class="topbar-menu-item" data-section="oportunidades"><div class="icon"><img src="/assets/icons/dolar-bombilla.svg" class="icon-desc"></img></div> Oportunidades</button>
       <button type="button" class="topbar-menu-item" data-section="analisis"><div class="icon"><img src="/assets/icons/grafico-dolar-circulo-mezclado.svg" class="icon-desc"></img></div> Análisis de Precios</button>
       <button type="button" class="topbar-menu-item" data-section="ia"><div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div> Análisis de Procesos</button>
+      <button type="button" class="topbar-menu-item" data-section="ayuda"><div class="icon"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div> Ayuda</button>
     </div>
   </nav>
 
@@ -348,6 +351,7 @@
     <div class="tab-content" id="secIA">
       <section>
         <div class="section-head">
+          <div class="icon"><img src="/assets/icons/inteligencia-artificial.svg" class="icon-desc"></img></div>
           <h2>Análisis de Procesos</h2>
         </div>
         <p class="section-sub" style="margin-bottom: 8px;">
@@ -538,6 +542,88 @@
             <div class="form-note" id="passwordInfoMsg" style="display:none; margin-bottom: 12px;"></div>
             <div class="modal-actions" style="justify-content: flex-start;">
               <button type="submit" class="btn">Cambiar Contraseña</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- Sección: Ayuda -->
+    <div class="tab-content" id="secAyuda">
+      <section>
+        <div class="section-head">
+          <div class="icon"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div>
+          <h2>Ayuda</h2>
+        </div>
+        <p class="section-sub" style="margin-bottom: 20px;">Guía rápida de MercadoAlerta y un formulario para escribirnos directo si algo no te queda claro.</p>
+
+        <div class="card" style="padding: 24px; margin-bottom: 20px;">
+          <h3 style="font-size: 15px; margin-bottom: 14px;">Guía rápida</h3>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Qué es MercadoAlerta y cómo funciona?</summary>
+            <p>MercadoAlerta revisa Mercado Público por ti, día y noche, y te avisa por correo (y Telegram, si lo configuras) apenas se publica una Licitación o Compra Ágil que calza con lo que configuraste en tus <strong>Alertas</strong>. No hace falta que entres a revisar el portal a mano todos los días.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Cómo creo mi primera alerta?</summary>
+            <p>Ve a <strong>Alertas → + Nueva Alerta</strong>. Lo único obligatorio es elegir un <strong>Rubro o Producto</strong> — todo lo demás (tipo de proceso, tramo de monto, ubicación, organismo comprador) es opcional y está colapsado bajo "Opciones avanzadas", por si quieres afinar más la búsqueda.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Cuál es la diferencia entre Alertas y Búsquedas?</summary>
+            <p>Una <strong>Alerta</strong> queda guardada y te avisa automáticamente cada vez que se publica algo nuevo que calza — no tienes que hacer nada más. Una <strong>Búsqueda</strong> es puntual: consulta en el momento contra Mercado Público (con los mismos filtros que uses) y te muestra los resultados ahí mismo, sin quedar monitoreando nada hacia adelante.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Qué son Recordatorios, Seguimiento y Portafolio (Oportunidades)?</summary>
+            <p><strong>Recordatorios de cierre</strong> te avisan con anticipación (24, 72 horas, etc., tú eliges) antes de que cierre una licitación o Compra Ágil que te interesa. <strong>Seguimiento de estado</strong> te avisa cada vez que una licitación cambia de estado (por ejemplo, pasa a "Adjudicada"). <strong>Portafolio</strong> es tu mini-CRM personal — un tablero para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta (por evaluar, preparando oferta, ganada, perdida, etc.), con notas propias en cada una.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Qué es Análisis de Precios?</summary>
+            <p>Buscas un producto o rubro y ves el historial de precios en los que se ha adjudicado antes — útil para calibrar a qué precio postular en un llamado nuevo, antes de armar tu oferta económica. Tiene 4 vistas: <strong>Precios</strong> (el historial en sí), <strong>Proveedores</strong> (quiénes se lo han adjudicado antes), <strong>Organismos</strong> (qué instituciones lo compran) y <strong>Razones de rechazo</strong> (por qué se han rechazado ofertas de ese producto/rubro en el pasado, para no repetir el mismo error).</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Cómo funciona el Análisis de Procesos con IA?</summary>
+            <p>Ingresas el código de una licitación o Compra Ágil, subes el PDF o Word de las bases (o marcas "No tengo o no existen archivos" para que se analice solo con la información pública disponible), y la IA te devuelve un resumen en lenguaje simple más un checklist de los documentos que exige. Es un apoyo para entender más rápido qué se pide — no reemplaza tu propio criterio ni redacta tu oferta.</p>
+            <p>Cada plan tiene una cuota mensual (no es mes calendario: se cuenta desde tu primer análisis de cada ciclo) — la ves apenas entras a la sección, sin necesidad de intentar un análisis primero.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Cómo cambio de plan o cancelo mi suscripción?</summary>
+            <p>Desde <strong>Mi Perfil → Mi Suscripción</strong> puedes ver tu plan actual, tu historial de pagos, y cancelar cuando quieras. Al cancelar, no pierdes el acceso al instante — lo mantienes hasta que termine el período que ya pagaste, y te avisamos por correo un par de días antes de que se corte de verdad.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Por qué no puedo editar mi RUT o mi email?</summary>
+            <p>El RUT de la empresa queda fijo porque ya se validó contra Mercado Público al momento de registrarte. El email tampoco es editable desde el panel por ahora — si necesitas cambiarlo, escríbenos con el formulario de aquí abajo.</p>
+          </details>
+
+          <details class="filter-toggle ayuda-item">
+            <summary>¿Qué pasa cuando termina mi período de prueba?</summary>
+            <p>Tu prueba dura 14 días. Te avisamos por correo 2 días antes de que termine, y de nuevo el mismo día que vence. Al vencer, tus alertas dejan de monitorear hasta que elijas un plan — pero toda tu configuración (alertas, búsquedas guardadas, recordatorios, portafolio) queda guardada tal cual la dejaste, sin perder nada.</p>
+          </details>
+        </div>
+
+        <div class="card" style="padding: 24px;">
+          <h3 style="font-size: 15px; margin-bottom: 6px;">¿No encontraste lo que buscabas?</h3>
+          <p class="section-sub" style="margin-bottom: 16px;">Escríbenos y te respondemos directo a tu correo.</p>
+
+          <form id="ayudaContactoForm">
+            <div class="field" style="margin-bottom: 14px;">
+              <label for="ayudaAsunto">Asunto</label>
+              <input type="text" id="ayudaAsunto" placeholder="Ej. Duda sobre mi plan" maxlength="255" required>
+            </div>
+            <div class="field" style="margin-bottom: 14px;">
+              <label for="ayudaMensaje">Mensaje</label>
+              <textarea id="ayudaMensaje" rows="5" placeholder="Cuéntanos en detalle qué necesitas..." required style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); resize: vertical;"></textarea>
+            </div>
+            <div class="error-banner" id="errorAyudaContacto" style="display:none;"></div>
+            <div class="form-note" id="ayudaContactoMsg" style="display:none;"></div>
+            <div class="modal-actions" style="justify-content: flex-start;">
+              <button type="submit" class="btn" id="ayudaContactoBtn">Enviar mensaje</button>
             </div>
           </form>
         </div>
