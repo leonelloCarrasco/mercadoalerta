@@ -584,6 +584,14 @@ table.analisis-table a:hover { text-decoration: underline; }
   padding: 7px 9px; font-size: 12.5px;
 }
 
+/* --- Ayuda (manual + contacto) --- */
+.ayuda-item { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+.ayuda-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.ayuda-item summary { font-size: 14px; color: var(--text); font-family: var(--font-body); text-transform: none; letter-spacing: normal; }
+.ayuda-item summary:hover { color: var(--gold); }
+.ayuda-item p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-top: 10px; }
+.ayuda-item p + p { margin-top: 8px; }
+
   .icon {
     height: 30px;
     width: 30px;
