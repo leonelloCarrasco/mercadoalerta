@@ -76,6 +76,26 @@ async function apiFetch(path, options = {}) {
   return res.status === 204 ? null : res.json();
 }
 
+/**
+ * Escapa HTML antes de insertar texto de origen externo/usuario dentro de un
+ * innerHTML — sin esto, un nombre de organismo, una nota de Portafolio, o el
+ * resumen/checklist que devuelve la IA (que a su vez procesa un archivo que
+ * el usuario sube) podría contener HTML/script que se ejecuta en el
+ * navegador de quien lo mire (XSS). Se usa en TODO texto que no sea 100%
+ * fijo del propio template — nombres/organismos que vienen de la API de
+ * Mercado Público, notas escritas a mano, y cualquier campo del resultado
+ * de Análisis de Procesos con IA.
+ */
+function escapeHtml(valor) {
+  if (valor === null || valor === undefined) return '';
+  return String(valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatMoney(n) {
   if (n === null || n === undefined) return 'No especificado';
   return '$' + Number(n).toLocaleString('es-CL');
@@ -215,7 +235,7 @@ let categoriaBuscarTimeout = null;
 function renderCategoriasChips() {
   categoriasChipsEl.innerHTML = categoriasSeleccionadas.map((c) => `
     <span class="categoria-chip" data-codigo="${c.codigo}">
-      ${c.titulo} <span class="nivel-badge ${c.nivel}">${c.nivel === 'categoria' ? 'Rub.' : 'Prod.'}</span> <span class="cod">(${c.codigo})</span>
+      ${escapeHtml(c.titulo)} <span class="nivel-badge ${c.nivel}">${c.nivel === 'categoria' ? 'Rub.' : 'Prod.'}</span> <span class="cod">(${c.codigo})</span>
       <span class="quitar" data-quitar="${c.codigo}">✕</span>
     </span>
   `).join('');
@@ -254,7 +274,7 @@ categoriaBuscarInput.addEventListener('input', () => {
       } else {
         categoriaResultadosEl.innerHTML = data.resultados.map((r) => `
           <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-            <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+            <span>${escapeHtml(r.titulo)} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
             <span class="cod">${r.codigo}</span>
           </div>
         `).join('');
@@ -311,7 +331,7 @@ function crearBuscadorCategoriaUnico(inputId, resultadosId, alCambiar) {
           ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
           : data.resultados.map((r) => `
               <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}" data-nivel="${r.nivel}">
-                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+                <span>${escapeHtml(r.titulo)} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
                 <span class="cod">${r.codigo}</span>
               </div>
             `).join('');
@@ -392,7 +412,7 @@ function crearBuscadorMultiple(inputId, resultadosId, chipsId, apiPath, { soloUn
   function renderChips() {
     chipsEl.innerHTML = seleccionados.map((o) => `
       <span class="categoria-chip" data-organismo="${o.replace(/"/g, '&quot;')}">
-        ${o}
+        ${escapeHtml(o)}
         <span class="quitar" data-quitar="${o.replace(/"/g, '&quot;')}">✕</span>
       </span>
     `).join('');
@@ -417,7 +437,7 @@ function crearBuscadorMultiple(inputId, resultadosId, chipsId, apiPath, { soloUn
         const disponibles = data.resultados.filter((o) => !seleccionados.includes(o));
         resultadosEl.innerHTML = disponibles.length === 0
           ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
-          : disponibles.map((o) => `<div class="categoria-resultado-item" data-organismo="${o.replace(/"/g, '&quot;')}"><span>${o}</span></div>`).join('');
+          : disponibles.map((o) => `<div class="categoria-resultado-item" data-organismo="${o.replace(/"/g, '&quot;')}"><span>${escapeHtml(o)}</span></div>`).join('');
 
         resultadosEl.querySelectorAll('[data-organismo]').forEach((el) => {
           el.addEventListener('click', () => {
@@ -486,7 +506,7 @@ function renderArbolRubros(filtro = '') {
       if (rubrosFiltrados.length === 0) return '';
 
       const hojasHtml = rubrosFiltrados.map((r) => `
-        <div class="rubro-hoja" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">${r.titulo}</div>
+        <div class="rubro-hoja" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">${escapeHtml(r.titulo)}</div>
       `).join('');
 
       // Con filtro activo, se abren automáticamente las ramas que tienen resultados.
@@ -803,7 +823,7 @@ let organismosSeleccionados = [];
 function renderOrganismosChips() {
   organismosChipsEl.innerHTML = organismosSeleccionados.map((o) => `
     <span class="categoria-chip" data-organismo="${o.replace(/"/g, '&quot;')}">
-      ${o}
+      ${escapeHtml(o)}
       <span class="quitar" data-quitar-organismo="${o.replace(/"/g, '&quot;')}">✕</span>
     </span>
   `).join('');
@@ -1116,7 +1136,7 @@ function renderConfigs() {
       const info = mapaCategorias[cod];
       return { codigo: cod, titulo: info ? info.titulo : cod, nivel: info ? info.nivel : 'categoria' };
     });
-    const nombresCategorias = categoriasInfo.map((cat) => `${cat.titulo} <span class="nivel-badge ${cat.nivel}">${etiquetaNivel(cat.nivel)}</span> <span class="cod">(${cat.codigo})</span>`);
+    const nombresCategorias = categoriasInfo.map((cat) => `${escapeHtml(cat.titulo)} <span class="nivel-badge ${cat.nivel}">${etiquetaNivel(cat.nivel)}</span> <span class="cod">(${cat.codigo})</span>`);
     return `
     <div class="row">
       <div class="row-info">
@@ -1563,7 +1583,7 @@ function describirBusquedaEnFila(b) {
   const fechaTexto = b.fecha ? formatDate(b.fecha).split(',')[0] : 'Hoy (al ejecutar)';
 
   if (b.tipo === 'compra_agil') {
-    if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
+    if (b.modo === 'codigo') return `<br><span>Código: ${escapeHtml(b.codigo_externo)}</span>`;
     const partes = [];
     if (b.texto_libre) partes.push(`<br><span>Texto: "${b.texto_libre}"</span>`);
     partes.push(formatearRegionesTag(b.regiones));
@@ -1574,7 +1594,7 @@ function describirBusquedaEnFila(b) {
     return partes.join('');
   }
 
-  if (b.modo === 'codigo') return `<br><span>Código: ${b.codigo_externo}</span>`;
+  if (b.modo === 'codigo') return `<br><span>Código: ${escapeHtml(b.codigo_externo)}</span>`;
   if (b.modo === 'estado_fecha') return `<br><span>Estado: ${ETIQUETAS_ESTADO_BUSQUEDA[b.estado] || b.estado}</span><br><span>Fecha: ${fechaTexto}</span>`;
   if (b.modo === 'proveedor') return `<br><span>Proveedor RUT: ${b.rut_proveedor}</span><br><span>Fecha: ${fechaTexto}</span>`;
   if (b.modo === 'organismo') return `${formatearOrganismosTag(b.organismos)}<br><span>Fecha: ${fechaTexto}</span>`;
@@ -1596,7 +1616,7 @@ function renderBusquedas() {
   const filasHtml = pagina.map((b) => `
     <div class="row" data-busqueda-id="${b.id}">
       <div class="row-info">
-        <div class="row-title">${b.nombre}</div>
+        <div class="row-title">${escapeHtml(b.nombre)}</div>
         <div class="row-meta">
           <span>${etiquetaTipoBusqueda(b.tipo)}</span>
           <span>${ETIQUETAS_MODO[b.modo] || b.modo}</span>
@@ -1728,13 +1748,13 @@ function filaResultadoHtml(r, tipo) {
     <div class="row">
       <div class="row-info">
         <div class="row-title">
-          <a href="${tipo === 'compra_agil' ? urlFichaCompraAgil(r.codigo_externo) : urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;">${r.nombre || r.codigo_externo} ↗</a>
+          <a href="${tipo === 'compra_agil' ? urlFichaCompraAgil(r.codigo_externo) : urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;">${escapeHtml(r.nombre) || escapeHtml(r.codigo_externo)} ↗</a>
         </div>
         <div class="row-meta">
           <span>${etiquetaTipoBusqueda(tipo)}</span>
           <br>
-          <span>Código: ${r.codigo_externo}</span>
-          <br><span>Estado: ${r.estado || 'Desconocido'}</span>
+          <span>Código: ${escapeHtml(r.codigo_externo)}</span>
+          <br><span>Estado: ${escapeHtml(r.estado) || 'Desconocido'}</span>
           <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
         </div>
         <div class="oportunidad-botones">
@@ -1910,7 +1930,7 @@ document.getElementById('descargarPdfBtn').addEventListener('click', async () =>
   const { busqueda, resultados } = ultimoResultadoBusqueda;
 
   doc.setFontSize(14);
-  doc.text(`Búsqueda: ${busqueda.nombre}`, 40, 40);
+  doc.text(`Búsqueda: ${escapeHtml(busqueda.nombre)}`, 40, 40);
   doc.setFontSize(9);
   doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, 56);
 
@@ -2148,11 +2168,11 @@ function renderRecordatorios() {
   card.innerHTML = recordatoriosData.map((r) => `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${r.nombre || r.codigo_externo}</div>
+        <div class="row-title">${escapeHtml(r.nombre) || escapeHtml(r.codigo_externo)}</div>
         <div class="row-meta">
           <span>${r.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
-          <br><span>Código: ${r.codigo_externo}</span>
-          <br><span>Organismo: ${r.organismo || 'No especificado'}</span>
+          <br><span>Código: ${escapeHtml(r.codigo_externo)}</span>
+          <br><span>Organismo: ${escapeHtml(r.organismo) || 'No especificado'}</span>
           <br><span>Monto: ${r.monto != null ? formatMoney(r.monto) : 'No especificado'}</span>
           <br><span>Cierra: ${formatDate(r.fecha_cierre)}</span>
           <br><span>Avisa: ${r.horas_antes}h antes del cierre</span>
@@ -2197,14 +2217,14 @@ function renderSeguimientos() {
     <div class="row">
       <div class="row-info">
         <div class="row-title">
-          <a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(s.codigo_externo)}" target="_blank" rel="noopener noreferrer">${s.nombre || s.codigo_externo} ↗</a>
+          <a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(s.codigo_externo)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.nombre) || escapeHtml(s.codigo_externo)} ↗</a>
         </div>
         <div class="row-meta">
           <span>📋 Licitación</span>
-          <br><span>Código: ${s.codigo_externo}</span>
-          <br><span>Organismo: ${s.organismo || 'No especificado'}</span>
-          <br><span>Región: ${s.region || 'No especificada'}</span>
-          <br><span>Estado actual: ${s.estado || 'Desconocido'}</span>
+          <br><span>Código: ${escapeHtml(s.codigo_externo)}</span>
+          <br><span>Organismo: ${escapeHtml(s.organismo) || 'No especificado'}</span>
+          <br><span>Región: ${escapeHtml(s.region) || 'No especificada'}</span>
+          <br><span>Estado actual: ${escapeHtml(s.estado) || 'Desconocido'}</span>
           <br><span>Cierra: ${formatDate(s.fecha_cierre)}</span>
           ${s.resuelta ? '<br><span>✅ Proceso resuelto</span>' : ''}
         </div>
@@ -2269,15 +2289,15 @@ function selectEstadoPipelineHtml(item) {
 function tarjetaPipelineHtml(item) {
   return `
     <div class="kanban-card" draggable="true" data-pipeline-id="${item.id}">
-      <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer" class="kanban-card-title">${item.nombre || item.codigo_externo} ↗</a>
+      <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer" class="kanban-card-title">${escapeHtml(item.nombre) || escapeHtml(item.codigo_externo)} ↗</a>
       <div class="kanban-card-meta">
         ${item.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}<br>
-        ${item.organismo || 'Organismo no especificado'}<br>
+        ${escapeHtml(item.organismo) || 'Organismo no especificado'}<br>
         ${item.monto != null ? formatMoney(item.monto) : 'Monto no especificado'}<br>
         Cierra: ${formatDate(item.fecha_cierre)}
       </div>
       ${selectEstadoPipelineHtml(item)}
-      <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${item.nota || ''}</textarea>
+      <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${escapeHtml(item.nota) || ''}</textarea>
       <div class="kanban-card-actions">
         <button type="button" data-eliminar-pipeline="${item.id}">✖ Quitar</button>
       </div>
@@ -2295,18 +2315,18 @@ function filaPipelineHtml(item) {
     <div class="row">
       <div class="row-info">
         <div class="row-title">
-          <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer">${item.nombre || item.codigo_externo} ↗</a>
+          <a href="${urlFichaPipeline(item)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.nombre) || escapeHtml(item.codigo_externo)} ↗</a>
         </div>
         <div class="row-meta">
           <span>${item.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
-          <br><span>Organismo: ${item.organismo || 'No especificado'}</span>
+          <br><span>Organismo: ${escapeHtml(item.organismo) || 'No especificado'}</span>
           <br><span>Monto: ${item.monto != null ? formatMoney(item.monto) : 'No especificado'}</span>
           <br><span>Cierra: ${formatDate(item.fecha_cierre)}</span>
           <br><span>Estado: ${estadoInfo ? `${estadoInfo.emoji} ${estadoInfo.etiqueta}` : item.estado_personal}</span>
         </div>
         <div class="field kanban-card" style="margin-top: 8px; max-width: 100%;">
           ${selectEstadoPipelineHtml(item)}
-          <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${item.nota || ''}</textarea>
+          <textarea data-pipeline-nota="${item.id}" placeholder="Nota...">${escapeHtml(item.nota) || ''}</textarea>
         </div>
       </div>
       <button class="btn btn-danger" data-eliminar-pipeline="${item.id}">✖ Quitar</button>
@@ -2621,19 +2641,19 @@ function renderHistorial() {
     <div class="row">
       <div class="row-info">
         <div class="row-title">${h.tipo_proceso === 'compra_agil'
-          ? `<a href="https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo} ↗</a>`
-          : `<a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${h.nombre || h.codigo_externo} ↗</a>`
+          ? `<a href="https://buscador.mercadopublico.cl/ficha?code=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${escapeHtml(h.nombre) || escapeHtml(h.codigo_externo)} ↗</a>`
+          : `<a href="http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(h.codigo_externo)}" target="_blank" rel="noopener noreferrer">${escapeHtml(h.nombre) || escapeHtml(h.codigo_externo)} ↗</a>`
         }</div>
         <div class="row-meta">
           <span>${h.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
           <br>
-          <span>Código: ${h.codigo_externo}</span>
+          <span>Código: ${escapeHtml(h.codigo_externo)}</span>
           <br>
           <span>Monto: ${formatMontoConTramo(h)}</span>
           <br>
-          <span>Región: ${h.region}</span>
+          <span>Región: ${escapeHtml(h.region)}</span>
           <br>
-          <span>Organismo: ${h.organismo}</span>
+          <span>Organismo: ${escapeHtml(h.organismo)}</span>
           <br>
           <span>Cierra: ${formatDate(h.fecha_cierre)}</span>
         </div>
@@ -2879,7 +2899,7 @@ if (analisisBuscarInput) {
         } else {
           analisisResultadosEl.innerHTML = data.resultados.map((r) => `
             <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
-              <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
+              <span>${escapeHtml(r.titulo)} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : r.nivel === 'obra' ? 'Obra' : 'Producto'}</span></span>
               <span class="cod">${r.codigo}</span>
             </div>
           `).join('');
@@ -3077,10 +3097,10 @@ function actualizarResultadosPrecios() {
           ? (r.url_acta ? `<a href="${r.url_acta}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
           : '⚡ Compra Ágil'}</td>
         <td>${r.fuente === 'licitacion'
-          ? `<a href="${urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener">${r.codigo_externo || '—'}</a>`
-          : `<a href="${urlFichaCompraAgil(r.codigo_externo)}" target="_blank" rel="noopener">${r.codigo_externo || '—'}</a>`}</td>
-        <td>${r.nombre_producto || '—'}</td>
-        <td>${r.organismo || '—'}</td>
+          ? `<a href="${urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener">${escapeHtml(r.codigo_externo) || '—'}</a>`
+          : `<a href="${urlFichaCompraAgil(r.codigo_externo)}" target="_blank" rel="noopener">${escapeHtml(r.codigo_externo) || '—'}</a>`}</td>
+        <td>${escapeHtml(r.nombre_producto) || '—'}</td>
+        <td>${escapeHtml(r.organismo) || '—'}</td>
         <td>${r.proveedor || '—'}</td>
         <td>${formatMoney(r.precio_unitario)}</td>
         <td>${resultadoHtml}</td>
@@ -3189,7 +3209,7 @@ function actualizarResultadosProveedores() {
     <tr>
       <td>${i + 1}</td>
       <td>
-        <a href="${urlFichaProveedor(p.rutProveedor)}" target="_blank" rel="noopener">${p.nombreProveedor || '—'}</a>
+        <a href="${urlFichaProveedor(p.rutProveedor)}" target="_blank" rel="noopener">${escapeHtml(p.nombreProveedor) || '—'}</a>
         <span class="row-meta">(${p.rutProveedor || '—'})</span>
       </td>
       <td>${p.vecesGanadas}</td>
@@ -3288,7 +3308,7 @@ function actualizarResultadosOrganismos() {
   const filasHtml = filtrados.map((o, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${o.organismo}</td>
+      <td>${escapeHtml(o.organismo)}</td>
       <td>${o.vecesComprado}</td>
       <td>${o.licitaciones} licitación${o.licitaciones === 1 ? '' : 'es'} · ${o.compraAgil} Compra${o.compraAgil === 1 ? '' : 's'} Ágil</td>
       <td>${formatMoney(o.montoPromedio)}</td>
@@ -3472,10 +3492,10 @@ function renderMisAnalisis(lista) {
   contenedor.innerHTML = lista.map((a) => `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${a.nombre || a.codigo_externo}</div>
+        <div class="row-title">${escapeHtml(a.nombre) || escapeHtml(a.codigo_externo)}</div>
         <div class="row-meta">
           <span>${a.tipo_proceso === 'compra_agil' ? '⚡ Compra Ágil' : '📋 Licitación'}</span>
-          <br><span>Código: ${a.codigo_externo}</span>
+          <br><span>Código: ${escapeHtml(a.codigo_externo)}</span>
           <br><span>${a.sin_adjuntos ? '⚠️ Sin adjuntos' : '📄 Con bases'}</span>
           <br><span>Analizado: ${formatDate(a.updated_at)}</span>
         </div>
@@ -3550,7 +3570,7 @@ function mostrarResultadoAnalisis(analisis, tipoProceso, codigo, posiblementeDes
     : '';
 
   const fechasHtml = (c.fechasClave || []).map((f) => `
-    <div class="analisis-fecha-fila"><span>${f.nombre}</span><strong>${f.fecha}</strong></div>
+    <div class="analisis-fecha-fila"><span>${escapeHtml(f.nombre)}</span><strong>${escapeHtml(f.fecha)}</strong></div>
   `).join('') || '<p class="section-sub">No se identificaron fechas.</p>';
 
   const gruposChecklist = agruparChecklist(c.checklistDocumentos);
@@ -3560,24 +3580,24 @@ function mostrarResultadoAnalisis(analisis, tipoProceso, codigo, posiblementeDes
       <div class="analisis-checklist-item">
         <span class="${d.obligatorio ? 'badge-obligatorio' : 'badge-opcional'}">${d.obligatorio ? '● OBLIGATORIO' : '○ opcional'}</span>
         <div>
-          <div>${d.documento}</div>
-          ${d.notas ? `<div class="section-sub" style="font-size:12px; margin-top:2px;">${d.notas}</div>` : ''}
+          <div>${escapeHtml(d.documento)}</div>
+          ${d.notas ? `<div class="section-sub" style="font-size:12px; margin-top:2px;">${escapeHtml(d.notas)}</div>` : ''}
         </div>
       </div>
     `).join('')}
   `).join('') || '<p class="section-sub">No se identificaron documentos exigidos.</p>';
 
   const criteriosHtml = (c.criteriosEvaluacion || []).map((cr) => `
-    <div class="analisis-criterio-fila"><span>${cr.criterio}</span><strong>${cr.ponderacion || ''}</strong></div>
-    ${cr.detalle ? `<p class="section-sub" style="font-size:12px; margin: 2px 0 8px 0;">${cr.detalle}</p>` : ''}
+    <div class="analisis-criterio-fila"><span>${escapeHtml(cr.criterio)}</span><strong>${escapeHtml(cr.ponderacion) || ''}</strong></div>
+    ${cr.detalle ? `<p class="section-sub" style="font-size:12px; margin: 2px 0 8px 0;">${escapeHtml(cr.detalle)}</p>` : ''}
   `).join('') || '<p class="section-sub">No se identificaron criterios de evaluación.</p>';
 
-  const puntosHtml = (c.puntosDeAtencion || []).map((p) => `<div class="analisis-punto-atencion">⚠️ ${p}</div>`).join('')
+  const puntosHtml = (c.puntosDeAtencion || []).map((p) => `<div class="analisis-punto-atencion">⚠️ ${escapeHtml(p)}</div>`).join('')
     || '<p class="section-sub">Sin puntos de atención identificados.</p>';
 
   document.getElementById('analisisContenido').innerHTML = `
     ${sinAdjuntosHtml}
-    <p style="white-space:pre-line; line-height:1.7;">${c.resumen || ''}</p>
+    <p style="white-space:pre-line; line-height:1.7;">${escapeHtml(c.resumen) || ''}</p>
 
     <div class="analisis-seccion">
       <h4>Fechas clave</h4>
@@ -3741,7 +3761,7 @@ document.getElementById('analisisDescargarPdfBtn').addEventListener('click', () 
   const doc = new jsPDF({ unit: 'pt' });
   const { analisis, codigo } = analisisActual;
   const c = analisis.contenido;
-  const nombreProceso = analisis.nombre ? `${codigo} - ${analisis.nombre}` : codigo;
+  const nombreProceso = analisis.nombre ? `${codigo} - ${escapeHtml(analisis.nombre)}` : codigo;
   const anchoUtil = doc.internal.pageSize.getWidth() - 80; // 40pt de margen a cada lado
 
   doc.setFontSize(14);
@@ -3934,7 +3954,7 @@ function renderSuscripcion(data) {
   }
 
   const tarjetaTexto = data.tarjeta?.ultimosDigitos
-    ? `Tarjeta terminada en ${data.tarjeta.ultimosDigitos}${data.tarjeta.marca ? ` (${data.tarjeta.marca})` : ''}`
+    ? `Tarjeta terminada en ${escapeHtml(data.tarjeta.ultimosDigitos)}${data.tarjeta.marca ? ` (${escapeHtml(data.tarjeta.marca)})` : ''}`
     : 'No disponible';
 
   const historialHtml = (data.historialPagos && data.historialPagos.length > 0)
@@ -3952,7 +3972,7 @@ function renderSuscripcion(data) {
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 6px 4px;">${formatDate(p.fecha)}</td>
               <td style="padding: 6px 4px;">${p.monto != null ? formatMoney(p.monto) : '—'}</td>
-              <td style="padding: 6px 4px;">${p.estado || '—'}</td>
+              <td style="padding: 6px 4px;">${escapeHtml(p.estado) || '—'}</td>
             </tr>
           `).join('')}
         </tbody>
