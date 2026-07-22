@@ -11,7 +11,6 @@
 <link rel="stylesheet" href="css/login.css">
 <link rel="stylesheet" href="css/index.css">
 <link rel="icon" type="image/svg+xml" href="/assets/mercadoalerta-icon.svg">
-<meta name="theme-color" content="#12172B" id="theme-meta"> 
 
 </head>
 <body>
@@ -26,6 +25,13 @@
 
   <div class="error" id="errorMsg"></div>
   <div class="notice" id="noticeMsg"></div>
+
+  <div id="reenviarConfirmacionBloque" style="display:none; margin-top: 16px;">
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">¿Quieres que te mandemos un link nuevo?</p>
+    <input type="email" id="reenviarConfirmacionEmail" placeholder="tu@correo.cl" style="margin-bottom: 8px;">
+    <button type="button" id="reenviarConfirmacionBtn" class="btn" style="width: 100%;">Reenviar correo de confirmación</button>
+    <div class="notice" id="reenviarConfirmacionMsg" style="display:none; margin-top: 8px;"></div>
+  </div>
 
   <div class="footer-link" id="footerLink" style="display:none;">
     <a href="login.html">Ir a iniciar sesión →</a>

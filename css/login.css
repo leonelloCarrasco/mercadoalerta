@@ -87,7 +87,7 @@ input {
   margin-bottom: 18px;
   outline: none;
 }
-input:focus { border-color: var(--gold); }
+input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 167, 44, 0.25); }
 button {
   width: 100%;
   background: var(--gold);

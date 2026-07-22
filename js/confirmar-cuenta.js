@@ -63,7 +63,43 @@ async function confirmarCuenta() {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
     footerLink.style.display = 'block';
+    // El token no nos dice cuál es el correo (es un valor opaco), así que
+    // acá sí hace falta pedirlo — a diferencia de register.js, que ya lo
+    // tiene guardado de cuando se llenó el formulario.
+    document.getElementById('reenviarConfirmacionBloque').style.display = 'block';
   }
 }
+
+document.getElementById('reenviarConfirmacionBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('reenviarConfirmacionBtn');
+  const emailInput = document.getElementById('reenviarConfirmacionEmail');
+  const msgEl = document.getElementById('reenviarConfirmacionMsg');
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    msgEl.textContent = 'Ingresa tu correo.';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/reenviar-confirmacion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    msgEl.textContent = data.mensaje || data.error || 'Listo.';
+    msgEl.style.display = 'block';
+  } catch (err) {
+    msgEl.textContent = 'No pudimos reenviar el correo. Intenta de nuevo en un momento.';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Reenviar correo de confirmación';
+  }
+});
 
 confirmarCuenta();

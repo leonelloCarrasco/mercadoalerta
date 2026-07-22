@@ -135,35 +135,43 @@ form.addEventListener('submit', async (e) => {
   const passwordConfirm = document.getElementById('passwordConfirm').value;
   const aceptaTerminos = document.getElementById('aceptaTerminos').checked;
 
-  if (password !== passwordConfirm) {
-    errorMsg.textContent = 'Las contraseñas no coinciden';
-    errorMsg.style.display = 'block';
-    return;
-  }
+  // Se juntan TODOS los errores de validación de una — antes se mostraba
+  // uno a la vez (con "return" apenas fallaba el primero), así que alguien
+  // con varios campos mal podía tardar 3-4 reintentos en enterarse de todos.
+  const errores = [];
+  let primerCampoInvalido = null;
 
   if (!validarTelefono(telefono)) {
     mostrarErrorTelefono(true);
-    telefonoInput.focus();
-    return;
+    errores.push('El teléfono no es válido.');
+    primerCampoInvalido = primerCampoInvalido || telefonoInput;
   }
 
   if (!validarRut(rutEmpresa)) {
     mostrarErrorRut(true);
-    rutEmpresaInput.focus();
-    return;
+    errores.push('El RUT de la empresa no es válido.');
+    primerCampoInvalido = primerCampoInvalido || rutEmpresaInput;
+  }
+
+  if (password !== passwordConfirm) {
+    errores.push('Las contraseñas no coinciden.');
+    primerCampoInvalido = primerCampoInvalido || document.getElementById('passwordConfirm');
   }
 
   if (!aceptaTerminos) {
-    errorMsg.textContent = 'Debes aceptar los Términos y Condiciones';
-    errorMsg.style.display = 'block';
-    return;
+    errores.push('Debes aceptar los Términos y Condiciones.');
   }
 
   // window.turnstile lo inyecta el script de Cloudflare cargado en el <head>.
   const captchaToken = window.turnstile ? window.turnstile.getResponse() : '';
   if (!captchaToken) {
-    errorMsg.textContent = 'Completa la verificación "soy humano" para continuar';
+    errores.push('Completa la verificación "soy humano" para continuar.');
+  }
+
+  if (errores.length > 0) {
+    errorMsg.innerHTML = errores.map((texto) => `• ${texto}`).join('<br>');
     errorMsg.style.display = 'block';
+    if (primerCampoInvalido) primerCampoInvalido.focus();
     return;
   }
 
@@ -193,11 +201,47 @@ form.addEventListener('submit', async (e) => {
     if (window.turnstile) window.turnstile.reset();
     submitBtn.disabled = true;
     submitBtn.textContent = 'Cuenta creada — revisa tu correo';
+
+    // El correo puede no llegar (spam, demora, typo) y antes no había
+    // ninguna salida — quedaba trabado sin poder ni reintentar el registro
+    // (el RUT/email ya existen). Se guarda el email para el reenvío.
+    document.getElementById('reenviarConfirmacionBloque').style.display = 'block';
+    document.getElementById('reenviarConfirmacionLink').dataset.email = email;
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Crear cuenta';
     if (window.turnstile) window.turnstile.reset();
+  }
+});
+
+document.getElementById('reenviarConfirmacionLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const link = e.target;
+  const emailAReenviar = link.dataset.email;
+  const msgEl = document.getElementById('reenviarConfirmacionMsg');
+
+  if (!emailAReenviar) return;
+
+  link.style.pointerEvents = 'none';
+  const textoOriginal = link.textContent;
+  link.textContent = 'Enviando...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/reenviar-confirmacion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailAReenviar }),
+    });
+    const data = await res.json();
+    msgEl.textContent = data.mensaje || data.error || 'Listo.';
+    msgEl.style.display = 'block';
+  } catch (err) {
+    msgEl.textContent = 'No pudimos reenviar el correo. Intenta de nuevo en un momento.';
+    msgEl.style.display = 'block';
+  } finally {
+    link.style.pointerEvents = 'auto';
+    link.textContent = textoOriginal;
   }
 });
