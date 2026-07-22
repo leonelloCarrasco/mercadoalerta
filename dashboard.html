@@ -77,6 +77,12 @@
 
         <p class="section-sub" style="margin-bottom: 20px;">Revisa el resumen de tu actividad en MercadoAlerta.</p>
 
+        <div class="card" id="inicioOnboardingBanner" style="display:none; padding: 24px; margin-bottom: 28px; border-color: var(--gold);">
+          <h3 style="font-size: 16px; margin-bottom: 6px;">👋 Todavía no tienes ninguna alerta configurada</h3>
+          <p class="section-sub" style="margin-bottom: 16px;">Cree tu primera alerta para que MercadoAlerta empiece a avisarte apenas se publique algo de tu rubro en Mercado Público.</p>
+          <button type="button" class="btn" id="inicioOnboardingCrearAlertaBtn">+ Crear mi primera alerta</button>
+        </div>
+
         <div class="section-head" style="margin-top: 32px;">
           <h3>Resumen de Alertas</h3>
         </div>
@@ -119,7 +125,7 @@
         </div>
 
         <div class="section-head" style="margin-top: 32px;">
-          <h3>Recordatorios y seguimientos</h3>
+          <h3>Recordatorios, seguimientos y portafolio</h3>
         </div>
         <div class="card" id="inicioOportunidadesCard">
           <div class="loading">Cargando...</div>
@@ -337,7 +343,7 @@
       </section>
     </div>
 
-    <!-- Sección: IA (mockup) -->
+    <!-- Sección: Análisis de Procesos (IA) -->
     <div class="tab-content" id="secIA">
       <section>
         <div class="section-head">
@@ -417,8 +423,8 @@
         <h3>⚠️ El documento no parece corresponder</h3>
         <p class="modal-message" id="analisisMismatchRazon"></p>
         <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" id="analisisMismatchCancelar">Cancelar</button>
-          <button type="button" class="btn" id="analisisMismatchContinuar">Continuar de todas formas</button>
+          <button type="button" class="btn" id="analisisMismatchCancelar">Cancelar</button>
+          <button type="button" class="btn btn-ghost" id="analisisMismatchContinuar">Continuar de todas formas</button>
         </div>
       </div>
     </div>
@@ -432,7 +438,7 @@
           <label for="analisisCorreoInput">Correo de destino</label>
           <input type="email" id="analisisCorreoInput">
         </div>
-        <div class="error" id="errorAnalisisCorreo" style="display:none;"></div>
+        <div class="error-banner" id="errorAnalisisCorreo" style="display:none;"></div>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="analisisCorreoCancelar">Cancelar</button>
           <button type="button" class="btn" id="analisisCorreoConfirmar">Enviar</button>

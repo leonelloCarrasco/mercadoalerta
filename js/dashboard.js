@@ -2501,6 +2501,11 @@ function renderInicio() {
   const hace7dias = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const notif7d = historialData.filter((h) => h.sent_at && new Date(h.sent_at).getTime() >= hace7dias).length;
 
+  // Es el primer momento crítico de todo el producto: alguien recién
+  // confirmó su cuenta y no tiene ni una sola alerta — sin esto, lo único
+  // que veía era una fila de "—"/0 sin ninguna indicación de qué hacer.
+  document.getElementById('inicioOnboardingBanner').style.display = (activas + pausadas === 0) ? 'block' : 'none';
+
   document.getElementById('statAlertasActivas').textContent = activas;
   document.getElementById('statAlertasPausadas').textContent = pausadas;
   document.getElementById('statNotifTotal').textContent = historialData.length;
@@ -2754,7 +2759,7 @@ sectionLinks.forEach((link) => {
   link.addEventListener('click', () => {
     mostrarSeccion(link.dataset.section);
     if (link.dataset.section === 'cuenta') poblarSeccionCuenta();
-    if (link.dataset.section === 'ia') cargarMisAnalisis();
+    if (link.dataset.section === 'ia') { cargarMisAnalisis(); cargarCupoAnalisis(); }
     topbarMenu.classList.remove('open');
     bottombarMasMenu.classList.remove('open');
   });
@@ -2788,6 +2793,13 @@ document.addEventListener('click', (e) => {
 
 // --- Modal de nueva alerta ---
 const newAlertModal = document.getElementById('newAlertModal');
+
+document.getElementById('inicioOnboardingCrearAlertaBtn').addEventListener('click', () => {
+  mostrarSeccion('alertas');
+  // Reusa el mismo botón/flujo de siempre (con toda su validación de cupo ya
+  // resuelta ahí) en vez de duplicar esa lógica acá.
+  document.getElementById('abrirNuevaAlertaBtn').click();
+});
 
 document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
   // Chequeo previo en el cliente (el backend igual lo valida) para no dejar
@@ -3431,6 +3443,20 @@ async function cargarMisAnalisis() {
   }
 }
 
+// Se muestra apenas se entra a la sección, no recién después de intentar un
+// análisis — antes, alguien en trial (1 análisis por ciclo) podía gastar su
+// único análisis sin saber que era el último que le quedaba.
+async function cargarCupoAnalisis() {
+  try {
+    const data = await apiFetch('/api/analisis-ia/cupo');
+    document.getElementById('analisisCupoInfo').textContent = `Te quedan ${data.restante} de ${data.limite} análisis de IA en tu ciclo actual.`;
+  } catch (err) {
+    // No es crítico — si falla, simplemente no se muestra el cupo por
+    // adelantado, pero el flujo de análisis lo sigue validando igual.
+    document.getElementById('analisisCupoInfo').textContent = '';
+  }
+}
+
 function renderMisAnalisis(lista) {
   const contenedor = document.getElementById('analisisMisAnalisisLista');
   if (!lista || lista.length === 0) {
@@ -3470,6 +3496,35 @@ function mostrarCupoInfoNuevo(cupoRestante) {
   document.getElementById('analisisCupoInfo').textContent = `Te quedan ${cupoRestante} análisis de IA este mes.`;
 }
 
+// Mismas 4 categorías y mismo orden que el backend (checklist-categorias.js)
+// — se repite acá porque frontend/backend no comparten módulos. Cubre
+// también análisis guardados ANTES de este cambio (sin "categoria" en su
+// checklist): esos documentos caen en "Otros" en vez de romper el render.
+const CATEGORIAS_CHECKLIST = [
+  { valor: 'anexos', etiqueta: 'Anexos' },
+  { valor: 'certificados', etiqueta: 'Certificados' },
+  { valor: 'legal_societario', etiqueta: 'Documentos legales y societarios' },
+  { valor: 'otros', etiqueta: 'Otros' },
+];
+
+function agruparChecklist(checklistDocumentos) {
+  const valoresValidos = CATEGORIAS_CHECKLIST.map((c) => c.valor);
+  const normalizado = (checklistDocumentos || []).map((d) => ({
+    ...d,
+    categoria: valoresValidos.includes(d.categoria) ? d.categoria : 'otros',
+  }));
+
+  return CATEGORIAS_CHECKLIST
+    .map((cat) => ({
+      categoria: cat.valor,
+      etiqueta: cat.etiqueta,
+      documentos: normalizado
+        .filter((d) => d.categoria === cat.valor)
+        .sort((a, b) => (b.obligatorio ? 1 : 0) - (a.obligatorio ? 1 : 0)),
+    }))
+    .filter((grupo) => grupo.documentos.length > 0);
+}
+
 function mostrarResultadoAnalisis(analisis, tipoProceso, codigo, posiblementeDesactualizado) {
   analisisActual = { analisis, tipoProceso, codigo };
   const wrap = document.getElementById('analisisResultadoWrap');
@@ -3493,14 +3548,18 @@ function mostrarResultadoAnalisis(analisis, tipoProceso, codigo, posiblementeDes
     <div class="analisis-fecha-fila"><span>${f.nombre}</span><strong>${f.fecha}</strong></div>
   `).join('') || '<p class="section-sub">No se identificaron fechas.</p>';
 
-  const checklistHtml = (c.checklistDocumentos || []).map((d) => `
-    <div class="analisis-checklist-item">
-      <span class="${d.obligatorio ? 'badge-obligatorio' : 'badge-opcional'}">${d.obligatorio ? '● OBLIGATORIO' : '○ opcional'}</span>
-      <div>
-        <div>${d.documento}</div>
-        ${d.notas ? `<div class="section-sub" style="font-size:12px; margin-top:2px;">${d.notas}</div>` : ''}
+  const gruposChecklist = agruparChecklist(c.checklistDocumentos);
+  const checklistHtml = gruposChecklist.map((grupo) => `
+    <p style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 14px 0 6px 0;">${grupo.etiqueta}</p>
+    ${grupo.documentos.map((d) => `
+      <div class="analisis-checklist-item">
+        <span class="${d.obligatorio ? 'badge-obligatorio' : 'badge-opcional'}">${d.obligatorio ? '● OBLIGATORIO' : '○ opcional'}</span>
+        <div>
+          <div>${d.documento}</div>
+          ${d.notas ? `<div class="section-sub" style="font-size:12px; margin-top:2px;">${d.notas}</div>` : ''}
+        </div>
       </div>
-    </div>
+    `).join('')}
   `).join('') || '<p class="section-sub">No se identificaron documentos exigidos.</p>';
 
   const criteriosHtml = (c.criteriosEvaluacion || []).map((cr) => `
@@ -3677,37 +3736,51 @@ document.getElementById('analisisDescargarPdfBtn').addEventListener('click', () 
   const doc = new jsPDF({ unit: 'pt' });
   const { analisis, codigo } = analisisActual;
   const c = analisis.contenido;
-  const nombreProceso = analisis.nombre? codigo +' - '+ analisis.nombre : codigo;
+  const nombreProceso = analisis.nombre ? `${codigo} - ${analisis.nombre}` : codigo;
+  const anchoUtil = doc.internal.pageSize.getWidth() - 80; // 40pt de margen a cada lado
 
   doc.setFontSize(14);
-  const tituloLineas = doc.splitTextToSize(`Análisis: ${nombreProceso}` , 500);
-  doc.text(tituloLineas, 40, 40, { 
-    align: 'justify', 
-    maxWidth: 500 
-  });
-  
-  let y = 40 + tituloLineas.length * 12 + 10;
+  const tituloLineas = doc.splitTextToSize(`Análisis: ${nombreProceso}`, anchoUtil);
+  doc.text(tituloLineas, 40, 40);
+
+  let y = 40 + tituloLineas.length * 16 + 6;
 
   doc.setFontSize(9);
   doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, y);
+  y += 24;
 
   doc.setFontSize(10);
-  const resumenLineas = doc.splitTextToSize(c.resumen || '', 500);
-  doc.text(resumenLineas, 40, (y+20) )
+  const resumenLineas = doc.splitTextToSize(c.resumen || '', anchoUtil);
+  doc.text(resumenLineas, 40, y);
 
-  y = (y+20) + resumenLineas.length * 12 + 20;
+  y = y + resumenLineas.length * 12 + 20;
 
-  doc.autoTable({
-    startY: y,
-    head: [['Documento exigido', 'Obligatorio', 'Notas']],
-    body: (c.checklistDocumentos || []).map((d) => [d.documento, d.obligatorio ? 'Sí' : 'No', d.notas || '']),
-    theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 4 },
-    headStyles: { fillColor: [30, 30, 40] },
-    margin: { left: 40, right: 40 },
-  });
+  // Se agrupa por categoría — cada grupo se agrega como su propia tabla con
+  // el nombre de la categoría de subtítulo, en vez de una tabla única con
+  // todos los documentos mezclados sin orden.
+  const gruposChecklist = agruparChecklist(c.checklistDocumentos);
+  if (gruposChecklist.length === 0) {
+    doc.setFontSize(11);
+    doc.text('Checklist de documentos: no se identificaron documentos exigidos.', 40, y);
+    y += 24;
+  } else {
+    gruposChecklist.forEach((grupo) => {
+      doc.setFontSize(11);
+      doc.text(grupo.etiqueta, 40, y);
+      y += 6;
+      doc.autoTable({
+        startY: y,
+        head: [['Documento exigido', 'Obligatorio', 'Notas']],
+        body: grupo.documentos.map((d) => [d.documento, d.obligatorio ? 'Sí' : 'No', d.notas || '']),
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [30, 30, 40] },
+        margin: { left: 40, right: 40 },
+      });
+      y = doc.lastAutoTable.finalY + 16;
+    });
+  }
 
-  y = doc.lastAutoTable.finalY + 20;
   doc.autoTable({
     startY: y,
     head: [['Puntos de atención']],

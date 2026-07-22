@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crear cuenta — MercadoAlerta</title>
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#12172B" id="theme-meta"> 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/login.css">
@@ -46,7 +47,7 @@
 
   <form id="registerForm">
     <label for="nombre">Nombre</label>
-    <input type="text" id="nombre" placeholder="Juan"< required>
+    <input type="text" id="nombre" placeholder="Juan" required>
 
     <label for="apellido">Apellido</label>
     <input type="text" id="apellido" placeholder="Pérez" required>
@@ -57,6 +58,7 @@
     <label for="telefono">Teléfono</label>
     <input type="tel" id="telefono" placeholder="+56 9 1234 5678" required>
     <div class="field-hint" id="telefonoHint"></div>
+    <div class="field-hint visible" id="telefonoAyuda" style="color: var(--text-muted);">Lo usamos solo para contactarte si hay algún problema con tu cuenta o tu pago — no lo compartimos ni lo usamos para marketing.</div>
 
     <label for="rutEmpresa">RUT de la empresa</label>
     <input type="text" id="rutEmpresa" placeholder="78.345.678-9" required>
@@ -91,6 +93,10 @@
     <button type="submit" id="submitBtn">Crear cuenta</button>
     <div class="error" id="errorMsg"></div>
     <div class="notice" id="noticeMsg"></div>
+    <div id="reenviarConfirmacionBloque" style="display:none; margin-top: 10px; font-size: 13px; text-align: center; color: var(--text-muted);">
+      ¿No te llegó el correo? <a href="#" id="reenviarConfirmacionLink" style="color: var(--gold);">Reenviar</a>
+      <div class="notice" id="reenviarConfirmacionMsg" style="display:none; margin-top: 6px;"></div>
+    </div>
   </form>
 
   <div class="footer-link">

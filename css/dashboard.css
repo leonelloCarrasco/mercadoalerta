@@ -160,7 +160,7 @@ section { margin-bottom: 56px; }
   width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
   padding: 8px 10px; border-radius: 6px; font-family: var(--font-body); font-size: 13px; outline: none;
 }
-.filter-bar .field input:focus, .filter-bar .field select:focus { border-color: var(--gold); }
+.filter-bar .field input:focus, .filter-bar .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 
 /* Variante "una sola línea": usada en Alertas y Notificaciones, con más campos
    que el grid de 4 columnas de arriba — en desktop se acomodan todos en una
@@ -190,7 +190,7 @@ section { margin-bottom: 56px; }
   width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
   padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; outline: none;
 }
-.field input:focus, .field select:focus { border-color: var(--gold); }
+.field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 
 #montoField { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 560px) { #montoField { grid-template-columns: 1fr; } }
@@ -394,10 +394,6 @@ table.analisis-table a:hover { text-decoration: underline; }
   padding: 60px 24px; text-align: center; color: var(--text-muted);
 }
 .analisis-locked .lock-icon { font-size: 32px; margin-bottom: 12px; }
-.analisis-badge-mockup {
-  display: inline-block; font-family: var(--font-mono); font-size: 11px;
-  background: var(--gold-soft); color: var(--gold); padding: 4px 10px; border-radius: 4px; margin-bottom: 16px;
-}
 
 /* --- Buscador de categorías (chips) --- */
 .categoria-resultados {
@@ -443,7 +439,7 @@ table.analisis-table a:hover { text-decoration: underline; }
   gap: 8px;
 }
 .region-dropdown-btn::after { content: '▾'; color: var(--text-muted); flex-shrink: 0; }
-.region-dropdown-btn:focus, .region-dropdown-btn.open { border-color: var(--gold); outline: none; }
+.region-dropdown-btn:focus, .region-dropdown-btn.open { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px var(--gold-soft); }
 .region-dropdown-btn .placeholder { color: var(--text-muted); }
 .region-dropdown-panel {
   position: absolute; left: 0; right: 0; z-index: 20;
@@ -584,26 +580,6 @@ table.analisis-table a:hover { text-decoration: underline; }
 }
 .inicio-reporte-fila strong { color: var(--text); }
 
-/* --- Mockups: Búsquedas / IA --- */
-.mockup-locked .row-title { color: var(--text-muted); }
-.mockup-locked .btn[disabled] { opacity: 0.4; }
-.mockup-locked input[disabled] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
-
-.ia-mock-chat { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.ia-mock-msg {
-  max-width: 78%; padding: 10px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5;
-}
-.ia-mock-msg.user { align-self: flex-end; background: var(--gold-soft); color: var(--gold); border-bottom-right-radius: 3px; }
-.ia-mock-msg.bot { align-self: flex-start; background: var(--surface-2); color: var(--text); border-bottom-left-radius: 3px; }
-.ia-mock-input-bar {
-  display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border);
-}
-.ia-mock-input-bar input {
-  flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted);
-  padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px;
-}
-
-.empty-state .analisis-badge-mockup { margin-bottom: 10px; }
 .analisis-filtros .field input, .analisis-filtros .field select {
   padding: 7px 9px; font-size: 12.5px;
 }
