@@ -61,6 +61,7 @@ a { color: inherit; }
 .sidebar-link:hover { color: var(--text); background: var(--surface); }
 .sidebar-link.active { color: var(--gold); background: var(--gold-soft); }
 .sidebar-nav .sidebar-link.active .icon { background-color: #EDEEF5; }
+.sidebar-nav .sidebar-link .icon:hover { background-color: #EDEEF5; }
 
 /* --- Main --- */
 .main { flex: 1; min-width: 0; margin-left: 224px; max-width: 960px; padding: 24px 24px 80px; }
@@ -133,6 +134,7 @@ section { margin-bottom: 56px; }
 .section-head h2 { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
 .section-head h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
+.section-head .icon { background-color: #EDEEF5; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 #head-new-search { justify-content: space-between; flex: 1 1 100%; }
@@ -158,7 +160,7 @@ section { margin-bottom: 56px; }
 @media (max-width: 420px) { .filter-bar { grid-template-columns: 1fr; } }
 .filter-bar .field input, .filter-bar .field select {
   width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
-  padding: 8px 10px; border-radius: 6px; font-family: var(--font-body); font-size: 13px; outline: none;
+  padding: 8px 10px; border-radius: 6px; font-family: var(--font-body); font-size: 16px; outline: none;
 }
 .filter-bar .field input:focus, .filter-bar .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 
@@ -188,7 +190,7 @@ section { margin-bottom: 56px; }
 }
 .field input, .field select {
   width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
-  padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; outline: none;
+  padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 16px; outline: none;
 }
 .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 
@@ -357,11 +359,11 @@ section { margin-bottom: 56px; }
 }
 .kanban-card-meta { font-size: 11px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px; }
 .kanban-card select {
-  width: 100%; font-size: 11px; margin-bottom: 6px; background: var(--bg);
+  width: 100%; font-size: 16px; margin-bottom: 6px; background: var(--bg);
   border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 4px;
 }
 .kanban-card textarea {
-  width: 100%; font-size: 11px; resize: vertical; min-height: 36px;
+  width: 100%; font-size: 16px; resize: vertical; min-height: 36px;
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
   border-radius: 4px; padding: 5px; font-family: var(--font-body); margin-bottom: 6px;
 }
@@ -376,7 +378,7 @@ section { margin-bottom: 56px; }
 /* --- Modal ancho (para el formulario de nueva alerta) --- */
 .modal-wide { max-width: 640px; text-align: left; }
 .modal-wide .form-grid { padding: 0; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-@media (max-width: 560px) { .modal-wide .form-grid { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .modal-wide .form-grid { grid-template-columns: 1fr; } }
 .modal-wide h3 { margin-bottom: 16px; font-size: 16px; }
 
 /* --- Análisis de datos (mockup) --- */
@@ -581,7 +583,7 @@ table.analisis-table a:hover { text-decoration: underline; }
 .inicio-reporte-fila strong { color: var(--text); }
 
 .analisis-filtros .field input, .analisis-filtros .field select {
-  padding: 7px 9px; font-size: 12.5px;
+  padding: 7px 9px; font-size: 16px;
 }
 
 /* --- Ayuda (manual + contacto) --- */

@@ -3474,7 +3474,7 @@ async function cargarMisAnalisis() {
 async function cargarCupoAnalisis() {
   try {
     const data = await apiFetch('/api/analisis-ia/cupo');
-    document.getElementById('analisisCupoInfo').textContent = `Te quedan ${data.restante} de ${data.limite} análisis de IA en tu ciclo actual.`;
+    document.getElementById('analisisCupoInfo').textContent = `ℹ️ Te quedan ${data.restante} de ${data.limite} análisis de procesos con IA en tu ciclo actual.`;
   } catch (err) {
     // No es crítico — si falla, simplemente no se muestra el cupo por
     // adelantado, pero el flujo de análisis lo sigue validando igual.
@@ -3924,11 +3924,13 @@ async function cargarSuscripcion() {
   const card = document.getElementById('suscripcionCard');
   const contenedor = document.getElementById('suscripcionContenido');
 
+  card.style.display = '';
+
   if (window.usuarioActual?.plan === 'trial') {
-    card.style.display = 'none';
+    renderSuscripcionTrial(window.usuarioActual);
     return;
   }
-  card.style.display = '';
+
   contenedor.innerHTML = '<div class="loading">Cargando...</div>';
 
   try {
@@ -3937,6 +3939,36 @@ async function cargarSuscripcion() {
   } catch (err) {
     contenedor.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
   }
+}
+
+// Antes, con plan='trial' la tarjeta entera se ocultaba — no había forma de
+// ver desde Mi Perfil cuándo terminaba la prueba sin ir a buscarlo en otro
+// lado. No pide nada a /api/pagos/mi-suscripcion (esa ruta es para
+// suscripciones reales de MercadoPago) — la fecha del trial ya viene en
+// /api/auth/me, no hace falta una llamada aparte.
+function renderSuscripcionTrial(usuario) {
+  const contenedor = document.getElementById('suscripcionContenido');
+  const fechaExp = usuario.fecha_expiracion_trial ? new Date(usuario.fecha_expiracion_trial) : null;
+
+  let diasTexto = '';
+  if (fechaExp) {
+    const diasRestantes = Math.ceil((fechaExp - new Date()) / (1000 * 60 * 60 * 24));
+    diasTexto = diasRestantes > 0
+      ? ` (${diasRestantes} día${diasRestantes === 1 ? '' : 's'} restante${diasRestantes === 1 ? '' : 's'})`
+      : ' (venció)';
+  }
+
+  contenedor.innerHTML = `
+    <div style="font-size: 14px; line-height: 1.9;">
+      <span>Plan: <strong>Trial</strong></span><br>
+      <span>Finaliza el: ${formatDate(usuario.fecha_expiracion_trial)}${diasTexto}</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Elige un plan antes de esa fecha para no perder el acceso a tus alertas — todo lo que configuraste durante la prueba se mantiene guardado.</p>
+    <div class="modal-actions" style="justify-content: flex-start; margin-top:20px;">
+      <button type="button" class="btn btn-ghost" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico')">Elegir Básico</button>
+      <button type="button" class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full')">Elegir Full</button>
+    </div>
+  `;
 }
 
 function renderSuscripcion(data) {
@@ -3959,6 +3991,7 @@ function renderSuscripcion(data) {
 
   const historialHtml = (data.historialPagos && data.historialPagos.length > 0)
     ? `
+      <div style="overflow-x:auto;">
       <table style="width:100%; border-collapse: collapse; margin-top: 8px; font-size: 13px;">
         <thead>
           <tr style="text-align:left; border-bottom: 1px solid var(--border); color: var(--text-muted);">
@@ -3977,6 +4010,7 @@ function renderSuscripcion(data) {
           `).join('')}
         </tbody>
       </table>
+      </div>
     `
     : '<p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Todavía no hay cobros registrados.</p>';
 
