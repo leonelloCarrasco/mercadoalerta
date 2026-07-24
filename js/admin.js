@@ -7,6 +7,23 @@ if (!token) window.location.href = 'login.html';
 
 const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
+/**
+ * Escapa HTML antes de insertar texto de origen externo/usuario dentro de un
+ * innerHTML — sin esto, un nombre/apellido/email registrado por un usuario
+ * (o el nombre de una empresa) podría contener HTML/script que se ejecuta en
+ * el navegador del administrador que mire este panel (XSS). Mismo helper que
+ * usa dashboard.js — se duplica acá porque son bundles JS independientes.
+ */
+function escapeHtml(valor) {
+  if (valor === null || valor === undefined) return '';
+  return String(valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function showError(msg) {
   const el = document.getElementById('errorBanner');
   el.textContent = '❌ ' + msg;
@@ -73,9 +90,9 @@ function renderUsuarios() {
   const tbody = document.getElementById('tablaUsuariosBody');
   tbody.innerHTML = usuariosData.map((u) => `
     <tr>
-      <td>${u.nombre || ''} ${u.apellido || ''}</td>
-      <td>${u.email}</td>
-      <td>${u.nombre_empresa || u.rut_empresa || '—'}</td>
+      <td>${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td>${escapeHtml(u.nombre_empresa || u.rut_empresa) || '—'}</td>
       <td>${u.plan}</td>
       <td><span class="admin-pill ${u.estado === 'activo' ? 'ok' : 'warn'}">${u.estado}</span></td>
       <td><span class="admin-pill ${u.estado_pago === 'activo' ? 'ok' : 'warn'}">${u.estado_pago}</span></td>
@@ -202,16 +219,16 @@ function inicializarPickerProducto(inputId, resultadosId, seleccionadoId, onSele
         resultados.innerHTML = data.resultados.length === 0
           ? '<div class="categoria-resultado-vacio">Sin resultados</div>'
           : data.resultados.map((r) => `
-              <div class="categoria-resultado-item" data-codigo="${r.codigo}" data-titulo="${r.titulo.replace(/"/g, '&quot;')}">
-                <span>${r.titulo} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : 'Producto'}</span></span>
-                <span class="cod">${r.codigo}</span>
+              <div class="categoria-resultado-item" data-codigo="${escapeHtml(r.codigo)}" data-titulo="${escapeHtml(r.titulo)}">
+                <span>${escapeHtml(r.titulo)} <span class="nivel-badge ${r.nivel}">${r.nivel === 'categoria' ? 'Rubro' : 'Producto'}</span></span>
+                <span class="cod">${escapeHtml(r.codigo)}</span>
               </div>
             `).join('');
 
         resultados.querySelectorAll('[data-codigo]').forEach((el) => {
           el.addEventListener('click', () => {
             valorSeleccionado = el.dataset.codigo;
-            chipSeleccionado.innerHTML = `<span>${el.dataset.titulo} (${el.dataset.codigo})</span> <button type="button">✕</button>`;
+            chipSeleccionado.innerHTML = `<span>${escapeHtml(el.dataset.titulo)} (${escapeHtml(el.dataset.codigo)})</span> <button type="button">✕</button>`;
             chipSeleccionado.style.display = 'flex';
             chipSeleccionado.querySelector('button').addEventListener('click', () => {
               valorSeleccionado = null;
@@ -292,9 +309,9 @@ function renderLicResultados() {
 
   tbody.innerHTML = licResultados.map((r) => `
     <tr>
-      <td><input type="checkbox" class="lic-check" value="${r.codigoExterno}" ${r.yaEnBD ? 'disabled' : ''}></td>
-      <td>${r.codigoExterno}</td>
-      <td>${r.nombre || '—'}</td>
+      <td><input type="checkbox" class="lic-check" value="${escapeHtml(r.codigoExterno)}" ${r.yaEnBD ? 'disabled' : ''}></td>
+      <td>${escapeHtml(r.codigoExterno)}</td>
+      <td>${escapeHtml(r.nombre) || '—'}</td>
       <td>${r.fechaCierre ? new Date(r.fechaCierre).toLocaleString('es-CL') : '—'}</td>
       <td>${r.yaEnBD ? '<span class="admin-pill ok">Ya importada</span>' : '<span class="admin-pill warn">Nueva</span>'}</td>
     </tr>
@@ -391,9 +408,9 @@ function renderCaResultados() {
 
   tbody.innerHTML = caResultados.map((r) => `
     <tr>
-      <td><input type="checkbox" class="ca-check" value="${r.codigo}" ${r.yaEnBD ? 'disabled' : ''}></td>
-      <td>${r.codigo}</td>
-      <td>${r.nombre || '—'}</td>
+      <td><input type="checkbox" class="ca-check" value="${escapeHtml(r.codigo)}" ${r.yaEnBD ? 'disabled' : ''}></td>
+      <td>${escapeHtml(r.codigo)}</td>
+      <td>${escapeHtml(r.nombre) || '—'}</td>
       <td>${r.fechaCierre ? new Date(r.fechaCierre).toLocaleString('es-CL') : '—'}</td>
       <td>${r.yaEnBD ? '<span class="admin-pill ok">Ya importada</span>' : '<span class="admin-pill warn">Nueva</span>'}</td>
     </tr>

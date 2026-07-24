@@ -3094,14 +3094,14 @@ function actualizarResultadosPrecios() {
     return `
       <tr>
         <td>${r.fuente === 'licitacion'
-          ? (r.url_acta ? `<a href="${r.url_acta}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
+          ? (r.url_acta ? `<a href="${escapeHtml(r.url_acta)}" target="_blank" rel="noopener">📋 Licitación</a>` : '📋 Licitación')
           : '⚡ Compra Ágil'}</td>
         <td>${r.fuente === 'licitacion'
           ? `<a href="${urlFichaLicitacion(r.codigo_externo)}" target="_blank" rel="noopener">${escapeHtml(r.codigo_externo) || '—'}</a>`
           : `<a href="${urlFichaCompraAgil(r.codigo_externo)}" target="_blank" rel="noopener">${escapeHtml(r.codigo_externo) || '—'}</a>`}</td>
         <td>${escapeHtml(r.nombre_producto) || '—'}</td>
         <td>${escapeHtml(r.organismo) || '—'}</td>
-        <td>${r.proveedor || '—'}</td>
+        <td>${escapeHtml(r.proveedor) || '—'}</td>
         <td>${formatMoney(r.precio_unitario)}</td>
         <td>${resultadoHtml}</td>
         <td>${r.fecha_adjudicacion ? new Date(r.fecha_adjudicacion).toLocaleDateString('es-CL') : '—'}</td>
