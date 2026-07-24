@@ -357,7 +357,10 @@
           Ingresa el código de una Licitación o Compra Ágil para recibir un resumen en lenguaje simple
           y un checklist de los documentos que exige — apoyo para decidir y prepararte, no reemplaza tu propio criterio.
         </p>
-        <p class="section-sub" id="analisisCupoInfo" style="margin-bottom: 20px; font-size: 13px;"></p>
+        <br>
+        <div class="card" style="display: block; padding: 24px; margin-bottom: 28px; border-color: var(--gold);"">
+          <p class="section-sub" id="analisisCupoInfo" style="margin-bottom: 0px;color: var(--gold);"></p>
+        </div>
 
         <div class="card" style="padding: 24px; margin-bottom: 20px;" id="analisisMisAnalisisCard">
           <div class="section-head">
@@ -410,7 +413,7 @@
           <div id="analisisAvisoDesactualizado" class="warning-box-inline" style="display:none;"></div>
           <div class="section-head">
             <h3 id="analisisResultadoTitulo">Resultado</h3>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
               <button type="button" class="btn btn-ghost" id="analisisDescargarPdfBtn">📄 Descargar PDF</button>
               <button type="button" class="btn btn-ghost" id="analisisEnviarCorreoBtn">✉️ Enviar por correo</button>
               <button type="button" class="btn btn-ghost" id="analisisRehacerBtn">🔄 Rehacer análisis</button>
@@ -597,7 +600,7 @@
 
           <details class="filter-toggle ayuda-item">
             <summary>¿Por qué no puedo editar mi RUT o mi email?</summary>
-            <p>El RUT de la empresa queda fijo porque ya se validó contra Mercado Público al momento de registrarte. El email tampoco es editable desde el panel por ahora — si necesitas cambiarlo, escríbenos con el formulario de aquí abajo.</p>
+            <p>El RUT de la empresa queda fijo porque ya se validó contra Mercado Público al momento de registrarte. El email tampoco es editable debido a que es la fuente oficial de comunicación que has establecido con nosotros — si necesitas cambiarlo, escríbenos con el formulario de aquí abajo.</p>
           </details>
 
           <details class="filter-toggle ayuda-item">
@@ -613,11 +616,11 @@
           <form id="ayudaContactoForm">
             <div class="field" style="margin-bottom: 14px;">
               <label for="ayudaAsunto">Asunto</label>
-              <input type="text" id="ayudaAsunto" placeholder="Ej. Duda sobre mi plan" maxlength="255" required>
+              <input type="text" id="ayudaAsunto" placeholder="Ej: Dudas sobre mi plan" maxlength="255" required>
             </div>
             <div class="field" style="margin-bottom: 14px;">
               <label for="ayudaMensaje">Mensaje</label>
-              <textarea id="ayudaMensaje" rows="5" placeholder="Cuéntanos en detalle qué necesitas..." required style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); resize: vertical;"></textarea>
+              <textarea id="ayudaMensaje" rows="5" placeholder="Cuéntanos en detalle qué necesitas..." required style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 16px; resize: vertical;"></textarea>
             </div>
             <div class="error-banner" id="errorAyudaContacto" style="display:none;"></div>
             <div class="form-note" id="ayudaContactoMsg" style="display:none;"></div>
