@@ -1739,10 +1739,6 @@ function urlFichaProveedor(rutProveedor){
   return `https://proveedor.mercadopublico.cl/ficha/${encodeURIComponent(rutProveedor)}`;
 }
 
-function urlFichaComprador(rutComprador){
-  return `https://comprador.mercadopublico.cl/ficha/${encodeURIComponent(rutComprador)}`;
-}
-
 function filaResultadoHtml(r, tipo) {
   return `
     <div class="row">

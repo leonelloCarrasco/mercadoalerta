@@ -56,11 +56,6 @@ async function apiFetch(path, options = {}) {
   return res.status === 204 ? null : res.json();
 }
 
-function formatMoney(n) {
-  if (n === null || n === undefined) return '—';
-  return '$' + Number(n).toLocaleString('es-CL');
-}
-
 // ============================= TABS =============================
 document.getElementById('adminTabs').addEventListener('click', (e) => {
   const tab = e.target.closest('.admin-tab');
