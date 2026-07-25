@@ -24,6 +24,38 @@ function escapeHtml(valor) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Chequeo de acceso BLOQUEANTE, corrido antes que cualquier otra cosa —
+ * antes esto se dejaba en manos del primer 403 que devolviera cualquier
+ * llamada a /api/admin-panel/*, lo que dejaba una ventana real (mientras esa
+ * llamada estaba en vuelo) donde un usuario no-admin veía y podía interactuar
+ * con todo el panel: admin.html es HTML estático, el navegador lo renderiza
+ * completo antes de que este script siquiera empiece a correr. El <body>
+ * arranca con visibility:hidden (ver admin.html) y esta función es la única
+ * que lo revela — y solo si /api/auth/me confirma es_admin === true.
+ */
+async function verificarAccesoAdmin() {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, { headers: authHeaders });
+    if (res.status === 401) {
+      sessionStorage.removeItem('token');
+      window.location.href = 'login.html';
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.usuario?.es_admin) {
+      document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#EDEEF5;background:#12172B;min-height:100vh;">No tienes acceso al panel de administrador. <a href="dashboard.html" style="color:#D4A72C;">Volver al dashboard</a></div>';
+      document.body.style.visibility = 'visible';
+      return;
+    }
+    document.body.style.visibility = 'visible';
+    cargarUsuarios();
+  } catch (err) {
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#EDEEF5;background:#12172B;min-height:100vh;">No se pudo verificar tu acceso. <a href="dashboard.html" style="color:#D4A72C;">Volver al dashboard</a></div>';
+    document.body.style.visibility = 'visible';
+  }
+}
+
 function showError(msg) {
   const el = document.getElementById('errorBanner');
   el.textContent = '❌ ' + msg;
@@ -453,4 +485,4 @@ document.getElementById('caImportarBtn').addEventListener('click', () => {
 });
 
 // ============================= INIT =============================
-cargarUsuarios();
+verificarAccesoAdmin();

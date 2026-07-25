@@ -985,8 +985,8 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Tu período de prueba de 14 días terminó. Elige un plan para seguir recibiendo alertas.</p>
         <div class="btn-group">
-          <button class="btn btn-ghost" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico')">Elegir Basic</button>
-          <button class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full')">Elegir Full</button>
+          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -995,8 +995,8 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Tu período de prueba termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Elige un plan para no perder tus alertas.</p>
         <div class="btn-group">
-          <button class="btn btn-ghost" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">Elegir Basic</button>
-          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">Elegir Full</button>
+          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -1018,8 +1018,8 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Cancelaste tu suscripción — tu acceso termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Si te arrepentiste, puedes reactivarlo.</p>
         <div class="btn-group">
-          <button class="btn btn-ghost" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">Elegir Basic</button>
-          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">Elegir Full</button>
+          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -1028,11 +1028,19 @@ function mostrarBannerPlan(usuario) {
 }
 
 async function iniciarUpgrade(empresaId, plan, btnId) {
-  const btn = document.getElementById(btnId);
-  const textoOriginal = btn.textContent;
+  // btn puede venir null si algún call site no pasa btnId (o el id no
+  // coincide con nada en el DOM) — antes esto tiraba un error sin manejar
+  // ("Cannot read properties of null") que dejaba el click sin hacer nada.
+  // Ahora, si no hay botón, seguimos igual con el flujo de pago (que es lo
+  // que realmente le importa al usuario) y solo nos salteamos el
+  // deshabilitar/cambiar texto del botón.
+  const btn = btnId ? document.getElementById(btnId) : null;
+  const textoOriginal = btn ? btn.textContent : null;
 
-  btn.disabled = true;
-  btn.textContent = 'Redirigiendo a MercadoPago...';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Redirigiendo a MercadoPago...';
+  }
   try {
     const data = await apiFetch(`/api/empresas/${empresaId}/upgrade`, {
       method: 'POST',
@@ -1043,8 +1051,10 @@ async function iniciarUpgrade(empresaId, plan, btnId) {
     }
   } catch (err) {
     showError('No se pudo iniciar el pago: ' + err.message);
-    btn.disabled = false;
-    btn.textContent = textoOriginal;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
   }
 }
 
@@ -3454,11 +3464,17 @@ document.querySelectorAll('.toggle-password').forEach((toggleBtn) => {
 let analisisActual = null; // { analisis, tipoProceso, codigo }
 let forzarContinuarPendiente = false;
 
+let misAnalisisData = [];
+const ANALISIS_MIOS_POR_PAGINA = 5;
+let analisisMiosPaginaActual = 1;
+
 async function cargarMisAnalisis() {
   const contenedor = document.getElementById('analisisMisAnalisisLista');
   try {
     const data = await apiFetch('/api/analisis-ia/mios');
-    renderMisAnalisis(data.analisis);
+    misAnalisisData = data.analisis || [];
+    analisisMiosPaginaActual = 1;
+    renderMisAnalisis();
   } catch (err) {
     contenedor.innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
   }
@@ -3478,14 +3494,19 @@ async function cargarCupoAnalisis() {
   }
 }
 
-function renderMisAnalisis(lista) {
+function renderMisAnalisis() {
   const contenedor = document.getElementById('analisisMisAnalisisLista');
-  if (!lista || lista.length === 0) {
+  if (!misAnalisisData || misAnalisisData.length === 0) {
     contenedor.innerHTML = '<div class="empty-state">Todavía no analizaste ningún proceso. Usá el buscador de abajo para empezar.</div>';
     return;
   }
 
-  contenedor.innerHTML = lista.map((a) => `
+  const totalPaginas = Math.ceil(misAnalisisData.length / ANALISIS_MIOS_POR_PAGINA);
+  if (analisisMiosPaginaActual > totalPaginas) analisisMiosPaginaActual = totalPaginas;
+  const inicio = (analisisMiosPaginaActual - 1) * ANALISIS_MIOS_POR_PAGINA;
+  const pagina = misAnalisisData.slice(inicio, inicio + ANALISIS_MIOS_POR_PAGINA);
+
+  const filasHtml = pagina.map((a) => `
     <div class="row">
       <div class="row-info">
         <div class="row-title">${escapeHtml(a.nombre) || escapeHtml(a.codigo_externo)}</div>
@@ -3496,19 +3517,62 @@ function renderMisAnalisis(lista) {
           <br><span>Analizado: ${formatDate(a.updated_at)}</span>
         </div>
       </div>
-      <button type="button" class="btn btn-ghost" data-ver-analisis="${a.id}">Ver →</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn btn-ghost" data-ver-analisis="${a.id}">Ver →</button>
+        <button type="button" class="btn btn-danger" data-eliminar-analisis="${a.id}">✖ Eliminar</button>
+      </div>
     </div>
   `).join('');
 
+  const mostrarPaginador = misAnalisisData.length > ANALISIS_MIOS_POR_PAGINA;
+  const paginadorHtml = mostrarPaginador ? `
+    <div class="paginador">
+      <button type="button" class="btn btn-ghost" id="analisisMiosPrev" ${analisisMiosPaginaActual === 1 ? 'disabled' : ''}>‹ Anterior</button>
+      <span class="paginador-info">Página ${analisisMiosPaginaActual} de ${totalPaginas}</span>
+      <button type="button" class="btn btn-ghost" id="analisisMiosNext" ${analisisMiosPaginaActual === totalPaginas ? 'disabled' : ''}>Siguiente ›</button>
+    </div>
+  ` : '';
+
+  contenedor.innerHTML = filasHtml + paginadorHtml;
+
+  if (mostrarPaginador) {
+    document.getElementById('analisisMiosPrev').addEventListener('click', () => {
+      analisisMiosPaginaActual--;
+      renderMisAnalisis();
+    });
+    document.getElementById('analisisMiosNext').addEventListener('click', () => {
+      analisisMiosPaginaActual++;
+      renderMisAnalisis();
+    });
+  }
+
   contenedor.querySelectorAll('[data-ver-analisis]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const a = lista.find((x) => String(x.id) === btn.dataset.verAnalisis);
+      const a = misAnalisisData.find((x) => String(x.id) === btn.dataset.verAnalisis);
       if (!a) return;
       document.getElementById('analisisCodigo').value = a.codigo_externo;
       document.querySelector(`input[name="analisisTipo"][value="${a.tipo_proceso}"]`).checked = true;
       document.getElementById('analisisUploadCard').style.display = 'none';
       document.getElementById('analisisCupoInfo').textContent = '';
       mostrarResultadoAnalisis(a, a.tipo_proceso, a.codigo_externo, false);
+    });
+  });
+
+  contenedor.querySelectorAll('[data-eliminar-analisis]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.eliminarAnalisis;
+      const confirmado = await confirmDialog('¿Eliminar este análisis de tu listado? Esta acción no se puede deshacer.');
+      if (!confirmado) return;
+      mostrarProcesando('Eliminando...');
+      try {
+        await apiFetch(`/api/analisis-ia/${id}`, { method: 'DELETE' });
+        misAnalisisData = misAnalisisData.filter((x) => String(x.id) !== id);
+        renderMisAnalisis();
+      } catch (err) {
+        showError('No se pudo eliminar el análisis: ' + err.message);
+      } finally {
+        ocultarProcesando();
+      }
     });
   });
 }
@@ -3961,8 +4025,8 @@ function renderSuscripcionTrial(usuario) {
     </div>
     <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Elige un plan antes de esa fecha para no perder el acceso a tus alertas — todo lo que configuraste durante la prueba se mantiene guardado.</p>
     <div class="modal-actions" style="justify-content: flex-start; margin-top:20px;">
-      <button type="button" class="btn btn-ghost" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico')">Elegir Básico</button>
-      <button type="button" class="btn" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full')">Elegir Full</button>
+      <button type="button" class="btn" id="btn-plan-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-plan-basico')">✅ Elegir Básico</button>
+      <button type="button" class="btn" id="btn-plan-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-plan-full')">🌟 Elegir Full</button>
     </div>
   `;
 }
