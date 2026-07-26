@@ -3840,6 +3840,25 @@ document.getElementById('analisisDescargarPdfBtn').addEventListener('click', () 
 
   y = y + resumenLineas.length * 12 + 20;
 
+  // Fechas clave — mismo lugar que en pantalla (justo después del resumen,
+  // antes del checklist). Antes esta sección no se incluía en el PDF aunque
+  // la IA sí la devuelve (c.fechasClave) y sí se muestra en el dashboard.
+  if ((c.fechasClave || []).length > 0) {
+    doc.setFontSize(11);
+    doc.text('Fechas clave', 40, y);
+    y += 6;
+    doc.autoTable({
+      startY: y,
+      head: [['Evento', 'Fecha']],
+      body: c.fechasClave.map((f) => [f.nombre, f.fecha]),
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [30, 30, 40] },
+      margin: { left: 40, right: 40 },
+    });
+    y = doc.lastAutoTable.finalY + 16;
+  }
+
   // Se agrupa por categoría — cada grupo se agrega como su propia tabla con
   // el nombre de la categoría de subtítulo, en vez de una tabla única con
   // todos los documentos mezclados sin orden.
