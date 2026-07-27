@@ -2638,10 +2638,29 @@ function renderHistorial() {
     return;
   }
 
-  const totalPaginas = Math.ceil(historialFiltrado.length / HISTORIAL_POR_PAGINA);
+  // Agrupar por codigo_externo — el mismo proceso genera un registro en
+  // alerts_sent POR CADA canal (email/telegram) que el usuario tenga
+  // configurado, ya que la deduplicación se reserva por canal (ver
+  // intentarReservarEnvio en el backend). Eso es correcto a nivel de datos
+  // (necesitamos ambos registros para el historial real de envíos), pero
+  // antes se mostraba como dos tarjetas idénticas en la UI — acá se agrupan
+  // en una sola tarjeta con un tag por canal.
+  //
+  // Se agrupa ANTES de paginar (no después) para que un grupo nunca quede
+  // partido entre dos páginas.
+  const gruposPorCodigo = new Map();
+  for (const h of historialFiltrado) {
+    if (!gruposPorCodigo.has(h.codigo_externo)) {
+      gruposPorCodigo.set(h.codigo_externo, { ...h, envios: [] });
+    }
+    gruposPorCodigo.get(h.codigo_externo).envios.push({ id: h.id, canal: h.canal, sent_at: h.sent_at });
+  }
+  const grupos = [...gruposPorCodigo.values()];
+
+  const totalPaginas = Math.ceil(grupos.length / HISTORIAL_POR_PAGINA);
   if (historialPaginaActual > totalPaginas) historialPaginaActual = totalPaginas;
   const inicio = (historialPaginaActual - 1) * HISTORIAL_POR_PAGINA;
-  const pagina = historialFiltrado.slice(inicio, inicio + HISTORIAL_POR_PAGINA);
+  const pagina = grupos.slice(inicio, inicio + HISTORIAL_POR_PAGINA);
 
   const filasHtml = pagina.map(h => `
     <div class="row">
@@ -2668,13 +2687,17 @@ function renderHistorial() {
         </div>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-        <span class="tag ${h.canal === 'telegram' ? 'telegram' : ''}">${h.canal === 'telegram' ? '📲' : '✉️'} ${h.canal} · ${formatDate(h.sent_at)}</span>
-        <button type="button" class="btn btn-danger" data-eliminar-notificacion="${h.id}">✖ Eliminar</button>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          ${h.envios.map((e) => `
+            <span class="tag ${e.canal === 'telegram' ? 'telegram' : ''}">${e.canal === 'telegram' ? '📲' : '✉️'} ${e.canal} · ${formatDate(e.sent_at)}</span>
+          `).join('')}
+        </div>
+        <button type="button" class="btn btn-danger" data-eliminar-notificacion="${h.envios.map((e) => e.id).join(',')}">✖ Eliminar</button>
       </div>
     </div>
   `).join('');
 
-  const mostrarPaginador = historialFiltrado.length > HISTORIAL_POR_PAGINA;
+  const mostrarPaginador = grupos.length > HISTORIAL_POR_PAGINA;
   const paginadorHtml = mostrarPaginador ? `
     <div class="paginador">
       <button type="button" class="btn btn-ghost" id="historialPrev" ${historialPaginaActual === 1 ? 'disabled' : ''}>‹ Anterior</button>
@@ -2698,16 +2721,18 @@ function renderHistorial() {
 
   // Eliminar del historial — no afecta recordatorios/seguimiento/portafolio
   // en Oportunidades (tablas totalmente independientes, ver
-  // eliminarDelHistorial en el backend).
+  // eliminarDelHistorial en el backend). Un grupo puede representar más de
+  // un registro real (uno por canal) — se borran todos los ids del grupo,
+  // ya que desde la perspectiva del usuario es "una sola notificación".
   card.querySelectorAll('[data-eliminar-notificacion]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const confirmado = await confirmDialog('¿Eliminar esta notificación del historial? No afecta ningún recordatorio, seguimiento ni ítem de tu portafolio.');
       if (!confirmado) return;
-      const id = btn.dataset.eliminarNotificacion;
+      const ids = btn.dataset.eliminarNotificacion.split(',');
       mostrarProcesando('Eliminando...');
       try {
-        await apiFetch(`/api/alerts/history/${id}`, { method: 'DELETE' });
-        historialData = historialData.filter((h) => String(h.id) !== String(id));
+        await Promise.all(ids.map((id) => apiFetch(`/api/alerts/history/${id}`, { method: 'DELETE' })));
+        historialData = historialData.filter((h) => !ids.includes(String(h.id)));
         renderHistorial();
       } catch (err) {
         showErrorNotificaciones(err.message);
@@ -3553,7 +3578,6 @@ function renderMisAnalisis() {
       document.getElementById('analisisCodigo').value = a.codigo_externo;
       document.querySelector(`input[name="analisisTipo"][value="${a.tipo_proceso}"]`).checked = true;
       document.getElementById('analisisUploadCard').style.display = 'none';
-      document.getElementById('analisisCupoInfo').textContent = '';
       mostrarResultadoAnalisis(a, a.tipo_proceso, a.codigo_externo, false);
     });
   });
@@ -3707,7 +3731,6 @@ document.getElementById('analisisBuscarBtn').addEventListener('click', async () 
 
   document.getElementById('analisisUploadCard').style.display = 'none';
   document.getElementById('analisisResultadoWrap').style.display = 'none';
-  document.getElementById('analisisCupoInfo').textContent = '';
 
   const btn = document.getElementById('analisisBuscarBtn');
   btn.disabled = true;
@@ -3718,7 +3741,6 @@ document.getElementById('analisisBuscarBtn').addEventListener('click', async () 
     const data = await apiFetch(`/api/analisis-ia/buscar?tipoProceso=${tipoProceso}&codigo=${encodeURIComponent(codigo)}`);
     if (data.encontrado) {
       mostrarResultadoAnalisis(data.analisis, tipoProceso, codigo, data.posiblementeDesactualizado);
-      document.getElementById('analisisCupoInfo').textContent = '';
     } else {
       mostrarCardSubida(tipoProceso, codigo);
     }
