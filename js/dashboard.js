@@ -3994,11 +3994,103 @@ function poblarSeccionCuenta() {
   passwordInfoMsg.style.display = 'none';
   passwordForm.reset();
   cargarSuscripcion();
+  cargarEstadoTelegram();
 }
 
 // --- Mi Suscripción (dentro de Mi Perfil) ---
 // Trial no tiene nada que mostrar acá (no hay suscripción real todavía) —
 // la tarjeta completa se oculta en ese caso.
+// --- Notificaciones por Telegram (dentro de Mi Perfil) ---
+let telegramPollingInterval = null;
+
+async function cargarEstadoTelegram() {
+  try {
+    const data = await apiFetch('/api/telegram/estado');
+    renderTelegram(data.vinculado);
+  } catch (err) {
+    document.getElementById('telegramContenido').innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function renderTelegram(vinculado) {
+  const contenedor = document.getElementById('telegramContenido');
+
+  if (vinculado) {
+    contenedor.innerHTML = `
+      <p style="color: var(--down); margin-bottom: 12px;">✅ Vinculado — ya recibís tus alertas por Telegram.</p>
+      <button type="button" class="btn btn-ghost" id="telegramDesvincularBtn">Desvincular</button>
+    `;
+    document.getElementById('telegramDesvincularBtn').addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Desvincular tu Telegram? Vas a dejar de recibir alertas por acá — seguís recibiéndolas por correo igual.');
+      if (!confirmado) return;
+      mostrarProcesando('Desvinculando...');
+      try {
+        await apiFetch('/api/telegram/vincular', { method: 'DELETE' });
+        renderTelegram(false);
+      } catch (err) {
+        showError('No se pudo desvincular: ' + err.message);
+      } finally {
+        ocultarProcesando();
+      }
+    });
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <button type="button" class="btn" id="telegramVincularBtn">Vincular Telegram</button>
+    <p class="form-note" id="telegramEsperandoMsg" style="display:none; margin-top: 10px;">Abrí el link, tocá "Iniciar" en Telegram, y volvé acá — esto se actualiza solo apenas confirmes.</p>
+  `;
+
+  document.getElementById('telegramVincularBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Generando link...';
+    try {
+      const data = await apiFetch('/api/telegram/generar-link', { method: 'POST' });
+      window.open(data.link, '_blank', 'noopener');
+      btn.textContent = 'Esperando confirmación...';
+      document.getElementById('telegramEsperandoMsg').style.display = '';
+      iniciarPollingTelegram();
+    } catch (err) {
+      showError('No se pudo generar el link: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Vincular Telegram';
+    }
+  });
+}
+
+/**
+ * La vinculación la completa Telegram llamando a nuestro webhook (no el
+ * navegador del usuario) — así que el único jeito de que la UI se entere de
+ * que ya quedó vinculado es preguntarle al backend cada tanto, hasta que
+ * cambie o se cumpla el mismo TTL de 15 min que tiene el link (después de
+ * eso, si el usuario no confirmó, no tiene sentido seguir preguntando).
+ */
+function iniciarPollingTelegram() {
+  if (telegramPollingInterval) clearInterval(telegramPollingInterval);
+  let intentos = 0;
+  const maxIntentos = 90; // 90 * 10s = 15 min, igual al TTL del link
+  telegramPollingInterval = setInterval(async () => {
+    intentos++;
+    try {
+      const data = await apiFetch('/api/telegram/estado');
+      if (data.vinculado) {
+        clearInterval(telegramPollingInterval);
+        telegramPollingInterval = null;
+        renderTelegram(true);
+        return;
+      }
+    } catch (err) {
+      // Un error puntual de red no debería cortar el polling — reintenta igual.
+    }
+    if (intentos >= maxIntentos) {
+      clearInterval(telegramPollingInterval);
+      telegramPollingInterval = null;
+      renderTelegram(false);
+    }
+  }, 10000);
+}
+
 async function cargarSuscripcion() {
   const card = document.getElementById('suscripcionCard');
   const contenedor = document.getElementById('suscripcionContenido');
