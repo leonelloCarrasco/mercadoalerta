@@ -33,7 +33,7 @@
 .admin-section-head h2 { font-size: 18px; font-weight: 600; }
 
 .admin-table-wrap {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto;
 }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .admin-table th {
