@@ -2520,6 +2520,25 @@ async function cargarHistorial() {
   }
 }
 
+// Botón manual de "Actualizar" en Notificaciones — el backfill de una alerta
+// nueva (y el matching normal en general) corren en segundo plano del lado
+// del backend, así que no hay forma de que el frontend sepa automáticamente
+// cuándo terminó y se generó una notificación nueva. En vez de hacer polling
+// automático, se deja en manos del usuario refrescar cuando quiera ver si ya
+// llegó algo — más simple y sin llamadas de más de fondo.
+document.getElementById('refrescarHistorialBtn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Actualizando...';
+  try {
+    await cargarHistorial();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
+
 // --- Inicio: resumen ---
 function renderInicio() {
   const activas = configsData.filter((c) => c.activo).length;
