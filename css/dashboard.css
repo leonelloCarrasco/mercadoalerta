@@ -134,6 +134,7 @@ section { margin-bottom: 56px; }
 .section-head h2 { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
 .section-head h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
+.section-head-action { margin-left: auto; }
 .section-head .icon { background-color: #EDEEF5; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
