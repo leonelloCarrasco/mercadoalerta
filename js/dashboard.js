@@ -4058,11 +4058,11 @@ function renderTelegram(vinculado) {
 
   if (vinculado) {
     contenedor.innerHTML = `
-      <p style="color: var(--down); margin-bottom: 12px;">✅ Vinculado — ya recibís tus alertas por Telegram.</p>
+      <p style="color: var(--down); margin-bottom: 12px;">✅ Vinculado — ya recibes tus alertas por Telegram.</p>
       <button type="button" class="btn btn-ghost" id="telegramDesvincularBtn">Desvincular</button>
     `;
     document.getElementById('telegramDesvincularBtn').addEventListener('click', async () => {
-      const confirmado = await confirmDialog('¿Desvincular tu Telegram? Vas a dejar de recibir alertas por acá — seguís recibiéndolas por correo igual.');
+      const confirmado = await confirmDialog('¿Desvincular tu Telegram? Vas a dejar de recibir alertas por acá — sigues recibiéndolas por correo igual.');
       if (!confirmado) return;
       mostrarProcesando('Desvinculando...');
       try {
