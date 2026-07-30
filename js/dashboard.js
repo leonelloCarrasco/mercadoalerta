@@ -2151,7 +2151,7 @@ async function cargarOportunidades() {
   }
 }
 
-function renderOportunidadesActiva() {
+async function renderOportunidadesActiva() {
   const card = document.getElementById('oportunidadesCard');
   // El kanban (desktop) necesita scroll horizontal — .card tiene overflow:hidden,
   // que lo recortaría. En mobile el pipeline es una lista vertical normal
@@ -2161,6 +2161,13 @@ function renderOportunidadesActiva() {
 
   if (oportunidadesSubtabActiva === 'recordatorios') renderRecordatorios();
   else if (oportunidadesSubtabActiva === 'seguimiento') renderSeguimientos();
+  else if (pipelineData.length === 0 && !(await tieneAcceso('portafolio'))) {
+    // Solo se bloquea la vista cuando está vacío Y sin acceso — si ya tenía
+    // ítems de un plan pago anterior, los sigue viendo igual (no se le
+    // esconden datos que ya tenía, solo se bloquea CREAR más, ver
+    // pipeline.routes.js).
+    card.innerHTML = '<div class="empty-state">El Portafolio está disponible en los planes Básico y Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
+  }
   else renderPipeline();
 }
 
@@ -2992,8 +2999,27 @@ document.querySelectorAll('#analisisSubTabs .tab-btn').forEach((btn) => {
   });
 });
 
-function renderSubTabAnalisisActiva() {
+// Chequeo genérico de acceso a una feature booleana del plan (ej.
+// 'accesoAnalisisPrecios', 'portafolio') — consulta /api/planes (cacheado
+// en obtenerPlanesData) contra el plan actual del usuario, en vez de
+// hardcodear nombres de plan acá. Si por lo que sea no se puede confirmar
+// (fetch falló), se asume SIN acceso — más seguro mostrar de más un mensaje
+// de upgrade que dejar pasar a alguien que no debería.
+async function tieneAcceso(feature) {
+  try {
+    const planes = await obtenerPlanesData();
+    return Boolean(planes?.[window.usuarioActual?.plan]?.[feature]);
+  } catch (err) {
+    return false;
+  }
+}
+
+async function renderSubTabAnalisisActiva() {
   if (!codigoSeleccionadoAnalisis) return;
+  if (!(await tieneAcceso('accesoAnalisisPrecios'))) {
+    document.getElementById('analisisCard').innerHTML = '<div class="empty-state">El Análisis de Precios de Mercado Público está disponible en el plan Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
+    return;
+  }
   if (subTabAnalisisActiva === 'precios') buscarPrecios(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
   else if (subTabAnalisisActiva === 'proveedores') buscarProveedores(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
   else if (subTabAnalisisActiva === 'organismos') buscarOrganismos(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
@@ -4036,6 +4062,25 @@ function poblarSeccionCuenta() {
   passwordForm.reset();
   cargarSuscripcion();
   cargarEstadoTelegram();
+  actualizarVisibilidadWhatsapp();
+}
+
+/**
+ * Mock a propósito — WhatsApp no está construido todavía (solo Telegram y
+ * email envían de verdad). Esto solo decide si mostrar el bloque "Próximamente"
+ * según si el plan actual del usuario lo incluye en su mensajería (planes.js,
+ * campo "mensajeria" es un string libre, se detecta por si menciona "WhatsApp"
+ * en vez de tener un array estructurado — así lo definió el backend).
+ */
+async function actualizarVisibilidadWhatsapp() {
+  const seccion = document.getElementById('whatsappSeccion');
+  try {
+    const planes = await obtenerPlanesData();
+    const mensajeriaDelPlan = planes?.[window.usuarioActual?.plan]?.mensajeria || '';
+    seccion.style.display = mensajeriaDelPlan.includes('WhatsApp') ? '' : 'none';
+  } catch (err) {
+    seccion.style.display = 'none';
+  }
 }
 
 // --- Mi Suscripción (dentro de Mi Perfil) ---
@@ -4153,12 +4198,23 @@ async function cargarSuscripcion() {
   }
 }
 
+// Cache simple — los precios no cambian mientras dura la sesión, no hace
+// falta pedirlos de nuevo cada vez que se visita Mi Perfil.
+let planesDataCache = null;
+async function obtenerPlanesData() {
+  if (!planesDataCache) {
+    const data = await apiFetch('/api/planes');
+    planesDataCache = data.planes;
+  }
+  return planesDataCache;
+}
+
 // Antes, con plan='trial' la tarjeta entera se ocultaba — no había forma de
 // ver desde Mi Perfil cuándo terminaba la prueba sin ir a buscarlo en otro
 // lado. No pide nada a /api/pagos/mi-suscripcion (esa ruta es para
 // suscripciones reales de MercadoPago) — la fecha del trial ya viene en
 // /api/auth/me, no hace falta una llamada aparte.
-function renderSuscripcionTrial(usuario) {
+async function renderSuscripcionTrial(usuario) {
   const contenedor = document.getElementById('suscripcionContenido');
   const fechaExp = usuario.fecha_expiracion_trial ? new Date(usuario.fecha_expiracion_trial) : null;
 
@@ -4170,6 +4226,19 @@ function renderSuscripcionTrial(usuario) {
       : ' (venció)';
   }
 
+  // Precios desde el backend — así nunca hay que volver a tocar este
+  // archivo cuando cambien un valor en planes.js.
+  let textoBotonBasico = '✅ Elegir Básico';
+  let textoBotonFull = '🌟 Elegir Full';
+  try {
+    const planes = await obtenerPlanesData();
+    textoBotonBasico = `✅ Elegir Básico — $${planes.basico.monto.toLocaleString('es-CL')}/mes`;
+    textoBotonFull = `🌟 Elegir Full — $${planes.full.monto.toLocaleString('es-CL')}/mes`;
+  } catch (err) {
+    // Si falla el fetch de precios, igual se muestran los botones sin el
+    // precio en el texto — mejor eso que dejar la pantalla rota.
+  }
+
   contenedor.innerHTML = `
     <div style="font-size: 14px; line-height: 1.9;">
       <span>Plan: <strong>Trial</strong></span><br>
@@ -4177,8 +4246,8 @@ function renderSuscripcionTrial(usuario) {
     </div>
     <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Elige un plan antes de esa fecha para no perder el acceso a tus alertas — todo lo que configuraste durante la prueba se mantiene guardado.</p>
     <div class="modal-actions" style="justify-content: flex-start; margin-top:20px;">
-      <button type="button" class="btn" id="btn-plan-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-plan-basico')">✅ Elegir Básico</button>
-      <button type="button" class="btn" id="btn-plan-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-plan-full')">🌟 Elegir Full</button>
+      <button type="button" class="btn" id="btn-plan-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-plan-basico')">${textoBotonBasico}</button>
+      <button type="button" class="btn" id="btn-plan-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-plan-full')">${textoBotonFull}</button>
     </div>
   `;
 }

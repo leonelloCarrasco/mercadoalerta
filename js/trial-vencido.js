@@ -83,6 +83,18 @@ async function elegirPlan(plan, btn) {
   }
 }
 
+async function cargarPrecios() {
+  try {
+    const res = await fetch(`${API_BASE}/api/planes`);
+    const data = await res.json();
+    if (!res.ok) return; // sin precio en el texto es mejor que romper la pantalla
+    document.getElementById('btnElegirBasico').textContent = `Elegir Plan Básico $${data.planes.basico.monto.toLocaleString('es-CL')} CLP/mes`;
+    document.getElementById('btnElegirFull').textContent = `Elegir Plan Full $${data.planes.full.monto.toLocaleString('es-CL')} CLP/mes`;
+  } catch (err) {
+    // igual, sin precio en el texto no es motivo para bloquear la pantalla
+  }
+}
+
 document.getElementById('btnElegirBasico').addEventListener('click', (e) => elegirPlan('basico', e.target));
 document.getElementById('btnElegirFull').addEventListener('click', (e) => elegirPlan('full', e.target));
 
@@ -93,3 +105,4 @@ document.getElementById('cerrarSesionTrialVencido').addEventListener('click', (e
 });
 
 cargarUsuario();
+cargarPrecios();
