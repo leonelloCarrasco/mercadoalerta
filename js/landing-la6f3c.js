@@ -3,9 +3,90 @@ const DASHBOARD_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostn
   ? 'http://127.0.0.1:5500'
   : 'https://mercadoalerta.cl';
 
+// Mismo patrón que dashboard.js — el backend vive en un subdominio propio en producción.
+const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ? 'http://localhost:3000'
+  : 'https://api.mercadoalerta.cl';
+
 document.querySelectorAll('.dashboard-link').forEach(a => {
   a.href = DASHBOARD_BASE + a.dataset.path;
 });
+
+// Decisiones de diseño/marketing (qué plan destacar, qué botones arrancan
+// deshabilitados) — esto no es "información del plan" en el sentido de
+// cuotas/precios, así que se queda acá. Los NÚMEROS de cada plan (cuántas
+// alertas, cuánto cuesta, etc.) SÍ vienen del backend vía /api/planes, para
+// no tener que volver a tocar este archivo cada vez que cambien un precio.
+const DISENO_POR_PLAN = {
+  trial: { destacado: true, disabled: false, textoBoton: 'Empezar Gratis' },
+  basico: { destacado: false, disabled: true, textoBoton: 'Elegir Basic' },
+  full: { destacado: false, disabled: true, textoBoton: 'Elegir Full' },
+};
+
+function formatCLP(numero) {
+  return '$' + numero.toLocaleString('es-CL');
+}
+
+function armarFeaturesPlan(plan) {
+  const items = [
+    `Hasta <strong>${plan.limiteAlertas} alertas</strong> activas`,
+    `Hasta <strong>${plan.limiteBusquedas} búsquedas</strong> preconfiguradas`,
+    `Hasta <strong>${plan.limiteRecordatorios} recordatorios</strong> de cierre`,
+    `Hasta <strong>${plan.limiteSeguimientos} seguimientos</strong> de procesos`,
+    `Alertas por <strong>${plan.mensajeria}</strong>`,
+  ];
+  if (plan.accesoAnalisisPrecios) items.push('<strong>Análisis de precios</strong> de Mercado Público');
+  if (plan.portafolio) items.push('Portafolio <strong>Ilimitado</strong>');
+  items.push(`<strong>${plan.limiteAnalisisIA} análisis</strong> de procesos con IA al mes`);
+  if (!plan.requierePago) items.push('Sin tarjeta de crédito');
+  return items.map((texto) => `<li>${texto}</li>`).join('');
+}
+
+function armarTarjetaPlan(clave, plan) {
+  const diseno = DISENO_POR_PLAN[clave] || { destacado: false, disabled: false, textoBoton: `Elegir ${plan.nombreDisplay}` };
+
+  const precioHtml = !plan.requierePago
+    ? `<div class="price-now"><span class="price-amount">Gratis</span></div>
+       <div class="price-later">Por ${plan.diasTrial} días · luego puedes elegir Basic o Full para seguir usándolo</div>`
+    : `<div class="price-now"><span class="price-amount">${formatCLP(plan.monto)}</span><span class="price-period">CLP / mes</span></div>
+       <div class="price-later">${plan.montoRegular && plan.montoRegular !== plan.monto ? `Precio normal ${formatCLP(plan.montoRegular)} CLP/mes · IVA incluido` : 'IVA incluido'}</div>`;
+
+  const stampHtml = plan.montoRegular && plan.montoRegular !== plan.monto
+    ? '<div class="price-stamp">OFERTA DE LANZAMIENTO</div>'
+    : '';
+
+  return `
+    <div class="price-card${diseno.destacado ? ' destacado' : ''}">
+      ${stampHtml}
+      <div class="price-plan-name">${plan.nombreDisplay}</div>
+      <div class="price-plan-desc">${plan.descripcion}</div>
+      ${precioHtml}
+      <ul class="price-features">${armarFeaturesPlan(plan)}</ul>
+      <a href="https://mercadoalerta.cl/register.html?plan=${clave}" class="btn ${diseno.destacado ? 'btn-primary' : 'btn-ghost'} dashboard-link${diseno.disabled ? ' btn-deshabilitado' : ''}" data-path="/register.html?plan=${clave}"${diseno.disabled ? ' disabled="true"' : ''}>${diseno.textoBoton}</a>
+    </div>
+  `;
+}
+
+async function cargarPlanes() {
+  const contenedor = document.getElementById('pricingGrid');
+  try {
+    const res = await fetch(`${API_BASE}/api/planes`);
+    if (!res.ok) throw new Error('No se pudo cargar la información de planes.');
+    const { planes } = await res.json();
+
+    contenedor.innerHTML = Object.entries(planes)
+      .map(([clave, plan]) => armarTarjetaPlan(clave, plan))
+      .join('');
+
+    // Los links recién armados también necesitan el dashboard_base correcto.
+    contenedor.querySelectorAll('.dashboard-link').forEach((a) => {
+      a.href = DASHBOARD_BASE + a.dataset.path;
+    });
+  } catch (err) {
+    contenedor.innerHTML = '<div class="price-card"><div class="price-plan-desc">No pudimos cargar los planes en este momento. Actualiza la página o vuelve a intentar más tarde.</div></div>';
+  }
+}
+cargarPlanes();
 
 const tickerData = [
   { codigo: '1002772-59-LR26', nombre: 'Suministro de mobiliario escolar', extra: 'Municipalidad de Talca' },

@@ -254,6 +254,7 @@ section { margin-bottom: 56px; }
   background: var(--gold-soft); color: var(--gold);
 }
 .tag.telegram { background: #3ECF8E22; color: var(--down); }
+.mensajeria-canal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
 .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
 
 .paginador {
