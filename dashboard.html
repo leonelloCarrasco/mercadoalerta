@@ -477,32 +477,26 @@
 
           <div class="card-2" id="mensajeriaCard">
             <h3 style="margin-bottom: 6px; font-size: 15px;">Mensajería</h3>
-            <p class="section-sub" style="margin-bottom: 14px;">Por dónde querés recibir tus alertas — depende de tu plan.</p>
+            <p class="section-sub" style="margin-bottom: 14px;">¿Por dónde quieres recibir tus alertas? — depende de tu plan.</p>
 
             <div class="mensajeria-canal">
               <div class="mensajeria-canal-head">
-                <span>✉️ Email</span>
-                <span class="tag" style="background: var(--down-soft); color: var(--down);">Siempre activo</span>
+                <img src="/assets/icons/email.png" class="icon-desc-canal">&nbsp;</img><span>Email</span>
               </div>
+
+              <span class="tag" style="background: var(--down-soft); color: var(--down);">Siempre activo</span>
               <p class="form-note" style="margin: 4px 0 0 0;">Todas las cuentas reciben sus alertas por correo — no se puede desactivar.</p>
             </div>
 
-            <hr style="border-color: var(--border); margin: 16px 0;">
 
             <div class="mensajeria-canal">
-              <div class="mensajeria-canal-head"><span>📲 Telegram</span></div>
+                <img src="/assets/icons/telegram.png" class="icon-desc-canal">&nbsp;</img><span>Telegram</span>
               <div id="telegramContenido" style="margin-top: 8px;"><div class="loading">Cargando...</div></div>
             </div>
 
-            <div id="whatsappSeccion" style="display:none;">
-              <hr style="border-color: var(--border); margin: 16px 0;">
-              <div class="mensajeria-canal">
-                <div class="mensajeria-canal-head">
-                  <span>🟢 WhatsApp</span>
-                  <span class="tag" style="background: var(--gold-soft); color: var(--gold);">Próximamente</span>
-                </div>
-                <p class="form-note" style="margin: 4px 0 0 0;">Estamos trabajando en sumar WhatsApp como canal de alertas para tu plan. Te vamos a avisar apenas esté disponible.</p>
-              </div>
+            <div class="mensajeria-canal" id="whatsappSeccion" style="display:none;">
+              <img src="/assets/icons/whatsapp.png" class="icon-desc-canal">&nbsp;</img><span>WhatsApp</span>
+              <div id="whatsappContenido" style="margin-top: 8px;"><div class="loading">Cargando...</div></div>
             </div>
           </div>
 

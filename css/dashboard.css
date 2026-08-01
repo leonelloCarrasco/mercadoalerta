@@ -249,12 +249,33 @@ section { margin-bottom: 56px; }
 @media (max-width: 880px) {
   .oportunidad-botones { display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
 }
-.tag {
+.tag{
   font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
   background: var(--gold-soft); color: var(--gold);
 }
-.tag.telegram { background: #3ECF8E22; color: var(--down); }
-.mensajeria-canal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
+.tag-email{
+  font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
+  background: var(--gold-soft); color: var(--gold);
+  display: flex; align-items: center; gap: 4px;
+}
+.tag-telegram{
+  font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
+  background: #0088cc2c; color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
+.tag-whatsapp{
+  font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
+  background: #3ECF8E22; color: var(--down);
+  display: flex; align-items: center; gap: 4px;
+}
+
+.icon-canal { font-size: 15px; flex-shrink: 0; }
+
+.sentence-case::first-letter {
+  text-transform: uppercase;
+}
+.mensajeria-canal { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+.mensajeria-canal-head { align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
 .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
 
 .paginador {
@@ -615,6 +636,7 @@ table.analisis-table a:hover { text-decoration: underline; }
     justify-content: center;
     }
  .icon-desc {height: 20px;}
+ .icon-desc-canal {height: 15px;}
 
   .icon-stat {
     height: 20px;
