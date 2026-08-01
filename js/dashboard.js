@@ -2589,7 +2589,13 @@ function renderInicio() {
     <div class="inicio-reporte-grupo">
       <h4>Por canal de envío</h4>
       ${Object.entries(porCanal).map(([canal, cantidad]) => `
-        <div class="inicio-reporte-fila"><span>${canal === 'telegram' ? '📲 Telegram' : '✉️ Email'}</span><strong>${cantidad}</strong></div>
+        <div class="inicio-reporte-fila">
+          <div style="display: flex;">
+            <img src="/assets/icons/${canal}.png" class="icon-desc-canal">&nbsp;</img>
+            <p>${canal === 'whatsapp' ? 'WhatsApp' : canal === 'telegram' ? 'Telegram' : 'Email'}</p>
+          </div>
+          <div><strong>${cantidad}</strong></div>
+        </div>
       `).join('')}
     </div>
   `;
@@ -2715,7 +2721,7 @@ function renderHistorial() {
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           ${h.envios.map((e) => `
-            <span class="tag ${e.canal === 'telegram' ? 'telegram' : ''}">${e.canal === 'telegram' ? '📲' : '✉️'} ${e.canal} · ${formatDate(e.sent_at)}</span>
+            <span class="tag-${e.canal}"><img src="/assets/icons/${e.canal}.png" class="icon-desc-canal">&nbsp;</img> ${e.canal === 'whatsapp' ? 'WhatsApp' : e.canal === 'telegram' ? 'Telegram' : 'Email'} · ${formatDate(e.sent_at)}</span>
           `).join('')}
         </div>
         <button type="button" class="btn btn-danger" data-eliminar-notificacion="${h.envios.map((e) => e.id).join(',')}">✖ Eliminar</button>
@@ -4077,10 +4083,105 @@ async function actualizarVisibilidadWhatsapp() {
   try {
     const planes = await obtenerPlanesData();
     const mensajeriaDelPlan = planes?.[window.usuarioActual?.plan]?.mensajeria || '';
-    seccion.style.display = mensajeriaDelPlan.includes('WhatsApp') ? '' : 'none';
+    const visible = mensajeriaDelPlan.includes('WhatsApp');
+    seccion.style.display = visible ? '' : 'none';
+    if (visible) cargarEstadoWhatsapp();
   } catch (err) {
     seccion.style.display = 'none';
   }
+}
+
+// --- Notificaciones por WhatsApp (dentro de Mi Perfil) — a diferencia de
+// Telegram, acá la vinculación es por código de verificación en 2 pasos
+// (número -> código), no por deep-link, porque WhatsApp Business es quien
+// inicia el contacto con una plantilla, no el usuario escribiéndole primero.
+let whatsappPollingInterval = null;
+
+async function cargarEstadoWhatsapp() {
+  try {
+    const data = await apiFetch('/api/whatsapp/estado');
+    renderWhatsapp(data.vinculado);
+  } catch (err) {
+    document.getElementById('whatsappContenido').innerHTML = `<div class="empty-state">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+function renderWhatsapp(vinculado) {
+  const contenedor = document.getElementById('whatsappContenido');
+
+  if (vinculado) {
+    contenedor.innerHTML = `
+      <p style="color: var(--down); margin-bottom: 12px;">✅ Vinculado — ya recibes tus alertas por WhatsApp.</p>
+      <button type="button" class="btn btn-ghost" id="whatsappDesvincularBtn">Desvincular</button>
+    `;
+    document.getElementById('whatsappDesvincularBtn').addEventListener('click', async () => {
+      const confirmado = await confirmDialog('¿Desvincular tu WhatsApp? Vas a dejar de recibir alertas por acá — sigues recibiéndolas por correo igual.');
+      if (!confirmado) return;
+      mostrarProcesando('Desvinculando...');
+      try {
+        await apiFetch('/api/whatsapp/vincular', { method: 'DELETE' });
+        renderWhatsapp(false);
+      } catch (err) {
+        showError('No se pudo desvincular: ' + err.message);
+      } finally {
+        ocultarProcesando();
+      }
+    });
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <button type="button" class="btn" id="whatsappVincularBtn">Vincular WhatsApp</button>
+    <p class="form-note" id="whatsappEsperandoMsg" style="display:none; margin-top: 10px;">Se abrió WhatsApp con un mensaje ya escrito — solo tienes que tocar enviar. Esto se actualiza solo apenas confirmes.</p>
+  `;
+
+  document.getElementById('whatsappVincularBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+    try {
+      const data = await apiFetch('/api/whatsapp/generar-codigo', { method: 'POST' });
+      window.open(data.link, '_blank', 'noopener');
+      btn.textContent = 'Esperando confirmación...';
+      document.getElementById('whatsappEsperandoMsg').style.display = '';
+      iniciarPollingWhatsapp();
+    } catch (err) {
+      showError('No se pudo generar el link: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Vincular WhatsApp';
+    }
+  });
+}
+
+/**
+ * La vinculación la completa WhatsApp llamando a nuestro webhook cuando
+ * mandas el mensaje (no el navegador) — así que el único jeito de que la UI
+ * se entere de que ya quedó vinculado es preguntarle al backend cada tanto,
+ * hasta que cambie o se cumpla el mismo TTL de 15 min que tiene el código.
+ */
+function iniciarPollingWhatsapp() {
+  if (whatsappPollingInterval) clearInterval(whatsappPollingInterval);
+  let intentos = 0;
+  const maxIntentos = 90; // 90 * 10s = 15 min, igual al TTL del código
+  whatsappPollingInterval = setInterval(async () => {
+    intentos++;
+    try {
+      const data = await apiFetch('/api/whatsapp/estado');
+      if (data.vinculado) {
+        clearInterval(whatsappPollingInterval);
+        whatsappPollingInterval = null;
+        renderWhatsapp(true);
+        return;
+      }
+    } catch (err) {
+      // Un error puntual de red no debería cortar el polling — reintenta igual.
+    }
+    if (intentos >= maxIntentos) {
+      clearInterval(whatsappPollingInterval);
+      whatsappPollingInterval = null;
+      renderWhatsapp(false);
+    }
+  }, 10000);
 }
 
 // --- Mi Suscripción (dentro de Mi Perfil) ---
