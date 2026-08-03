@@ -946,6 +946,11 @@ async function cargarUsuario() {
     mostrarBannerPlan(data.usuario);
     renderAnalisis(data.usuario);
 
+    // Tour de bienvenida (ver js/tutorial.js) — se define después en el
+    // orden de carga de <script>, pero para cuando esta promesa resuelve
+    // (después del round-trip a /api/auth/me) ya está disponible.
+    if (window.verificarTutorialOnboarding) window.verificarTutorialOnboarding(data.usuario);
+
     // Solo visible para el usuario admin (users.es_admin, migración 028) —
     // se inyecta por JS en vez de dejarlo fijo en el HTML para que no
     // "parpadee" visible antes de saber si el usuario es admin o no.

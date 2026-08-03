@@ -587,6 +587,14 @@
         </div>
         <p class="section-sub" style="margin-bottom: 20px;">Guía rápida de MercadoAlerta y un formulario para escribirnos directo si algo no te queda claro.</p>
 
+        <div class="card" style="padding: 24px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <div>
+            <h3 style="font-size: 15px; margin-bottom: 4px;">¿Quieres repasar cómo funciona MercadoAlerta?</h3>
+            <p class="section-sub" style="margin: 0;">Recorre de nuevo el tour guiado que viste al crear tu cuenta.</p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="verTourDeNuevoBtn">Volver a ver el tour</button>
+        </div>
+
         <div class="card" style="padding: 24px; margin-bottom: 20px;">
           <h3 style="font-size: 15px; margin-bottom: 14px;">Guía rápida</h3>
 
@@ -970,10 +978,25 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="tutorialBienvenidaModal">
+  <div class="modal" style="max-width: 420px; text-align: center;">
+    <img src="/assets/mercadoalerta-icon.svg" alt="" style="width: 40px; height: 40px; margin-bottom: 14px;">
+    <h3 style="font-size: 17px; margin-bottom: 10px;">¡Bienvenido a MercadoAlerta!</h3>
+    <p class="modal-message" style="margin-bottom: 22px;">Te mostramos rápidamente cómo funciona cada parte del panel — toma menos de un minuto.</p>
+    <div class="modal-actions" style="justify-content: center;">
+      <button type="button" class="btn btn-ghost" id="tutorialBienvenidaSaltarBtn">Saltar</button>
+      <button type="button" class="btn" id="tutorialBienvenidaEmpezarBtn">Empezar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js" integrity="sha384-Zj5NAMJ45tB1L13yWiQlFjFjlyyeUBZTWQKktGXeW303njR3jSLmfN16iUgF8I8n" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/inactivity-logout.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+<script src="js/tutorial.js"></script>
 
 </body>
 </html>
