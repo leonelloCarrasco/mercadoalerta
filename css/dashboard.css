@@ -10,9 +10,49 @@
   --down: #3ECF8E;
   --down-soft: #3ECF8E25;
   --danger: #E8827A;
+  --danger-soft: #E8827A22;
+  /* Fondo de los "chips" cuadrados detrás de los íconos (sidebar, section-head,
+     etc.) — DELIBERADAMENTE fijas, no cambian en [data-theme="light"]. Los
+     íconos son <img> de un .svg sin fill propio (negro sólido por default,
+     no se pueden recolorear vía CSS por ser <img>, no SVG inline) — el chip
+     de atrás necesita quedarse siempre claro para que el negro se distinga,
+     sin importar el tema de la página. Antes esto usaba var(--text)/
+     var(--text-muted), que sí cambian por tema — con el tema claro esas
+     variables se vuelven oscuras (para servir de color de TEXTO sobre fondo
+     blanco) y el negro del ícono se perdía contra un chip también oscuro.
+     Ver el hallazgo documentado al agregar el tema claro. */
+  --icon-chip-bg: #8B90A8;
+  --icon-chip-bg-active: #EDEEF5;
   --font-display: 'Arial', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+}
+
+/**
+ * Tema claro — elegible desde Mi Perfil (ver dashboard.js, aplicaTema()).
+ * Se activa poniendo data-theme="light" en <html> (no en :root porque
+ * necesita ganarle en especificidad a los valores de arriba). El atributo
+ * se setea lo antes posible, con un script inline en el <head> ANTES de
+ * cargar este CSS, para que no haya parpadeo del tema oscuro antes de
+ * aplicar el claro (ver dashboard.html/admin.html).
+ *
+ * gold/down/danger quedan más oscuros que en el tema oscuro — son los
+ * mismos colores de marca, pero el original está calibrado para leerse
+ * bien como texto sobre fondo oscuro; sobre blanco pierden contraste (por
+ * ejemplo se usan como color de texto en .stat-tile-value, .sidebar-link.active,
+ * links de tabla). *-soft se dejan igual: son fondos translúcidos de tinte,
+ * no texto, así que no tienen el mismo problema de contraste.
+ */
+[data-theme="light"] {
+  --bg: #F4F5FA;
+  --surface: #FFFFFF;
+  --surface-2: #ECEEF6;
+  --border: #D9DCE8;
+  --text: #1B2140;
+  --text-muted: #666C88;
+  --gold: #9C7A1D;
+  --down: #1F9D68;
+  --danger: #C65C50;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -60,8 +100,8 @@ a { color: inherit; }
 .sidebar-link-icon { font-size: 15px; flex-shrink: 0; }
 .sidebar-link:hover { color: var(--text); background: var(--surface); }
 .sidebar-link.active { color: var(--gold); background: var(--gold-soft); }
-.sidebar-nav .sidebar-link.active .icon { background-color: #EDEEF5; }
-.sidebar-nav .sidebar-link .icon:hover { background-color: #EDEEF5; }
+.sidebar-nav .sidebar-link.active .icon { background-color: var(--icon-chip-bg-active); }
+.sidebar-nav .sidebar-link .icon:hover { background-color: var(--icon-chip-bg-active); }
 
 /* --- Main --- */
 .main { flex: 1; min-width: 0; margin-left: 224px; max-width: 960px; padding: 24px 24px 80px; }
@@ -117,7 +157,7 @@ a { color: inherit; }
 .bottombar-link-icon { font-size: 18px; }
 .bottombar-link.active { color: var(--gold); background: var(--gold-soft); }
 .bottombar-mobile .bottombar-link.active .icon,
-.bottombar-mobile .topbar-menu .topbar-menu-item.active .icon{ background-color: #EDEEF5; }
+.bottombar-mobile .topbar-menu .topbar-menu-item.active .icon{ background-color: var(--icon-chip-bg-active); }
 
 @media (max-width: 880px) {
   .wrap { flex-direction: column; }
@@ -135,8 +175,8 @@ section { margin-bottom: 56px; }
 .section-head h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
 .section-head-action { margin-left: auto; }
-.section-head .icon { background-color: #EDEEF5; }
-.section-head .icon-desc-info { background-color: #EDEEF5; }
+.section-head .icon { background-color: var(--icon-chip-bg-active); }
+.section-head .icon-desc-info { background-color: var(--icon-chip-bg-active); }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 #head-new-search { justify-content: space-between; flex: 1 1 100%; }
@@ -221,14 +261,15 @@ section { margin-bottom: 56px; }
 .btn:hover { opacity: 0.9; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+.tema-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
 .btn-danger { background: none; border: 1px solid var(--danger); color: var(--danger); }
 
 .form-note {
   padding: 10px 12px; border-radius: 6px; font-size: 13px;
-  background: var(--danger)22; border: 1px solid var(--danger); color: var(--danger);
+  background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger);
 }
 .form-note.success {
-  background: var(--down)22; border: 1px solid var(--down); color: var(--down);
+  background: var(--down-soft); border: 1px solid var(--down); color: var(--down);
 }
 
 .row {
@@ -266,7 +307,7 @@ section { margin-bottom: 56px; }
 }
 .tag-whatsapp{
   font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
-  background: #3ECF8E22; color: var(--down);
+  background: var(--down-soft); color: var(--down);
   display: flex; align-items: center; gap: 4px;
 }
 
@@ -287,7 +328,7 @@ section { margin-bottom: 56px; }
 
 .loading { padding: 20px; text-align: center; color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
 .error-banner {
-  background: #E8827A22; border: 1px solid var(--danger); color: var(--danger);
+  background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger);
   padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; display: none;
 }
 
@@ -298,7 +339,7 @@ section { margin-bottom: 56px; }
 .plan-banner p { font-size: 14px; }
 .plan-banner .btn-group { display: flex; gap: 8px; flex-shrink: 0; }
 .plan-banner.aviso { background: var(--gold-soft); border: 1px solid var(--gold); }
-.plan-banner.bloqueo { background: #E8827A22; border: 1px solid var(--danger); }
+.plan-banner.bloqueo { background: var(--danger-soft); border: 1px solid var(--danger); }
 
 .modal-overlay {
   display: none; position: fixed; inset: 0; background: #0B0E1CAA;
@@ -621,7 +662,7 @@ table.analisis-table a:hover { text-decoration: underline; }
   .icon {
     height: 30px;
     width: 30px;
-    background-color: #8B90A8;
+    background-color: var(--icon-chip-bg);
     border-radius: 30%;
     display: flex;
     align-items: center;
@@ -630,7 +671,7 @@ table.analisis-table a:hover { text-decoration: underline; }
     .icon-2 {
     height: 30px;
     width: 30px;
-    background-color: #EDEEF5;
+    background-color: var(--icon-chip-bg-active);
     border-radius: 30%;
     display: flex;
     align-items: center;
@@ -643,7 +684,7 @@ table.analisis-table a:hover { text-decoration: underline; }
   .icon-stat {
     height: 20px;
     width: 20px;
-    background-color: #3ECF8E;
+    background-color: #3ECF8E; /* fijo, no var(--down) — mismo motivo que --icon-chip-bg: el ícono adentro es un <img> negro fijo */
     border-radius: 30%;
     display: flex;
     align-items: center;

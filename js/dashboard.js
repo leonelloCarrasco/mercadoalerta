@@ -4628,6 +4628,35 @@ passwordForm.addEventListener('submit', async (e) => {
   }
 });
 
+/**
+ * Tema claro/oscuro — el <html> ya puede traer data-theme="light" puesto
+ * por el script inline en el <head> (evita el parpadeo del tema oscuro por
+ * default antes de que esto corra). Acá solo hace falta: reflejar ese
+ * estado en los botones, y manejar el cambio cuando el usuario elige otro.
+ *
+ * Guardado en localStorage (preferencia solo del navegador, no del backend)
+ * — es una elección de UI de bajo impacto, no algo que valga la pena
+ * sincronizar entre dispositivos con una columna nueva en la base de datos.
+ */
+function aplicarTema(tema) {
+  const esClaro = tema === 'light';
+  document.documentElement.setAttribute('data-theme', esClaro ? 'light' : 'dark');
+  localStorage.setItem('tema', esClaro ? 'light' : 'dark');
+
+  const temaMeta = document.getElementById('theme-meta');
+  if (temaMeta) temaMeta.setAttribute('content', esClaro ? '#F4F5FA' : '#12172B');
+
+  document.querySelectorAll('.tema-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.tema === (esClaro ? 'light' : 'dark'));
+  });
+}
+
+document.querySelectorAll('.tema-btn').forEach((btn) => {
+  btn.addEventListener('click', () => aplicarTema(btn.dataset.tema));
+});
+
+aplicarTema(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+
 cargarUsuario();
 cargarRegiones();
 cargarTramos();

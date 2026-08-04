@@ -7,6 +7,15 @@
 <title>Panel Admin — MercadoAlerta</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#12172B" id="theme-meta"> 
+<script>
+  // Ver el mismo script en dashboard.html — admin.html comparte
+  // dashboard.css, así que respeta la preferencia de tema aunque no tenga
+  // el selector acá (ese vive en Mi Perfil, solo en el dashboard normal).
+  (function () {
+    var tema = localStorage.getItem('tema');
+    if (tema === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/dashboard.css">
