@@ -136,6 +136,7 @@ section { margin-bottom: 56px; }
 .section-head #abrirNuevaAlertaBtn { margin-left: auto; }
 .section-head-action { margin-left: auto; }
 .section-head .icon { background-color: #EDEEF5; }
+.section-head .icon-desc-info { background-color: #EDEEF5; }
 
 .section-head-right { display: flex; justify-content: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 #head-new-search { justify-content: space-between; flex: 1 1 100%; }
@@ -637,6 +638,7 @@ table.analisis-table a:hover { text-decoration: underline; }
     }
  .icon-desc {height: 20px;}
  .icon-desc-canal {height: 15px;}
+ .icon-desc-info {height: 20px;}
 
   .icon-stat {
     height: 20px;

@@ -73,10 +73,15 @@ form.addEventListener('submit', async (e) => {
       throw new Error(data.error || 'Error al iniciar sesión');
     }
 
-    // Guardamos el token en memoria de sesión del navegador (no localStorage,
-    // por seguridad frente a XSS; para persistencia entre pestañas se puede
-    // evaluar sessionStorage más adelante según necesidad real).
-    sessionStorage.setItem('token', data.token);
+    // Guardamos el token en localStorage (antes sessionStorage) para que la
+    // sesión sobreviva a cerrar la pestaña, mientras el navegador siga
+    // abierto — decisión de producto tomada a sabiendas del trade-off de
+    // seguridad frente a XSS (un token robado dura más si el sitio tuviera
+    // esa vulnerabilidad). El cierre de sesión por inactividad (ver
+    // inactivity-logout.js) sigue aplicando igual, ahora compartido entre
+    // pestañas vía la marca de tiempo en localStorage.
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('lastActivityAt', String(Date.now()));
 
     // Chequeo de trial vencido: se hace UNA vez, acá, justo después del
     // login — no en cada llamada a la API mientras la sesión ya está abierta

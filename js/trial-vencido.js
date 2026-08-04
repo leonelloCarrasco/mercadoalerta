@@ -2,7 +2,7 @@ const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://localhost:3000'
   : 'https://api.mercadoalerta.cl';
 
-const token = sessionStorage.getItem('token');
+const token = localStorage.getItem('token');
 if (!token) window.location.href = 'login.html';
 
 const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -100,7 +100,7 @@ document.getElementById('btnElegirFull').addEventListener('click', (e) => elegir
 
 document.getElementById('cerrarSesionTrialVencido').addEventListener('click', (e) => {
   e.preventDefault();
-  sessionStorage.removeItem('token');
+  localStorage.removeItem('token'); localStorage.removeItem('lastActivityAt');
   window.location.href = 'login.html';
 });
 
