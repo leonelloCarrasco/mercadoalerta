@@ -985,6 +985,7 @@ async function cargarUsuario() {
     // orden de carga de <script>, pero para cuando esta promesa resuelve
     // (después del round-trip a /api/auth/me) ya está disponible.
     if (window.verificarTutorialOnboarding) window.verificarTutorialOnboarding(data.usuario);
+    marcarSubtabsAnalisisBloqueados();
 
     // Solo visible para el usuario admin (users.es_admin, migración 028) —
     // se inyecta por JS en vez de dejarlo fijo en el HTML para que no
@@ -2957,11 +2958,7 @@ newAlertModal.addEventListener('click', (e) => {
 });
 
 // --- Análisis de datos ---
-// Plan Full únicamente. TEMPORAL: se incluye 'trial' acá solo para poder probarlo
-// durante desarrollo — sacar 'trial' de este array antes de lanzar a producción
-// (el backend tiene el mismo criterio temporal en analisis.routes.js, hay que
-// sacarlo de los dos lados a la vez).
-const PLANES_CON_ANALISIS = ['full','trial'];
+const PLANES_CON_ANALISIS = ['full','basico'];
 
 function renderAnalisis(usuario) {
   const card = document.getElementById('analisisCard');
@@ -2972,8 +2969,8 @@ function renderAnalisis(usuario) {
     card.innerHTML = `
       <div class="analisis-locked">
         <div class="lock-icon">🔒</div>
-        <p><strong>Disponible en el plan Full</strong></p>
-        <p style="font-size:13px; margin-top:6px;">Actualiza tu plan para acceder al análisis de datos de Mercado Público.</p>
+        <p><strong>Disponible en los planes Basic y Full</strong></p>
+        <p style="font-size:13px; margin-top:6px;">Actualiza tu plan para acceder al análisis de precios de Mercado Público.</p>
       </div>
     `;
   }
@@ -3045,6 +3042,20 @@ document.querySelectorAll('#analisisSubTabs .tab-btn').forEach((btn) => {
   });
 });
 
+/**
+ * Marca con 🔒 los sub-tabs de detalle "completo" (Proveedores, Organismos,
+ * Razones de rechazo) cuando el plan del usuario es 'resumen' (Basic) — para
+ * que no gasten un clic en algo que ya sabemos que les va a mostrar la nota
+ * de upgrade. Se llama una vez desde cargarUsuario(), cuando ya está
+ * disponible window.usuarioActual.plan.
+ */
+async function marcarSubtabsAnalisisBloqueados() {
+  if (await detalleAnalisisPreciosEsCompleto()) return; // Full: nada que marcar
+  document.querySelectorAll('#analisisSubTabs .tab-btn[data-subtab="proveedores"], #analisisSubTabs .tab-btn[data-subtab="organismos"], #analisisSubTabs .tab-btn[data-subtab="rechazos"]').forEach((btn) => {
+    btn.textContent = `🔒 ${btn.textContent}`;
+  });
+}
+
 // Chequeo genérico de acceso a una feature booleana del plan (ej.
 // 'accesoAnalisisPrecios', 'portafolio') — consulta /api/planes (cacheado
 // en obtenerPlanesData) contra el plan actual del usuario, en vez de
@@ -3063,20 +3074,39 @@ async function tieneAcceso(feature) {
 async function renderSubTabAnalisisActiva() {
   if (!codigoSeleccionadoAnalisis) return;
   if (!(await tieneAcceso('accesoAnalisisPrecios'))) {
-    document.getElementById('analisisCard').innerHTML = '<div class="empty-state">El Análisis de Precios de Mercado Público está disponible en el plan Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
+    document.getElementById('analisisCard').innerHTML = '<div class="empty-state">El Análisis de Precios de Mercado Público está disponible en los planes Basic y Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
     return;
   }
+
+  // Proveedores/Organismos/Rechazos son el detalle "completo" (exclusivo
+  // Full, ver planes.js) — se corta ANTES de pegarle al backend para no
+  // mostrar un error de red, directo la nota de upgrade.
+  const esSubtabProfundo = ['proveedores', 'organismos', 'rechazos'].includes(subTabAnalisisActiva);
+  if (esSubtabProfundo && !(await detalleAnalisisPreciosEsCompleto())) {
+    document.getElementById('analisisCard').innerHTML = '<div class="empty-state">Este nivel de detalle del Análisis de Precios está disponible en el plan Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
+    return;
+  }
+
   if (subTabAnalisisActiva === 'precios') buscarPrecios(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
   else if (subTabAnalisisActiva === 'proveedores') buscarProveedores(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
   else if (subTabAnalisisActiva === 'organismos') buscarOrganismos(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
   else if (subTabAnalisisActiva === 'rechazos') buscarRechazos(codigoSeleccionadoAnalisis, tituloSeleccionadoAnalisis);
 }
 
+async function detalleAnalisisPreciosEsCompleto() {
+  try {
+    const planes = await obtenerPlanesData();
+    return planes?.[window.usuarioActual?.plan]?.detalleAnalisisPrecios === 'completo';
+  } catch (err) {
+    return false;
+  }
+}
+
 let datosPreciosActuales = null; // { resumen, registros } sin filtrar, tal como llegó del backend
 
 async function buscarPrecios(codigo, titulo) {
   const card = document.getElementById('analisisCard');
-  card.innerHTML = '<div class="loading">Buscando...</div>';
+  buscandoModal.classList.add('open');
 
   try {
     const data = await apiFetch(`/api/analisis/precios?codigo=${codigo}`);
@@ -3087,10 +3117,35 @@ async function buscarPrecios(codigo, titulo) {
       return;
     }
 
+    // Nivel 'resumen' (Basic): el backend no manda `registros` a propósito
+    // (ver analisis.routes.js) — se muestra solo el rango de precios, sin
+    // la tabla filtrable de detalle por proveedor/organismo.
+    if (!data.registros) {
+      construirVistaResumenPrecios(data.resumen);
+      return;
+    }
+
     construirVistaPrecios();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  } finally {
+    buscandoModal.classList.remove('open');
   }
+}
+
+function construirVistaResumenPrecios(resumen) {
+  const card = document.getElementById('analisisCard');
+  card.innerHTML = `
+    <div class="card" style="padding: 20px;">
+      <p class="section-sub" style="margin-bottom: 14px;">Rango de precios adjudicados (${resumen.cantidadRegistros} registro${resumen.cantidadRegistros === 1 ? '' : 's'})</p>
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div><div class="section-sub">Mínimo</div><div style="font-size: 20px; font-family: var(--font-mono);">$${resumen.precioMinimo.toLocaleString('es-CL')}</div></div>
+        <div><div class="section-sub">Promedio</div><div style="font-size: 20px; font-family: var(--font-mono); color: var(--gold);">$${resumen.precioPromedio.toLocaleString('es-CL')}</div></div>
+        <div><div class="section-sub">Máximo</div><div style="font-size: 20px; font-family: var(--font-mono);">$${resumen.precioMaximo.toLocaleString('es-CL')}</div></div>
+      </div>
+      <p class="form-note" style="margin-top: 16px;">El detalle por proveedor, organismo y contrato individual está disponible en el plan Full. <a href="#" onclick="mostrarSeccion('cuenta'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></p>
+    </div>
+  `;
 }
 
 function aplicarFiltrosPrecios(registros) {
@@ -3262,7 +3317,7 @@ let datosProveedoresActuales = null;
 
 async function buscarProveedores(codigo, titulo) {
   const card = document.getElementById('analisisCard');
-  card.innerHTML = '<div class="loading">Buscando...</div>';
+  buscandoModal.classList.add('open');
 
   try {
     const data = await apiFetch(`/api/analisis/proveedores?codigo=${codigo}`);
@@ -3276,6 +3331,8 @@ async function buscarProveedores(codigo, titulo) {
     construirVistaProveedores();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  } finally {
+    buscandoModal.classList.remove('open');
   }
 }
 
@@ -3362,7 +3419,7 @@ let datosOrganismosActuales = null;
 
 async function buscarOrganismos(codigo, titulo) {
   const card = document.getElementById('analisisCard');
-  card.innerHTML = '<div class="loading">Buscando...</div>';
+  buscandoModal.classList.add('open');
 
   try {
     const data = await apiFetch(`/api/analisis/organismos?codigo=${codigo}`);
@@ -3376,6 +3433,8 @@ async function buscarOrganismos(codigo, titulo) {
     construirVistaOrganismos();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  } finally {
+    buscandoModal.classList.remove('open');
   }
 }
 
@@ -3459,7 +3518,7 @@ let datosRechazosActuales = null;
 
 async function buscarRechazos(codigo, titulo) {
   const card = document.getElementById('analisisCard');
-  card.innerHTML = '<div class="loading">Buscando...</div>';
+  buscandoModal.classList.add('open');
 
   try {
     const data = await apiFetch(`/api/analisis/rechazos?codigo=${codigo}`);
@@ -3473,6 +3532,8 @@ async function buscarRechazos(codigo, titulo) {
     construirVistaRechazos();
   } catch (err) {
     card.innerHTML = `<div class="empty-state">Error al buscar: ${err.message}</div>`;
+  } finally {
+    buscandoModal.classList.remove('open');
   }
 }
 
