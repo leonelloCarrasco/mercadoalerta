@@ -35,6 +35,13 @@ function armarFeaturesPlan(plan) {
     `Hasta <strong>${plan.limiteSeguimientos} seguimientos</strong> de procesos`,
     `Alertas por <strong>${plan.mensajeria}</strong>`,
   ];
+  // El cupo es 10x limiteAlertas (ver spec: tope WhatsApp) — se calcula acá
+  // en vez de venir del backend porque es una regla derivada, no un campo
+  // propio de PLANES; si el múltiplo cambia después de calibrar con datos
+  // reales, este archivo también hay que actualizarlo.
+  if (plan.mensajeria?.includes('WhatsApp')) {
+    items.push(`Hasta <strong>${plan.limiteAlertas * 10} notificaciones por WhatsApp</strong> al mes`);
+  }
   if (plan.accesoAnalisisPrecios) items.push('<strong>Análisis de precios</strong> de Mercado Público');
   if (plan.portafolio) items.push('Portafolio <strong>Ilimitado</strong>');
   items.push(`<strong>${plan.limiteAnalisisIA} análisis</strong> de procesos con IA al mes`);
