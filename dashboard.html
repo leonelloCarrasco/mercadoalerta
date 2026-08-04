@@ -6,7 +6,17 @@
 <script src="js/clean-url.js"></script>
 <title>Dashboard — MercadoAlerta</title>
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#12172B" id="theme-meta"> 
+<meta name="theme-color" content="#12172B" id="theme-meta">
+<script>
+  // Aplica el tema guardado ANTES de que cargue el CSS, para que no haya un
+  // parpadeo del tema oscuro (default) antes de aplicar el claro — ver
+  // aplicarTema() en dashboard.js, que es la misma lógica pero llamada
+  // desde el botón de Mi Perfil en vez de acá al cargar.
+  (function () {
+    var tema = localStorage.getItem('tema');
+    if (tema === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/dashboard.css">
@@ -504,6 +514,17 @@
             <div class="mensajeria-canal" id="whatsappSeccion" style="display:none;">
               <img src="/assets/icons/whatsapp.png" class="icon-desc-canal">&nbsp;</img><span>WhatsApp</span>
               <div id="whatsappContenido" style="margin-top: 8px;"><div class="loading">Cargando...</div></div>
+            </div>
+          </div>
+
+          <hr style="border-color: var(--border); margin: 22px 0;">
+
+          <div class="card-2" id="aparienciaCard">
+            <h3 style="margin-bottom: 6px; font-size: 15px;">Apariencia</h3>
+            <p class="section-sub" style="margin-bottom: 14px;">Elige cómo se ve tu panel.</p>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-ghost tema-btn" id="temaOscuroBtn" data-tema="dark">🌙 Oscuro</button>
+              <button type="button" class="btn btn-ghost tema-btn" id="temaClaroBtn" data-tema="light">☀️ Claro</button>
             </div>
           </div>
 
