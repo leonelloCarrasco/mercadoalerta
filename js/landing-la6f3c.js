@@ -43,7 +43,8 @@ function armarFeaturesPlan(plan) {
     items.push(`Hasta <strong>${plan.limiteAlertas * 10} notificaciones por WhatsApp</strong> al mes`);
   }
   if (plan.accesoAnalisisPrecios) items.push('<strong>Análisis de precios</strong> de Mercado Público');
-  if (plan.portafolio) items.push('Portafolio <strong>Ilimitado</strong>');
+  if (plan.limitePortafolio) items.push(`Portafolio (hasta <strong>${plan.limitePortafolio} ítems</strong>, para probar)`);
+  else if (plan.portafolio) items.push('Portafolio <strong>Ilimitado</strong>');
   items.push(`<strong>${plan.limiteAnalisisIA} análisis</strong> de procesos con IA al mes`);
   if (!plan.requierePago) items.push('Sin tarjeta de crédito');
   return items.map((texto) => `<li>${texto}</li>`).join('');
