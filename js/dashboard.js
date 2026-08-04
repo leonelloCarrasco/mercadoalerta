@@ -2,7 +2,7 @@ const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://localhost:3000'
   : 'https://api.mercadoalerta.cl';
 
-const token = sessionStorage.getItem('token');
+const token = localStorage.getItem('token');
 if (!token) window.location.href = 'login.html';
 
 const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -65,7 +65,7 @@ function showErrorBubble(target, msg) {
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...authHeaders, ...(options.headers || {}) } });
   if (res.status === 401) {
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token'); localStorage.removeItem('lastActivityAt');
     window.location.href = 'login.html';
     throw new Error('Sesión inválida');
   }
@@ -707,7 +707,7 @@ async function cargarRegiones() {
   }
 }
 
-// --- Tipo de licitación (tramo UTM) — mismo patrón de checkboxes que regiones,
+// --- Tipo de Licitación (tramo UTM) — mismo patrón de checkboxes que regiones,
 // pero cada opción tiene un código (L1, LE, LP...) distinto de su etiqueta visible. ---
 let tramosDisponibles = []; // [{codigo, descripcion}]
 let tramosSeleccionados = new Set(); // set de códigos
@@ -784,7 +784,7 @@ async function cargarTramos() {
     renderTramoDropdownPanel();
     actualizarTextoTramoDropdown();
   } catch (err) {
-    console.warn('No se pudieron cargar los tramos de licitación:', err.message);
+    console.warn('No se pudieron cargar los tramos de Licitación:', err.message);
   }
 }
 
@@ -1380,10 +1380,10 @@ const busquedaHorasRecientesFieldEl = document.getElementById('busquedaHorasReci
 const busquedaAvisoLimitacionEl = document.getElementById('busquedaAvisoLimitacion');
 
 const AVISOS_LIMITACION = {
-  codigo: 'Busca una licitación puntual.',
-  estado_fecha: 'Busca licitaciones por estado.',
-  proveedor: 'Busca licitaciones por proveedor (RUT).',
-  organismo: 'Busca licitaciones por organismo comprador (nombre).',
+  codigo: 'Busca una Licitación puntual.',
+  estado_fecha: 'Busca Licitaciones por estado.',
+  proveedor: 'Busca Licitaciones por proveedor (RUT).',
+  organismo: 'Busca Licitaciones por organismo comprador (nombre).',
 };
 
 function modoLicitacionSeleccionado() {
@@ -1407,7 +1407,7 @@ function actualizarCamposBusquedaSegunTipo() {
 
   // 'codigo' es compartido entre los dos tipos (mismo campo, label distinto).
   busquedaCodigoFieldEl.style.display = (modoActivo === 'codigo') ? '' : 'none';
-  busquedaCodigoLabelEl.innerHTML = esCompraAgil ? '<strong>Código de la Compra Ágil *</strong>' : '<strong>Código de la licitación *</strong>';
+  busquedaCodigoLabelEl.innerHTML = esCompraAgil ? '<strong>Código de la Compra Ágil *</strong>' : '<strong>Código de la Licitación *</strong>';
   document.getElementById('busquedaCodigoExterno').placeholder = esCompraAgil ? 'Ej: 1195-39-COT26' : 'Ej: 1509-5-L114';
 
   // Exclusivo de Licitaciones:
@@ -2263,7 +2263,7 @@ function renderRecordatorios() {
 function renderSeguimientos() {
   const card = document.getElementById('oportunidadesCard');
   if (seguimientosData.length === 0) {
-    card.innerHTML = '<div class="empty-state">Todavía no estás siguiendo ninguna licitación. Agrégalas desde Notificaciones o Búsquedas con el botón "➕ Seguir".</div>';
+    card.innerHTML = '<div class="empty-state">Todavía no estás siguiendo ninguna Licitación. Agrégalas desde Notificaciones o Búsquedas con el botón "➕ Seguir".</div>';
     return;
   }
 
@@ -2289,7 +2289,7 @@ function renderSeguimientos() {
 
   card.querySelectorAll('[data-eliminar-seguimiento]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const confirmado = await confirmDialog('¿Dejar de seguir esta licitación?');
+      const confirmado = await confirmDialog('¿Dejar de seguir esta Licitación?');
       if (!confirmado) return;
       const id = btn.dataset.eliminarSeguimiento;
       mostrarProcesando('Eliminando...');
@@ -2853,7 +2853,7 @@ document.getElementById('limpiarFiltroHistBtn').addEventListener('click', () => 
 
 document.querySelectorAll('.logout-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token'); localStorage.removeItem('lastActivityAt');
     window.location.href = 'login.html';
   });
 });
@@ -3392,7 +3392,7 @@ function actualizarResultadosProveedores() {
         <span class="row-meta">(${p.rutProveedor || '—'})</span>
       </td>
       <td>${p.vecesGanadas}</td>
-      <td>${p.licitaciones} licitación${p.licitaciones === 1 ? '' : 'es'} · ${p.compraAgil} Compra${p.compraAgil === 1 ? '' : 's'} Ágil</td>
+      <td>${p.licitaciones} Licitacion${p.licitaciones === 1 ? '' : 'es'} · ${p.compraAgil} Compra${p.compraAgil === 1 ? '' : 's'} Ágil</td>
       <td>${formatMoney(p.precioPromedio)}</td>
     </tr>
   `).join('');
@@ -3491,7 +3491,7 @@ function actualizarResultadosOrganismos() {
       <td>${i + 1}</td>
       <td>${escapeHtml(o.organismo)}</td>
       <td>${o.vecesComprado}</td>
-      <td>${o.licitaciones} licitación${o.licitaciones === 1 ? '' : 'es'} · ${o.compraAgil} Compra${o.compraAgil === 1 ? '' : 's'} Ágil</td>
+      <td>${o.licitaciones} Licitacion${o.licitaciones === 1 ? '' : 'es'} · ${o.compraAgil} Compra${o.compraAgil === 1 ? '' : 's'} Ágil</td>
       <td>${formatMoney(o.montoPromedio)}</td>
     </tr>
   `).join('');
@@ -3663,7 +3663,7 @@ async function cargarMisAnalisis() {
 async function cargarCupoAnalisis() {
   try {
     const data = await apiFetch('/api/analisis-ia/cupo');
-    document.getElementById('analisisCupoInfo').textContent = `ℹ️ Te quedan ${data.restante} de ${data.limite} análisis de procesos con IA en tu ciclo actual.`;
+    document.getElementById('analisisCupoInfo').textContent = `Te quedan ${data.restante} de ${data.limite} análisis de procesos con IA en tu ciclo actual.`;
   } catch (err) {
     // No es crítico — si falla, simplemente no se muestra el cupo por
     // adelantado, pero el flujo de análisis lo sigue validando igual.
@@ -3933,7 +3933,7 @@ async function ejecutarAnalisis() {
   if (forzarContinuarPendiente) formData.append('forzarContinuar', 'true');
 
   try {
-    const token = sessionStorage.getItem('token');
+    const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE}/api/analisis-ia`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }, // sin Content-Type — FormData lo arma solo con el boundary

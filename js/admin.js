@@ -2,7 +2,7 @@ const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://localhost:3000'
   : 'https://api.mercadoalerta.cl';
 
-const token = sessionStorage.getItem('token');
+const token = localStorage.getItem('token');
 if (!token) window.location.href = 'login.html';
 
 const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -38,7 +38,7 @@ async function verificarAccesoAdmin() {
   try {
     const res = await fetch(`${API_BASE}/api/auth/me`, { headers: authHeaders });
     if (res.status === 401) {
-      sessionStorage.removeItem('token');
+      localStorage.removeItem('token'); localStorage.removeItem('lastActivityAt');
       window.location.href = 'login.html';
       return;
     }
@@ -73,7 +73,7 @@ function showNotice(msg) {
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...authHeaders, ...(options.headers || {}) } });
   if (res.status === 401) {
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token'); localStorage.removeItem('lastActivityAt');
     window.location.href = 'login.html';
     throw new Error('Sesión inválida');
   }
@@ -364,7 +364,7 @@ document.getElementById('licImportarBtn').addEventListener('click', () => {
   const codigos = [...document.querySelectorAll('.lic-check:checked')].map((c) => c.value);
 
   pedirConfirmacion(
-    `Vas a importar ${codigos.length} licitación(es) y disparar el matching de alertas configuradas (se notificará a los usuarios que correspondan). ¿Confirmas?`,
+    `Vas a importar ${codigos.length} Licitación(es) y disparar el matching de alertas configuradas (se notificará a los usuarios que correspondan). ¿Confirmas?`,
     async () => {
       const btn = document.getElementById('licImportarBtn');
       btn.disabled = true;
@@ -373,7 +373,7 @@ document.getElementById('licImportarBtn').addEventListener('click', () => {
         const data = await apiFetch('/api/admin-panel/importar/licitaciones', {
           method: 'POST', body: JSON.stringify({ codigos }),
         });
-        showNotice(`${data.importadas} licitación(es) importada(s) y procesada(s) para alertas.` +
+        showNotice(`${data.importadas} Licitación(es) importada(s) y procesada(s) para alertas.` +
           (data.codigosFallidos.length ? ` (${data.codigosFallidos.length} fallaron)` : ''));
         document.getElementById('formBuscarLicitaciones').dispatchEvent(new Event('submit'));
       } catch (err) {

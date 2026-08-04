@@ -51,7 +51,7 @@ function tutorialHtmlMock(nombreSeccion) {
       tutorialFilaMock('1 recordatorio de cierre próximo', 'Compra ágil — cierra en 18 horas'),
     ],
     notificaciones: [
-      tutorialFilaMock('Suministro de notebooks', 'Nueva licitación · Municipalidad de Ñuñoa', '$18.500.000'),
+      tutorialFilaMock('Suministro de notebooks', 'Nueva Licitación · Municipalidad de Ñuñoa', '$18.500.000'),
       tutorialFilaMock('Insumos de aseo institucional', 'Cambio de estado → Adjudicada'),
     ],
     busquedas: [
@@ -149,7 +149,7 @@ async function tutorialConstruirPasos() {
       element: '#abrirNuevaAlertaBtn',
       popover: {
         title: 'Crea tu primera alerta',
-        description: 'Todo empieza acá: eliges un rubro o producto y MercadoAlerta revisa Mercado Público por ti, día y noche, avisándote apenas se publique algo que calce.',
+        description: 'Todo empieza acá: eliges un rubro o producto y MercadoAlerta revisa Mercado Público por ti, día y noche, avisándote apenas se publique algo que calce con tus preferencias.',
         side: 'bottom',
         showButtons: ['next', 'previous', 'close'],
       },
@@ -158,7 +158,7 @@ async function tutorialConstruirPasos() {
     },
     tutorialPasoBase('notificaciones', 'historyCard', {
       title: 'Notificaciones',
-      description: 'Cada vez que una licitación o Compra Ágil nueva calza con tus alertas —o cambia de estado— queda registrada acá, además de llegarte por correo (y Telegram/WhatsApp si los configuras).',
+      description: 'Cada vez que una Licitación o Compra Ágil nueva calza con tus alertas — o cambia de estado — queda registrada acá, además de llegarte por correo (y Telegram o WhatsApp si los configuras).',
       side: 'bottom',
     }),
     tutorialPasoBase('busquedas', 'busquedasCard', {
@@ -168,7 +168,7 @@ async function tutorialConstruirPasos() {
     }),
     tutorialPasoBase('oportunidades', 'oportunidadesCard', {
       title: 'Oportunidades',
-      description: 'Acá viven tus Recordatorios de cierre, el Seguimiento de estado, y tu Portafolio — un mini-CRM para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta.',
+      description: 'Acá viven tus Recordatorios de cierre, el Seguimiento de estado, y tu Portafolio, para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta.',
       side: 'bottom',
     }),
     tutorialPasoBase('analisis', 'analisisCard', {
@@ -178,7 +178,7 @@ async function tutorialConstruirPasos() {
     }),
     tutorialPasoBase('ia', 'analisisMisAnalisisCard', {
       title: 'Análisis de Procesos con IA',
-      description: 'Ingresa el código de un proceso y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.',
+      description: 'Ingresa el código de una Licitación o Compra Ágil, y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.',
       side: 'bottom',
     }),
   ];
