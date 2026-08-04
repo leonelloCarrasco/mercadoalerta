@@ -246,12 +246,47 @@ function renderCategoriasChips() {
       renderCategoriasChips();
     });
   });
+
+  actualizarNotaLimiteCategorias();
 }
 
-// El máximo es 1 categoría/producto por alerta para todos los planes — elegir
-// una nueva reemplaza la anterior en vez de acumularse en la lista.
-function agregarCategoria(codigo, titulo, nivel) {
-  categoriasSeleccionadas = [{ codigo, titulo, nivel }];
+/**
+ * El máximo de categorías/productos por alerta depende del plan
+ * (limiteCategorias, ver planes.js — Trial 1, Basic 2, Full 3): un segundo
+ * eje de valor entre planes además de las cantidades. obtenerPlanesData()
+ * ya cachea el resultado de /api/planes, así que llamarlo acá en cada
+ * chip no pega a la red más que la primera vez.
+ */
+async function limiteCategoriasDelPlan() {
+  try {
+    const planes = await obtenerPlanesData();
+    return planes?.[window.usuarioActual?.plan]?.limiteCategorias ?? 1;
+  } catch (err) {
+    return 1;
+  }
+}
+
+async function actualizarNotaLimiteCategorias() {
+  const nota = document.getElementById('categoriasLimiteMsg');
+  if (!nota) return;
+  const limite = await limiteCategoriasDelPlan();
+  if (categoriasSeleccionadas.length >= limite) {
+    nota.textContent = `Llegaste al máximo de tu plan: ${limite} producto${limite === 1 ? '' : 's'} o rubro${limite === 1 ? '' : 's'} por alerta.`;
+  } else {
+    nota.textContent = `Puedes agregar hasta ${limite} producto${limite === 1 ? '' : 's'} o rubro${limite === 1 ? '' : 's'} por alerta (llevas ${categoriasSeleccionadas.length}).`;
+  }
+}
+
+async function agregarCategoria(codigo, titulo, nivel) {
+  if (categoriasSeleccionadas.some((c) => c.codigo === codigo)) return; // ya está agregada, no duplicar
+
+  const limite = await limiteCategoriasDelPlan();
+  if (categoriasSeleccionadas.length >= limite) {
+    showError(`Tu plan permite hasta ${limite} producto${limite === 1 ? '' : 's'} o rubro${limite === 1 ? '' : 's'} por alerta. Quita uno para agregar otro.`);
+    return;
+  }
+
+  categoriasSeleccionadas = [...categoriasSeleccionadas, { codigo, titulo, nivel }];
   renderCategoriasChips();
 }
 
@@ -4077,11 +4112,10 @@ function poblarSeccionCuenta() {
 }
 
 /**
- * Mock a propósito — WhatsApp no está construido todavía (solo Telegram y
- * email envían de verdad). Esto solo decide si mostrar el bloque "Próximamente"
- * según si el plan actual del usuario lo incluye en su mensajería (planes.js,
- * campo "mensajeria" es un string libre, se detecta por si menciona "WhatsApp"
- * en vez de tener un array estructurado — así lo definió el backend).
+ * Decide si mostrar el bloque de WhatsApp según si el plan actual del
+ * usuario lo incluye en su mensajería (planes.js, campo "mensajeria" es un
+ * string libre, se detecta por si menciona "WhatsApp" en vez de tener un
+ * array estructurado — así lo definió el backend).
  */
 async function actualizarVisibilidadWhatsapp() {
   const seccion = document.getElementById('whatsappSeccion');
@@ -4117,8 +4151,10 @@ function renderWhatsapp(vinculado) {
   if (vinculado) {
     contenedor.innerHTML = `
       <p style="color: var(--down); margin-bottom: 12px;">✅ Vinculado — ya recibes tus alertas por WhatsApp.</p>
+      <div id="whatsappCuotaContenido" style="margin-bottom: 14px;"><div class="loading">Cargando cupo del mes...</div></div>
       <button type="button" class="btn btn-ghost" id="whatsappDesvincularBtn">Desvincular</button>
     `;
+    cargarCuotaWhatsapp();
     document.getElementById('whatsappDesvincularBtn').addEventListener('click', async () => {
       const confirmado = await confirmDialog('¿Desvincular tu WhatsApp? Vas a dejar de recibir alertas por acá — sigues recibiéndolas por correo igual.');
       if (!confirmado) return;
@@ -4156,6 +4192,45 @@ function renderWhatsapp(vinculado) {
       btn.textContent = 'Vincular WhatsApp';
     }
   });
+}
+
+/**
+ * Barra de cupo mensual de WhatsApp — GET /api/whatsapp/cuota (ver
+ * whatsapp.routes.js). El backend puede estar en modo "solo medir"
+ * (enforzado: false): en ese caso se cuenta y se muestra igual, pero se
+ * aclara que todavía no se corta nada, para no generar alarma antes de
+ * tiempo.
+ */
+async function cargarCuotaWhatsapp() {
+  const contenedor = document.getElementById('whatsappCuotaContenido');
+  if (!contenedor) return;
+  try {
+    const data = await apiFetch('/api/whatsapp/cuota');
+    if (!data.disponible || !data.limite) {
+      contenedor.innerHTML = '';
+      return;
+    }
+
+    const porcentaje = Math.min(100, Math.round((data.usados / data.limite) * 100));
+    const cercaDelTope = porcentaje >= 80;
+    const colorBarra = cercaDelTope ? 'var(--gold)' : 'var(--down)';
+
+    const notaModo = !data.enforzado
+      ? `<p class="form-note" style="margin-top: 6px; color: var(--gold);">Estamos afinando este límite según el uso real — este mes no se corta nada.</p>`
+      : cercaDelTope
+        ? `<p class="form-note" style="margin-top: 6px; color: var(--gold);">Si llegas al tope, sigues recibiendo todo por Email sin cortes — solo se pausa WhatsApp hasta el próximo ciclo.</p>`
+        : '';
+
+    contenedor.innerHTML = `
+      <p class="form-note" style="margin-bottom: 6px;">${data.usados}/${data.limite} mensajes de WhatsApp este mes</p>
+      <div style="background: var(--border); border-radius: 4px; height: 6px; overflow: hidden;">
+        <div style="background: ${colorBarra}; width: ${porcentaje}%; height: 100%;"></div>
+      </div>
+      ${notaModo}
+    `;
+  } catch (err) {
+    contenedor.innerHTML = '';
+  }
 }
 
 /**
