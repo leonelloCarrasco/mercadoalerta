@@ -2202,11 +2202,11 @@ async function renderOportunidadesActiva() {
   if (oportunidadesSubtabActiva === 'recordatorios') renderRecordatorios();
   else if (oportunidadesSubtabActiva === 'seguimiento') renderSeguimientos();
   else if (pipelineData.length === 0 && !(await tieneAcceso('portafolio'))) {
-    // Solo se bloquea la vista cuando está vacío Y sin acceso — si ya tenía
-    // ítems de un plan pago anterior, los sigue viendo igual (no se le
-    // esconden datos que ya tenía, solo se bloquea CREAR más, ver
-    // pipeline.routes.js).
-    card.innerHTML = '<div class="empty-state">El Portafolio está disponible en los planes Básico y Full. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Elige un plan →</a></div>';
+    // Defensivo — con los planes de hoy (Trial/Basic/Full) esto ya no se
+    // dispara nunca, porque los tres tienen portafolio:true (Trial con su
+    // propio limitePortafolio más chico, ver pipeline.routes.js). Se deja
+    // por si en el futuro se agrega algún plan/estado con portafolio:false.
+    card.innerHTML = '<div class="empty-state">El Portafolio no está disponible en tu plan actual. <a href="#" onclick="mostrarSeccion(\'cuenta\'); poblarSeccionCuenta(); return false;" style="color: var(--gold);">Revisa tu plan →</a></div>';
   }
   else renderPipeline();
 }
