@@ -53,6 +53,8 @@
   --gold: #9C7A1D;
   --down: #1F9D68;
   --danger: #C65C50;
+  --icon-chip-bg: #edeef544;
+  --icon-chip-bg-active: #9fa0aa6c;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -89,7 +91,39 @@ a { color: inherit; }
   padding: 4px 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
 }
 .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--border); padding-top: 12px; }
-.sidebar-bottom { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.sidebar-bottom { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; position: relative; }
+
+.sidebar-user-trigger {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: none; cursor: pointer; padding: 8px; border-radius: 8px;
+  text-align: left; color: var(--text);
+}
+.sidebar-user-trigger:hover { background: var(--surface-2); }
+.sidebar-user-info { min-width: 0; flex: 1; }
+.sidebar-user-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-user-email { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Se abre hacia ARRIBA (bottom: 100%) porque el disparador está pegado al
+   fondo del sidebar — hacia abajo se saldría de la pantalla. Mismo patrón
+   visual que .topbar-menu (mobile), pero anclado distinto. */
+.sidebar-menu {
+  display: none; position: absolute; bottom: 100%; left: 0; right: 0; margin-bottom: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px #00000055; overflow: hidden; z-index: 60;
+}
+
+.sidebar-menu.open { display: grid; }
+.sidebar-menu .sidebar-link { 
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: none; color: var(--text-muted); text-align: left;
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  padding: 10px 10px; border-radius: 6px; cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease; 
+}
+.sidebar-menu .sidebar-link:hover { color: var(--text); background: var(--surface-2); }
+.sidebar-menu .sidebar-link.active .icon { background-color: var(--icon-chip-bg-active); }
+.sidebar-menu .sidebar-link .icon:hover { background-color: var(--icon-chip-bg-active); }
+
 .sidebar-link {
   display: flex; align-items: center; gap: 10px;
   background: none; border: none; color: var(--text-muted); text-align: left;
@@ -100,6 +134,7 @@ a { color: inherit; }
 .sidebar-link-icon { font-size: 15px; flex-shrink: 0; }
 .sidebar-link:hover { color: var(--text); background: var(--surface); }
 .sidebar-link.active { color: var(--gold); background: var(--gold-soft); }
+
 .sidebar-nav .sidebar-link.active .icon { background-color: var(--icon-chip-bg-active); }
 .sidebar-nav .sidebar-link .icon:hover { background-color: var(--icon-chip-bg-active); }
 
@@ -123,7 +158,16 @@ a { color: inherit; }
   background: var(--gold-soft); color: var(--gold); border: none; cursor: pointer;
   font-family: var(--font-mono); font-size: 13px; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
+.topbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-preview {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gold-soft); color: var(--gold); overflow: hidden;
+  font-family: var(--font-mono); font-size: 22px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
 .topbar-menu {
   display: none; position: absolute; top: 64px; right: 12px; min-width: 220px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;

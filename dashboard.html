@@ -42,10 +42,18 @@
     </nav>
 
     <div class="sidebar-bottom">
-      <div class="stat-tile-label">Cuenta</div>
-      <button type="button" class="sidebar-link" data-section="cuenta"><div class="icon-2"><img src="/assets/icons/ajustes.svg" class="icon-desc"></img></div> Configuración</button>
-      <button type="button" class="sidebar-link" data-section="ayuda"><div class="icon-2"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div> Ayuda</button>
-      <button type="button" class="sidebar-link logout-btn"><div class="icon-2"><img src="/assets/icons/salida.svg" class="icon-desc"></img></div> Cerrar sesión</button>
+      <button type="button" class="sidebar-user-trigger" id="sidebarMenuBtn">
+        <div class="topbar-avatar" id="sidebarAvatarBtn">👤</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebarMenuName">Cargando...</div>
+          <div class="sidebar-user-email" id="sidebarMenuEmail"></div>
+        </div>
+      </button>
+      <div class="sidebar-menu" id="sidebarMenu">
+        <button type="button" class="sidebar-link" data-section="cuenta"><div class="icon"><img src="/assets/icons/ajustes.svg" class="icon-desc"></img></div> Configuración</button>
+        <button type="button" class="sidebar-link" data-section="ayuda"><div class="icon"><img src="/assets/icons/interrogatorio.svg" class="icon-desc"></img></div> Ayuda</button>
+        <button type="button" class="sidebar-link logout-btn"><div class="icon"><img src="/assets/icons/salida.svg" class="icon-desc"></img></div> Cerrar sesión</button>
+      </div>
     </div>
   </aside>
 
@@ -489,6 +497,19 @@
             <div class="perfil-acordeon-contenido">
               <p class="section-sub" style="margin-bottom: 14px;">Gestiona tu información personal.</p>
               <div class="mensajeria-canal" style="margin-bottom: 0;">
+                <label for="profileNombre" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Avatar</label>
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                  <div id="avatarPreview" class="avatar-preview">👤</div>
+                  <div>
+                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+                    <div style="display: flex; gap: 8px;">
+                      <button type="button" class="btn btn-ghost" id="avatarSubirBtn">Subir foto</button>
+                      <button type="button" class="btn btn-ghost" id="avatarQuitarBtn" style="display:none;">Quitar foto</button>
+                    </div>
+                    <p class="form-note" id="avatarMsg" style="display:none; margin-top: 8px;"></p>
+                  </div>
+                </div>
+
                 <div style="display: flex; gap: 8px;">
                   <form id="profileForm">
                     <div class="profile-field-row">
@@ -540,7 +561,7 @@
             <div class="perfil-acordeon-contenido">
               <p class="section-sub" style="margin-bottom: 14px;">Elige cómo se ve tu panel.</p>
               <div class="mensajeria-canal" style="margin-bottom: 0;">
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
                   <button type="button" class="btn btn-ghost tema-btn" id="temaOscuroBtn" data-tema="dark">🌙 Oscuro</button>
                   <button type="button" class="btn btn-ghost tema-btn" id="temaClaroBtn" data-tema="light">☀️ Claro</button>
                 </div>
@@ -553,7 +574,7 @@
             <div class="perfil-acordeon-contenido">
               <p class="section-sub" style="margin-bottom: 14px;">Modifica tu contraseña.</p>
               <div class="mensajeria-canal" style="margin-bottom: 0;">
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
                   <form id="passwordForm">
                     <label for="passwordActual" style="display:block; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Contraseña  Actual</label>
                     <input type="password" id="passwordActual" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
@@ -590,7 +611,7 @@
             <summary>Suscripción</summary>
             <div class="perfil-acordeon-contenido" id="suscripcionCard">
               <p class="section-sub" style="margin-bottom: 14px;">Información sobre tu plan de suscripción.</p>
-              <div class="mensajeria-canal" style="margin-bottom: 0;">
+              <div class="mensajeria-canal" style="margin-bottom: 0; justify-content: center; display: flex; flex-direction: column; align-items: center;">
                 <div id="suscripcionContenido"><div class="loading">Cargando...</div></div>
                 <div class="form-note" id="suscripcionMsg" style="display:none; margin-top: 12px;"></div>
               </div>
@@ -613,12 +634,16 @@
 
 
               <div class="mensajeria-canal">
+                <div class="mensajeria-canal-head">
                   <img src="/assets/icons/telegram.png" class="icon-desc-canal">&nbsp;</img><span>Telegram</span>
+                </div>
                 <div id="telegramContenido" style="margin-top: 8px;"><div class="loading">Cargando...</div></div>
               </div>
 
               <div class="mensajeria-canal" id="whatsappSeccion" style="display:none;">
-                <img src="/assets/icons/whatsapp.png" class="icon-desc-canal">&nbsp;</img><span>WhatsApp</span>
+                <div class="mensajeria-canal-head">
+                  <img src="/assets/icons/whatsapp.png" class="icon-desc-canal">&nbsp;</img><span>WhatsApp</span>
+                </div>
                 <div id="whatsappContenido" style="margin-top: 8px;"><div class="loading">Cargando...</div></div>
               </div>
             </div>
@@ -651,7 +676,7 @@
 
           <details class="filter-toggle ayuda-item">
             <summary>¿Qué es MercadoAlerta y cómo funciona?</summary>
-            <p>MercadoAlerta revisa Mercado Público por ti, día y noche, y te avisa por correo (y Telegram, si lo configuras) apenas se publica una Licitación o Compra Ágil que calza con lo que configuraste en tus <strong>Alertas</strong>. No hace falta que entres a revisar el portal a mano todos los días.</p>
+            <p>MercadoAlerta revisa Mercado Público por ti, día y noche, y te avisa por correo (y Telegram o WhatsApp, si lo configuras) apenas se publica una Licitación o Compra Ágil que calza con lo que configuraste en tus <strong>Alertas</strong>. No hace falta que entres a revisar el portal a mano todos los días.</p>
           </details>
 
           <details class="filter-toggle ayuda-item">
@@ -666,7 +691,7 @@
 
           <details class="filter-toggle ayuda-item">
             <summary>¿Qué son Recordatorios, Seguimiento y Portafolio (Oportunidades)?</summary>
-            <p><strong>Recordatorios de cierre</strong> te avisan con anticipación (24, 72 horas, etc., tú eliges) antes de que cierre una Licitación o Compra Ágil que te interesa. <strong>Seguimiento de estado</strong> te avisa cada vez que una Licitación cambia de estado (por ejemplo, pasa a "Adjudicada"). <strong>Portafolio</strong> es tu mini-CRM personal — un tablero para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta (por evaluar, preparando oferta, ganada, perdida, etc.), con notas propias en cada una.</p>
+            <p><strong>Recordatorios de cierre</strong> te avisan con anticipación (24, 72 horas, etc., tú eliges) antes de que cierre una Licitación o Compra Ágil que te interesa. <br><strong>Seguimiento de estado</strong> te avisa cada vez que una Licitación cambia de estado (por ejemplo, pasa a "Adjudicada"). <br><strong>Portafolio</strong> es tu mini-CRM personal — un tablero para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta (por evaluar, preparando oferta, ganada, perdida, etc.), con notas propias en cada una.</p>
           </details>
 
           <details class="filter-toggle ayuda-item">
@@ -682,7 +707,7 @@
 
           <details class="filter-toggle ayuda-item">
             <summary>¿Cómo cambio de plan o cancelo mi suscripción?</summary>
-            <p>Desde <strong>Mi Perfil → Mi Suscripción</strong> puedes ver tu plan actual, tu historial de pagos, y cancelar cuando quieras. Al cancelar, no pierdes el acceso al instante — lo mantienes hasta que termine el período que ya pagaste, y te avisamos por correo un par de días antes de que se corte de verdad.</p>
+            <p>Desde <strong>Configuración → Suscripción</strong> puedes ver tu plan actual, tu historial de pagos, y cancelar cuando quieras. Al cancelar, no pierdes el acceso al instante — lo mantienes hasta que termine el período que ya pagaste, y te avisamos por correo un par de días antes de que se corte de verdad.</p>
           </details>
 
           <details class="filter-toggle ayuda-item">
