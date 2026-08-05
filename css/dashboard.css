@@ -160,7 +160,7 @@ a { color: inherit; }
 .bottombar-mobile .topbar-menu .topbar-menu-item.active .icon{ background-color: var(--icon-chip-bg-active); }
 
 @media (max-width: 880px) {
-  .wrap { flex-direction: column; }
+  .wrap { flex-direction: column; align-items: stretch; }
   .sidebar { display: none; }
   .topbar-mobile, .bottombar-mobile { display: flex; }
   .main { margin-left: 0; max-width: 100%; padding: 72px 16px calc(80px + env(safe-area-inset-bottom)); }
@@ -183,6 +183,26 @@ section { margin-bottom: 56px; }
 #head-result-search { justify-content: space-between; flex: 1 1 100%; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+/* --- Acordeón de Mi Perfil — exclusivo: abrir uno cierra los demás (ver
+   dashboard.js, la lógica vive en un listener 'toggle' sobre .perfil-acordeon,
+   no en CSS puro, para que funcione igual en todos los navegadores). --- */
+.perfil-acordeon { border-bottom: 1px solid var(--border); width: 100%; box-sizing: border-box; }
+.perfil-acordeon:last-child { border-bottom: none; }
+.perfil-acordeon summary {
+  cursor: pointer; list-style: none; font-size: 15px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px; user-select: none;
+  padding: 20px 32px; width: 100%; box-sizing: border-box;
+}
+.perfil-acordeon summary::-webkit-details-marker { display: none; }
+.perfil-acordeon summary::before { content: '▸'; font-size: 12px; color: var(--text-muted); transition: transform 0.15s ease; }
+.perfil-acordeon[open] summary::before { transform: rotate(90deg); }
+.perfil-acordeon summary:hover { color: var(--gold); }
+.perfil-acordeon-contenido {
+  padding: 0 32px 24px; width: 100%; box-sizing: border-box;
+  overflow-wrap: break-word; word-wrap: break-word;
+}
+.perfil-acordeon-contenido p, .perfil-acordeon-contenido .section-sub { max-width: 100%; overflow-wrap: break-word; }
 
 .filter-toggle { margin-bottom: 16px; }
 .filter-toggle summary {

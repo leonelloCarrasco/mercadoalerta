@@ -4657,6 +4657,23 @@ document.querySelectorAll('.tema-btn').forEach((btn) => {
 
 aplicarTema(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 
+/**
+ * Acordeón exclusivo de Mi Perfil — abrir un bloque cierra los demás,
+ * como un grupo de radio buttons. Usa el evento nativo 'toggle' de
+ * <details> (dispara tanto al abrir como al cerrar) en vez del atributo
+ * `name` compartido entre <details> — ese atributo da el mismo
+ * comportamiento sin JS, pero todavía no lo soportan todos los navegadores
+ * relevantes, así que se prefiere esta versión explícita.
+ */
+document.querySelectorAll('#secCuenta .perfil-acordeon').forEach((detalle) => {
+  detalle.addEventListener('toggle', () => {
+    if (!detalle.open) return;
+    document.querySelectorAll('#secCuenta .perfil-acordeon').forEach((otro) => {
+      if (otro !== detalle) otro.open = false;
+    });
+  });
+});
+
 cargarUsuario();
 cargarRegiones();
 cargarTramos();
