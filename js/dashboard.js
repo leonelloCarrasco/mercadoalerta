@@ -974,9 +974,12 @@ async function cargarUsuario() {
     const iniciales = data.usuario.nombre
       ? `${data.usuario.nombre[0]}${(data.usuario.apellido || '')[0] || ''}`.toUpperCase()
       : data.usuario.email[0].toUpperCase();
-    document.getElementById('topbarMenuBtn').textContent = iniciales;
+    inicialesUsuarioActual = iniciales;
+    aplicarAvatar(data.usuario.avatar_data);
     document.getElementById('topbarMenuName').textContent = nombreCompleto;
     document.getElementById('topbarMenuEmail').textContent = data.usuario.email;
+    document.getElementById('sidebarMenuName').textContent = nombreCompleto;
+    document.getElementById('sidebarMenuEmail').textContent = data.usuario.email;
 
     mostrarBannerPlan(data.usuario);
     renderAnalisis(data.usuario);
@@ -2876,6 +2879,7 @@ const bottombarMasBtn = document.getElementById('bottombarMasBtn');
 
 function mostrarSeccion(nombre) {
   sectionLinks.forEach((l) => l.classList.toggle('active', l.dataset.section === nombre));
+  setSidebarMenuOpen(false);
   Object.entries(secciones).forEach(([key, el]) => el.classList.toggle('active', key === nombre));
   bottombarMasBtn.classList.toggle('active', nombre === 'analisis' || nombre === 'ia' || nombre === 'oportunidades');
 }
@@ -2899,6 +2903,23 @@ topbarMenuBtn.addEventListener('click', (e) => {
   topbarMenu.classList.toggle('open');
 });
 
+// --- Menú de identidad del sidebar (escritorio) — mismo patrón que el del
+// top bar de mobile, pero se abre hacia arriba porque el disparador está
+// pegado al fondo del sidebar (ver .sidebar-menu en dashboard.css).
+const sidebarMenuBtn = document.getElementById('sidebarMenuBtn');
+const sidebarMenu = document.getElementById('sidebarMenu');
+const sidebarNav = document.getElementById('sidebarNav');
+
+function setSidebarMenuOpen(abrir) {
+  sidebarMenu.classList.toggle('open', abrir);
+  sidebarNav.style.visibility = abrir ? 'hidden' : 'visible';
+}
+
+sidebarMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setSidebarMenuOpen(!sidebarMenu.classList.contains('open'));
+});
+
 // --- Hoja "Más" del bottom bar (mobile) ---
 const bottombarMasMenu = document.getElementById('bottombarMasMenu');
 
@@ -2910,6 +2931,9 @@ bottombarMasBtn.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!topbarMenu.contains(e.target) && e.target !== topbarMenuBtn) {
     topbarMenu.classList.remove('open');
+  }
+  if (!sidebarMenu.contains(e.target) && !sidebarMenuBtn.contains(e.target)) {
+    setSidebarMenuOpen(false);
   }
   if (!bottombarMasMenu.contains(e.target) && e.target !== bottombarMasBtn) {
     bottombarMasMenu.classList.remove('open');
@@ -4672,6 +4696,128 @@ document.querySelectorAll('#secCuenta .perfil-acordeon').forEach((detalle) => {
       if (otro !== detalle) otro.open = false;
     });
   });
+});
+
+/**
+ * Avatar de perfil — se guarda en el backend como data-URI base64 (ver
+ * auth.routes.js, POST/DELETE /api/auth/me/avatar). Mismo patrón de subida
+ * (fetch + FormData + solo header Authorization) que ya usa el análisis IA
+ * para subir bases de licitación, para no inventar uno nuevo.
+ *
+ * inicialesUsuarioActual se guarda como variable de módulo porque
+ * aplicarAvatar() necesita el fallback a iniciales tanto al cargar la
+ * página como al borrar el avatar — sin guardarla, habría que
+ * recalcularla en dos lugares distintos.
+ */
+let inicialesUsuarioActual = '';
+
+function aplicarAvatar(avatarData) {
+  const topbarBtn = document.getElementById('topbarMenuBtn');
+  const sidebarBtn = document.getElementById('sidebarAvatarBtn');
+  const preview = document.getElementById('avatarPreview');
+  const quitarBtn = document.getElementById('avatarQuitarBtn');
+
+  if (avatarData) {
+    topbarBtn.innerHTML = `<img src="${avatarData}" alt="">`;
+    if (sidebarBtn) sidebarBtn.innerHTML = `<img src="${avatarData}" alt="">`;
+    if (preview) preview.innerHTML = `<img src="${avatarData}" alt="">`;
+  } else {
+    topbarBtn.textContent = inicialesUsuarioActual;
+    if (sidebarBtn) sidebarBtn.textContent = inicialesUsuarioActual;
+    if (preview) preview.textContent = '👤';
+  }
+  if (quitarBtn) quitarBtn.style.display = avatarData ? '' : 'none';
+}
+
+/**
+ * Redimensiona/comprime la imagen en el navegador ANTES de subirla —
+ * así una foto de 12MB de celular no infla el data-URI que se guarda en la
+ * base de datos (ver migración 048: se eligió TEXT en vez de un bucket
+ * externo, justo para mantenerlo liviano). Devuelve un Blob JPEG.
+ */
+function redimensionarAvatar(file, maxLado = 256, calidad = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('No se pudo procesar la imagen.'))), 'image/jpeg', calidad);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function mostrarMensajeAvatar(texto, ok) {
+  const avatarMsg = document.getElementById('avatarMsg');
+  avatarMsg.textContent = texto;
+  avatarMsg.className = ok ? 'form-note success' : 'form-note';
+  avatarMsg.style.display = 'block';
+}
+
+document.getElementById('avatarSubirBtn').addEventListener('click', () => {
+  document.getElementById('avatarInput').click();
+});
+
+document.getElementById('avatarInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // permite volver a elegir el mismo archivo después
+  if (!file) return;
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    mostrarMensajeAvatar('Solo se aceptan imágenes JPG, PNG o WEBP.', false);
+    return;
+  }
+
+  const btn = document.getElementById('avatarSubirBtn');
+  btn.disabled = true;
+  btn.textContent = 'Subiendo...';
+  document.getElementById('avatarMsg').style.display = 'none';
+
+  try {
+    const blob = await redimensionarAvatar(file);
+    const formData = new FormData();
+    formData.append('avatar', blob, 'avatar.jpg');
+
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE}/api/auth/me/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }, // sin Content-Type — FormData arma el boundary solo
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al subir la imagen');
+
+    if (window.usuarioActual) window.usuarioActual.avatar_data = data.avatar_data;
+    aplicarAvatar(data.avatar_data);
+    mostrarMensajeAvatar('Foto de perfil actualizada.', true);
+  } catch (err) {
+    mostrarMensajeAvatar(err.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Subir foto';
+  }
+});
+
+document.getElementById('avatarQuitarBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('avatarQuitarBtn');
+  btn.disabled = true;
+  document.getElementById('avatarMsg').style.display = 'none';
+
+  try {
+    await apiFetch('/api/auth/me/avatar', { method: 'DELETE' });
+    if (window.usuarioActual) window.usuarioActual.avatar_data = null;
+    aplicarAvatar(null);
+    mostrarMensajeAvatar('Foto de perfil eliminada.', true);
+  } catch (err) {
+    mostrarMensajeAvatar(err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 cargarUsuario();
