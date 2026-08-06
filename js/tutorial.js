@@ -23,8 +23,7 @@ const TUTORIAL_SECCIONES_MOBILE_EN_MAS = ['oportunidades', 'analisis', 'ia'];
 
 /** Sección → contenedor real donde va el overlay mockeado. */
 const TUTORIAL_CONTENEDOR_MOCK = {
-  inicio: 'inicioStats',
-  alertas: 'configsCard',
+  inicio: 'secInicio',
   notificaciones: 'historyCard',
   busquedas: 'busquedasCard',
   oportunidades: 'oportunidadesCard',
@@ -32,61 +31,129 @@ const TUTORIAL_CONTENEDOR_MOCK = {
   ia: 'analisisMisAnalisisCard',
 };
 
-function tutorialFilaMock(titulo, subtitulo, monto) {
-  return `
-    <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px;">
-      <div>
-        <div style="font-weight:500;">${titulo}</div>
-        <div style="color:var(--text-muted); font-size:12px; margin-top:2px;">${subtitulo}</div>
-      </div>
-      ${monto ? `<div style="color:var(--gold); font-family:var(--font-mono); white-space:nowrap;">${monto}</div>` : ''}
-    </div>`;
-}
+/**
+ * Sección → id fijo del recuadro mockeado — ESTE es el elemento que Driver.js
+ * resalta y usa como referencia para ubicar el popover, NO la tarjeta
+ * completa. Resaltar la tarjeta completa (que incluye el mensaje de "vacío"
+ * más el mock) la deja demasiado alta, y Driver.js termina superponiendo el
+ * popover encima del contenido en vez de dejarlo debajo — resaltando solo
+ * el recuadro chico del mock, siempre queda espacio limpio alrededor.
+ */
+const TUTORIAL_MOCK_ID = {
+  notificaciones: 'tutorialMockNotificaciones',
+  busquedas: 'tutorialMockBusquedas',
+  oportunidades: 'tutorialMockOportunidades',
+  analisis: 'tutorialMockAnalisis',
+  ia: 'tutorialMockIa',
+};
 
-/** Contenido de ejemplo por sección — todo con datos inventados, jamás tocan datos reales del usuario. */
-function tutorialHtmlMock(nombreSeccion) {
-  const filas = {
-    inicio: [
-      tutorialFilaMock('3 licitaciones nuevas hoy', 'Coinciden con tus alertas activas'),
-      tutorialFilaMock('1 recordatorio de cierre próximo', 'Compra ágil — cierra en 18 horas'),
-    ],
-    notificaciones: [
-      tutorialFilaMock('Suministro de notebooks', 'Nueva Licitación · Municipalidad de Ñuñoa', '$18.500.000'),
-      tutorialFilaMock('Insumos de aseo institucional', 'Cambio de estado → Adjudicada'),
-    ],
-    busquedas: [
-      tutorialFilaMock('Servicios de mantención eléctrica', 'Búsqueda guardada · 4 resultados'),
-    ],
-    oportunidades: [
-      tutorialFilaMock('Compra de equipos de laboratorio', 'En pipeline · Preparando oferta', '$4.200.000'),
-    ],
-    analisis: [
-      tutorialFilaMock('Notebook 15" i5 16GB', 'Precio promedio adjudicado', '$620.000'),
-    ],
-    ia: [
-      tutorialFilaMock('1234-5-LE24', 'Análisis listo · 6 documentos exigidos'),
-    ],
+/**
+ * Contenido de ejemplo por sección — todo con datos inventados, jamás
+ * tocan datos reales del usuario. A propósito reutiliza las MISMAS clases
+ * CSS que la UI real (.row/.row-info/.row-title/.row-meta, .tag-email,
+ * .btn) en vez de un formato genérico — así el mock se ve igual a como se
+ * va a ver de verdad, no como una maqueta aparte. Los botones de acción se
+ * dejan `disabled`: son decorativos, no deben poder tocarse durante el tour.
+ */
+function tutorialHtmlMockInterno(nombreSeccion) {
+  const encabezado = '<div style="font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em; font-family:var(--font-mono); margin-bottom:10px;">Así se va a ver cuando tengas datos</div>';
+
+  const mocks = {
+    // Mismo formato exacto que renderHistorial (título, tipo, código, monto,
+    // región, organismo, cierre) + tag de canal.
+    notificaciones: `
+      <div class="row" style="border-bottom:none;">
+        <div class="row-info">
+          <div class="row-title">Suministro de notebooks ↗</div>
+          <div class="row-meta">
+            <span>📋 Licitación</span><br>
+            <span>Código: 1234-5-LE24 Compra de equipos</span><br>
+            <span>Monto: $18.500.000</span><br>
+            <span>Región: Metropolitana</span><br>
+            <span>Organismo: Municipalidad de Ñuñoa</span><br>
+            <span>Cierra: 12 ago. 2026, 18:00</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+          <span class="tag-email"><img src="/assets/icons/email.png" class="icon-desc-canal">&nbsp;</img>Email · hoy</span>
+        </div>
+      </div>`,
+
+    // Mismo formato que renderBusquedas (título, tipo, modo, criterios) + botón Ejecutar.
+    busquedas: `
+      <div class="row" style="border-bottom:none;">
+        <div class="row-info">
+          <div class="row-title">Servicios de mantención eléctrica</div>
+          <div class="row-meta"><span>📋 Licitación</span><span>Búsqueda guardada</span><span>4 resultados</span></div>
+        </div>
+        <button type="button" class="btn btn-ghost" disabled>▶ Ejecutar</button>
+      </div>`,
+
+    // Mismo formato que renderRecordatorios (título, tipo, código, organismo, monto, cierre, estado de aviso).
+    oportunidades: `
+      <div class="row" style="border-bottom:none;">
+        <div class="row-info">
+          <div class="row-title">Compra de equipos de laboratorio</div>
+          <div class="row-meta">
+            <span>⚡ Compra Ágil</span><br>
+            <span>Código: 987-6-CM24</span><br>
+            <span>Organismo: Universidad de Chile</span><br>
+            <span>Monto: $4.200.000</span><br>
+            <span>Cierra: 15 ago. 2026, 15:00</span><br>
+            <span>⏳ Pendiente de avisar</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger" disabled>✖ Eliminar</button>
+      </div>`,
+
+    // Mismo formato que construirVistaResumenPrecios (mínimo/promedio/máximo).
+    analisis: `
+      <p class="section-sub" style="margin-bottom:10px;">Notebook 15" i5 16GB — 12 registros</p>
+      <div style="display:flex; gap:24px; flex-wrap:wrap;">
+        <div><div class="section-sub">Mínimo</div><div style="font-size:18px; font-family:var(--font-mono);">$540.000</div></div>
+        <div><div class="section-sub">Promedio</div><div style="font-size:18px; font-family:var(--font-mono); color:var(--gold);">$620.000</div></div>
+        <div><div class="section-sub">Máximo</div><div style="font-size:18px; font-family:var(--font-mono);">$710.000</div></div>
+      </div>`,
+
+    // Mismo formato que renderMisAnalisis (título, tipo, código, adjuntos, fecha) + botón Ver.
+    ia: `
+      <div class="row" style="border-bottom:none;">
+        <div class="row-info">
+          <div class="row-title">1234-5-LE24 Compra de equipos</div>
+          <div class="row-meta"><span>📋 Licitación</span><br><span>📄 Con bases</span><br><span>Analizado: hoy</span></div>
+        </div>
+        <button type="button" class="btn btn-ghost" disabled>Ver →</button>
+      </div>`,
   };
 
-  const lista = (filas[nombreSeccion] || []).join('');
-  return `
-    <div class="tutorial-mock-overlay" style="position:relative; margin-top:14px; border:1px dashed var(--gold); border-radius:8px; padding:14px; background:var(--surface-2);">
-      <div style="font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em; font-family:var(--font-mono); margin-bottom:6px;">Así se va a ver cuando tengas datos</div>
-      ${lista}
-    </div>`;
+  return encabezado + (mocks[nombreSeccion] || '');
 }
 
-function tutorialMostrarOverlayMock(nombreSeccion) {
-  const idContenedor = TUTORIAL_CONTENEDOR_MOCK[nombreSeccion];
-  if (!idContenedor) return;
-  const contenedor = document.getElementById(idContenedor);
-  if (!contenedor) return;
-  // Si ya hay uno puesto (ej. volvió a este paso con "Atrás"), no duplicar.
-  if (contenedor.querySelector('.tutorial-mock-overlay')) return;
-  contenedor.insertAdjacentHTML('beforeend', tutorialHtmlMock(nombreSeccion));
+/**
+ * Pre-inserta TODOS los recuadros mockeados de una vez, ocultos
+ * (display:none), antes de arrancar el tour — así cada uno ya existe en el
+ * DOM con un id fijo (TUTORIAL_MOCK_ID) cuando Driver.js necesita
+ * resaltarlo, sin depender de insertarlo justo a tiempo paso a paso. Un
+ * elemento oculto no afecta el layout de su contenedor (display:none no
+ * ocupa espacio), así que no altera cómo se ve ninguna sección todavía no
+ * visitada del tour.
+ */
+function tutorialPrepararOverlays() {
+  Object.entries(TUTORIAL_MOCK_ID).forEach(([nombreSeccion, mockId]) => {
+    if (document.getElementById(mockId)) return; // ya existe (ej. se relanzó el tour desde Ayuda)
+    const contenedor = document.getElementById(TUTORIAL_CONTENEDOR_MOCK[nombreSeccion]);
+    if (!contenedor) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = mockId;
+    wrapper.className = 'tutorial-mock-overlay';
+    wrapper.style.cssText = 'display:none; position:relative; margin-top:14px; border:1px dashed var(--gold); border-radius:8px; padding:14px; background:var(--surface-2);';
+    wrapper.innerHTML = tutorialHtmlMockInterno(nombreSeccion);
+    contenedor.appendChild(wrapper);
+  });
 }
 
-/** Se llama al dejar CUALQUIER paso (onDeselected) y también al destruir el tour, por las dudas. */
+/** Se llama una vez al terminar/cerrar el tour — saca del DOM los 6 recuadros mockeados por completo. */
 function tutorialLimpiarOverlaysMock() {
   document.querySelectorAll('.tutorial-mock-overlay').forEach((el) => el.remove());
 }
@@ -115,21 +182,25 @@ async function tutorialMarcarCompletadoEnBackend() {
   }
 }
 
-function tutorialPasoBase(nombreSeccion, elementoIdOverride, popover) {
+function tutorialPasoBase(nombreSeccion, popover) {
+  const mockId = TUTORIAL_MOCK_ID[nombreSeccion];
   return {
-    element: `#${elementoIdOverride || TUTORIAL_CONTENEDOR_MOCK[nombreSeccion]}`,
+    element: `#${mockId}`,
     popover: { ...popover, showButtons: ['next', 'previous', 'close'] },
     onHighlightStarted: () => {
       mostrarSeccion(nombreSeccion);
-      tutorialAbrirMasMenuSiCorresponde(nombreSeccion);
+      //tutorialAbrirMasMenuSiCorresponde(nombreSeccion);
+      // Mostrar ANTES de que Driver.js mida — display:none → block es
+      // sincrónico, así que para cuando Driver.js calcula la posición del
+      // recuadro (inmediatamente después de este callback), ya tiene su
+      // tamaño real.
+      const el = document.getElementById(mockId);
+      if (el) el.style.display = 'block';
     },
-    onHighlighted: () => {
-      // El overlay se agrega después de mostrarSeccion (que puede reordenar/mostrar
-      // el contenedor recién ahora) y después de que Driver.js ya calculó la
-      // posición inicial, para no pisarle la medición del recuadro.
-      tutorialMostrarOverlayMock(nombreSeccion);
+    onDeselected: () => {
+      const el = document.getElementById(mockId);
+      if (el) el.style.display = 'none';
     },
-    onDeselected: () => tutorialLimpiarOverlaysMock(),
   };
 }
 
@@ -140,11 +211,16 @@ async function tutorialConstruirPasos() {
     : '<br><br><span style="color:var(--gold);">Esto se desbloquea en el plan Full.</span>';
 
   return [
-    tutorialPasoBase('inicio', 'inicioStats', {
-      title: 'Tu panel de Inicio',
-      description: 'Acá ves de un vistazo cuántas alertas tienes activas, cuántas notificaciones te han llegado, y un resumen de lo último que pasó.',
-      side: 'bottom',
-    }),
+    {
+      element: '#inicioStats',
+      popover: {
+        title: 'Tu panel de Inicio',
+        description: 'Acá ves de un vistazo cuántas alertas tienes activas, cuántas notificaciones te han llegado, y un resumen de lo último que pasó.',
+        side: 'bottom',
+        showButtons: ['next', 'close'],
+      },
+      onHighlightStarted: () => mostrarSeccion('inicio'),
+    },
     {
       element: '#abrirNuevaAlertaBtn',
       popover: {
@@ -154,29 +230,28 @@ async function tutorialConstruirPasos() {
         showButtons: ['next', 'previous', 'close'],
       },
       onHighlightStarted: () => mostrarSeccion('alertas'),
-      onDeselected: () => tutorialLimpiarOverlaysMock(),
     },
-    tutorialPasoBase('notificaciones', 'historyCard', {
+    tutorialPasoBase('notificaciones', {
       title: 'Notificaciones',
       description: 'Cada vez que una Licitación o Compra Ágil nueva calza con tus alertas — o cambia de estado — queda registrada acá, además de llegarte por correo (y Telegram o WhatsApp si los configuras).',
       side: 'bottom',
     }),
-    tutorialPasoBase('busquedas', 'busquedasCard', {
+    tutorialPasoBase('busquedas', {
       title: 'Búsquedas',
       description: 'A diferencia de una alerta, una búsqueda es puntual: consulta en el momento contra Mercado Público y te muestra los resultados ahí mismo, sin quedar monitoreando hacia adelante.',
       side: 'bottom',
     }),
-    tutorialPasoBase('oportunidades', 'oportunidadesCard', {
+    tutorialPasoBase('oportunidades', {
       title: 'Oportunidades',
       description: 'Acá viven tus Recordatorios de cierre, el Seguimiento de estado, y tu Portafolio, para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta.',
       side: 'bottom',
     }),
-    tutorialPasoBase('analisis', 'analisisCard', {
+    tutorialPasoBase('analisis', {
       title: 'Análisis de Precios',
       description: `Busca un producto o rubro y revisa el historial de precios en los que se ha adjudicado antes — útil para calibrar tu oferta económica.${notaUpgradeAnalisis}`,
       side: 'bottom',
     }),
-    tutorialPasoBase('ia', 'analisisMisAnalisisCard', {
+    tutorialPasoBase('ia', {
       title: 'Análisis de Procesos con IA',
       description: 'Ingresa el código de una Licitación o Compra Ágil, y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.',
       side: 'bottom',
@@ -193,6 +268,7 @@ async function iniciarTourOnboarding() {
     return;
   }
 
+  tutorialPrepararOverlays();
   const steps = await tutorialConstruirPasos();
 
   tutorialDriverInstance = driverFactory({
@@ -207,6 +283,8 @@ async function iniciarTourOnboarding() {
     onDestroyed: () => {
       tutorialLimpiarOverlaysMock();
       tutorialMarcarCompletadoEnBackend();
+      cargarMisAnalisis();
+      cargarCupoAnalisis();
     },
   });
 
