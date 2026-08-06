@@ -1639,7 +1639,7 @@ function describirBusquedaEnFila(b) {
   if (b.tipo === 'compra_agil') {
     if (b.modo === 'codigo') return `<br><span>Código: ${escapeHtml(b.codigo_externo)}</span>`;
     const partes = [];
-    if (b.texto_libre) partes.push(`<br><span>Texto: "${b.texto_libre}"</span>`);
+    if (b.texto_libre) partes.push(`<br><span>Texto: "${escapeHtml(b.texto_libre)}"</span>`);
     partes.push(formatearRegionesTag(b.regiones));
     if (b.estados && b.estados.length > 0) {
       partes.push(`<br><span>Estado: ${b.estados.map((e) => ETIQUETAS_ESTADO_BUSQUEDA[e] || e).join(', ')}</span>`);
@@ -1650,7 +1650,7 @@ function describirBusquedaEnFila(b) {
 
   if (b.modo === 'codigo') return `<br><span>Código: ${escapeHtml(b.codigo_externo)}</span>`;
   if (b.modo === 'estado_fecha') return `<br><span>Estado: ${ETIQUETAS_ESTADO_BUSQUEDA[b.estado] || b.estado}</span><br><span>Fecha: ${fechaTexto}</span>`;
-  if (b.modo === 'proveedor') return `<br><span>Proveedor RUT: ${b.rut_proveedor}</span><br><span>Fecha: ${fechaTexto}</span>`;
+  if (b.modo === 'proveedor') return `<br><span>Proveedor RUT: ${escapeHtml(b.rut_proveedor)}</span><br><span>Fecha: ${fechaTexto}</span>`;
   if (b.modo === 'organismo') return `${formatearOrganismosTag(b.organismos)}<br><span>Fecha: ${fechaTexto}</span>`;
   return '';
 }
@@ -3137,7 +3137,7 @@ async function buscarPrecios(codigo, titulo) {
     datosPreciosActuales = data;
 
     if (!data.resumen) {
-      card.innerHTML = `<div class="empty-state">Todavía no hay historial de precios para "${titulo}". A medida que se resuelvan licitaciones y Compras Ágiles de esta categoría, van a ir apareciendo acá.</div>`;
+      card.innerHTML = `<div class="empty-state">Todavía no hay historial de precios para "${escapeHtml(titulo)}". A medida que se resuelvan licitaciones y Compras Ágiles de esta categoría, van a ir apareciendo acá.</div>`;
       return;
     }
 
@@ -3348,7 +3348,7 @@ async function buscarProveedores(codigo, titulo) {
     datosProveedoresActuales = data;
 
     if (data.ranking.length === 0) {
-      card.innerHTML = `<div class="empty-state">Todavía no hay ganadores registrados para "${titulo}".</div>`;
+      card.innerHTML = `<div class="empty-state">Todavía no hay ganadores registrados para "${escapeHtml(titulo)}".</div>`;
       return;
     }
 
@@ -3450,7 +3450,7 @@ async function buscarOrganismos(codigo, titulo) {
     datosOrganismosActuales = data;
 
     if (data.ranking.length === 0) {
-      card.innerHTML = `<div class="empty-state">Todavía no hay compras resueltas registradas para "${titulo}".</div>`;
+      card.innerHTML = `<div class="empty-state">Todavía no hay compras resueltas registradas para "${escapeHtml(titulo)}".</div>`;
       return;
     }
 
@@ -3549,7 +3549,7 @@ async function buscarRechazos(codigo, titulo) {
     datosRechazosActuales = data;
 
     if (data.totalRechazadas === 0) {
-      card.innerHTML = `<div class="empty-state">Todavía no hay cotizaciones rechazadas registradas para "${titulo}".</div>`;
+      card.innerHTML = `<div class="empty-state">Todavía no hay cotizaciones rechazadas registradas para "${escapeHtml(titulo)}".</div>`;
       return;
     }
 
@@ -3600,7 +3600,7 @@ function actualizarResultadosRechazos() {
     const porcentaje = Math.round((r.cantidad / datosRechazosActuales.totalRechazadas) * 100);
     return `
       <tr>
-        <td>${r.razon}</td>
+        <td>${escapeHtml(r.razon)}</td>
         <td>${r.cantidad} <span class="row-meta">(${porcentaje}%)</span></td>
       </tr>
     `;
