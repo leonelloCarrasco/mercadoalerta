@@ -42,8 +42,10 @@ function armarFeaturesPlan(plan) {
   if (plan.mensajeria?.includes('WhatsApp')) {
     items.push(`Hasta <strong>${plan.limiteAlertas * 10} notificaciones por WhatsApp</strong> al mes`);
   }
-  if (plan.detalleAnalisisPrecios === 'completo') items.push('<strong>Análisis de precios</strong> de Mercado Público, con detalle por proveedor y organismo');
-  else if (plan.accesoAnalisisPrecios) items.push('<strong>Análisis de precios</strong> de Mercado Público (rango de precios)');
+  // Análisis de Precios queda afuera del listado a propósito — el menú está
+  // deshabilitado por ahora (no se promociona todavía, ver conversación de
+  // agosto 2026), aunque plan.accesoAnalisisPrecios/detalleAnalisisPrecios
+  // sigan existiendo en planes.js para cuando se vuelva a activar.
   if (plan.limitePortafolio) items.push(`Portafolio (hasta <strong>${plan.limitePortafolio} ítems</strong>, para probar)`);
   else if (plan.portafolio) items.push('Portafolio <strong>Ilimitado</strong>');
   items.push(`<strong>${plan.limiteAnalisisIA} análisis</strong> de procesos con IA al mes`);
