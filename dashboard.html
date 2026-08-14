@@ -681,7 +681,7 @@
 
           <details class="filter-toggle ayuda-item">
             <summary>¿Cómo creo mi primera alerta?</summary>
-            <p>Ve a <strong>Alertas → + Nueva Alerta</strong>. Lo único obligatorio es elegir un <strong>Rubro o Producto</strong> — todo lo demás (tipo de proceso, tramo de monto, ubicación, organismo comprador) es opcional y está colapsado bajo "Opciones avanzadas", por si quieres afinar más la búsqueda.</p>
+            <p>Ve a <strong>Alertas → + Nueva Alerta</strong>. Necesitás completar al menos uno de estos dos: un <strong>Rubro o Producto</strong>, o <strong>Palabras clave</strong> — todo lo demás (tipo de proceso, tramo de monto, ubicación, organismo comprador) es opcional y está colapsado bajo "Opciones avanzadas", por si quieres afinar más la búsqueda.</p>
           </details>
 
           <details class="filter-toggle ayuda-item">
@@ -755,8 +755,8 @@
         <!-- 1. Producto o Rubro (único campo obligatorio) -->
         <div class="field" style="grid-column: 1 / -1; position: relative; border: 1px solid var(--border); padding: 10px;">
           
-          <label><strong>Rubro o Producto *</strong></label>
-          <small>Elige un producto o rubro que deseas seguir.</small>
+          <label><strong>Rubro o Producto</strong></label>
+          <small>Elige un producto o rubro, o completa "Palabras Clave" más abajo — necesitas al menos uno de los dos.</small>
           </br>
 
           <div class="categoria-modo-tabs" id="categoriaModoTabs">
@@ -776,6 +776,32 @@
 
           <div id="categoriasChips" class="categoria-chips"></div>
           <p class="form-note" id="categoriasLimiteMsg" style="margin-top: 6px;"></p>
+        </div>
+
+        <!-- 1.5 Palabras clave (positivas y negativas) — complementa el producto/rubro -->
+        <div class="field" id="palabrasClaveField" style="grid-column: 1 / -1; border: 1px solid var(--border); padding: 10px;">
+          <label><strong>Palabras Clave</strong></label>
+          <small>Alternativa a "Rubro o Producto" de arriba — útil si el texto de una licitación no calza con ningún código. Necesitas al menos uno de los dos campos.</small>
+          <br><br>
+
+          <label for="palabrasClaveDescripcion">Describe qué buscas</label>
+          <input type="text" id="palabrasClaveDescripcion" placeholder="Ej: Vendo mesas y sillas de oficina, y artículos de aseo." autocomplete="off">
+          <button type="button" class="btn btn-ghost" id="sugerirPalabrasClaveBtn" style="margin-top:8px;">Sugerir palabras clave</button>
+          <!-- display:none por default a propósito — .form-note siempre se ve como
+               caja de error (fondo/borde rojo, ver css/dashboard.css), incluso vacía.
+               Sin esto, quedaría visible como una caja roja vacía todo el tiempo. -->
+          <p class="form-note" id="palabrasClaveSugerenciaMsg" style="display:none; margin-top:8px;"></p>
+
+          <div id="palabrasClaveCandidatasWrap" style="display:none; margin-top:10px;">
+            <small>Elige hasta <span id="palabrasClaveTope">5</span> — clic para agregar:</small>
+            <div id="palabrasClaveCandidatas" class="categoria-chips"></div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <small>Palabras clave elegidas:</small>
+            <div id="palabrasClaveSeleccionadas" class="categoria-chips"></div>
+          </div>
+
         </div>
 
         <!-- 2. Licitaciones / Compras Ágiles -->
@@ -806,7 +832,15 @@
             <div id="tramoDropdownPanel" class="region-dropdown-panel"></div>
           </div>
 
-          <!-- 4. Monto mínimo / máximo — solo visible si "Compras Ágiles" está marcado -->
+          <!-- 4. Palabras a excluir (opcional) -->
+          <div class="field" id="palabrasExcluirField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
+            <label for="palabrasClaveExcluirInput"><strong>Palabras a Excluir</strong></label>
+            <small>Escribe una palabra y presiona Enter para agregarla. Usa plurales, igual que las categorías.</small>
+            <input type="text" id="palabrasClaveExcluirInput" placeholder="Ej: escuelas" autocomplete="off">
+            <div id="palabrasClaveExcluirChips" class="categoria-chips"></div>
+          </div>
+
+          <!-- 5. Monto mínimo / máximo — solo visible si "Compras Ágiles" está marcado -->
           <div class="field" id="montoField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
             <div id="title-field">
               <label><strong>Tramo de monto para Compras Ágiles</strong></label>
@@ -823,7 +857,7 @@
             </div>
           </div>
 
-          <!-- 5. Regiones -->
+          <!-- 6. Regiones -->
           <div class="field" id="regionField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
             <label for="regionDropdownBtn"><strong>Ubicación</strong></label>
             <small>Filtra por la región del organismo comprador (no de tu empresa). Si no marcas ninguna, se monitorean todas las regiones del país.</small>
@@ -832,7 +866,7 @@
             <div id="regionDropdownPanel" class="region-dropdown-panel"></div>
           </div>
 
-          <!-- 6. Organismo comprador -->
+          <!-- 7. Organismo comprador -->
           <div class="field" id="organismoField" style="position: relative; border: 1px solid var(--border); padding: 10px; margin-top: 12px;">
             <label for="organismoBuscar"><strong>Organismo comprador</strong> </label>
             <small>Puedes elegir varias instituciones compradoras.</small>

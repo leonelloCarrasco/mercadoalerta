@@ -164,6 +164,19 @@ function formatearOrganismosTag(organismos) {
   return `<br><span class="regiones-toggle" data-resumen="${resumen}" data-completo="${completo}" style="border-bottom: 1px dotted var(--text-muted); cursor: pointer;">${resumen}</span>`;
 }
 
+// Palabras clave son texto libre — a diferencia de organismos/categorías
+// (catálogo fijo), acá sí hace falta escapeHtml antes de insertar.
+function formatearPalabrasClaveTag(palabrasClave, palabrasClaveExcluir) {
+  let html = '';
+  if (palabrasClave && palabrasClave.length > 0) {
+    html += `<br><span>Palabras clave: ${palabrasClave.map(escapeHtml).join(', ')}</span>`;
+  }
+  if (palabrasClaveExcluir && palabrasClaveExcluir.length > 0) {
+    html += `<br><span style="color: var(--danger);">Excluye: ${palabrasClaveExcluir.map(escapeHtml).join(', ')}</span>`;
+  }
+  return html;
+}
+
 function formatMontoConTramo(h) {
   if (h.monto !== null && h.monto !== undefined) return formatMoney(h.monto);
   if (h.monto_utm_min) {
@@ -289,6 +302,186 @@ async function agregarCategoria(codigo, titulo, nivel) {
   categoriasSeleccionadas = [...categoriasSeleccionadas, { codigo, titulo, nivel }];
   renderCategoriasChips();
 }
+
+// --- Palabras clave (positivas y negativas) ---
+// palabrasClaveCandidatas: lo que devolvió la IA (hasta 12), sin elegir todavía.
+// palabrasClaveSeleccionadas: las que el usuario eligió entre las candidatas (tope del plan).
+// palabrasClaveExcluir: negativas, escritas directo por el usuario, sin IA.
+// sugerenciasUsadasEnEstaAlerta: contador LOCAL (no persiste, se resetea al abrir/cerrar el
+// modal) — el tope "por alerta" se controla acá, no en el backend (que solo aplica el tope diario).
+let palabrasClaveCandidatas = [];
+let palabrasClaveSeleccionadas = [];
+let palabrasClaveExcluir = [];
+let sugerenciasUsadasEnEstaAlerta = 0;
+
+const palabrasClaveDescripcionInput = document.getElementById('palabrasClaveDescripcion');
+const sugerirPalabrasClaveBtn = document.getElementById('sugerirPalabrasClaveBtn');
+const palabrasClaveSugerenciaMsgEl = document.getElementById('palabrasClaveSugerenciaMsg');
+const palabrasClaveCandidatasWrapEl = document.getElementById('palabrasClaveCandidatasWrap');
+const palabrasClaveCandidatasEl = document.getElementById('palabrasClaveCandidatas');
+const palabrasClaveSeleccionadasEl = document.getElementById('palabrasClaveSeleccionadas');
+const palabrasClaveExcluirInput = document.getElementById('palabrasClaveExcluirInput');
+const palabrasClaveExcluirChipsEl = document.getElementById('palabrasClaveExcluirChips');
+
+/**
+ * .form-note siempre se ve como caja de error (fondo/borde rojo, ver
+ * css/dashboard.css) sin importar si tiene texto — un textContent = ''
+ * sin tocar la visibilidad deja una caja roja vacía flotando todo el
+ * tiempo. Esta función centraliza mostrar/ocultar junto con el texto.
+ */
+function setMensajePalabrasClave(texto) {
+  palabrasClaveSugerenciaMsgEl.textContent = texto || '';
+  palabrasClaveSugerenciaMsgEl.style.display = texto ? 'block' : 'none';
+}
+
+/** Trae los límites de palabras clave del plan actual — mismo patrón de caché que limiteCategoriasDelPlan(). */
+async function limitesPalabrasClaveDelPlan() {
+  try {
+    const planes = await obtenerPlanesData();
+    const plan = planes?.[window.usuarioActual?.plan];
+    return {
+      limitePalabrasClave: plan?.limitePalabrasClave ?? 5,
+      limiteSugerenciasIAAlerta: plan?.limiteSugerenciasIAAlerta ?? 2,
+    };
+  } catch (err) {
+    return { limitePalabrasClave: 5, limiteSugerenciasIAAlerta: 2 };
+  }
+}
+
+function renderPalabrasClaveCandidatas(limite) {
+  const disponibles = palabrasClaveCandidatas.filter((p) => !palabrasClaveSeleccionadas.includes(p));
+  const enTope = palabrasClaveSeleccionadas.length >= limite;
+
+  palabrasClaveCandidatasEl.innerHTML = disponibles.map((p) => `
+    <span class="categoria-chip candidata${enTope ? ' disabled' : ''}" data-candidata="${escapeHtml(p)}">
+      + ${escapeHtml(p)}
+    </span>
+  `).join('');
+
+  if (!enTope) {
+    palabrasClaveCandidatasEl.querySelectorAll('[data-candidata]').forEach((el) => {
+      el.addEventListener('click', () => agregarPalabraClaveSeleccionada(el.dataset.candidata, limite));
+    });
+  }
+}
+
+function renderPalabrasClaveSeleccionadas(limite) {
+  palabrasClaveSeleccionadasEl.innerHTML = palabrasClaveSeleccionadas.map((p) => `
+    <span class="categoria-chip" data-palabra="${escapeHtml(p)}">
+      ${escapeHtml(p)}
+      <span class="quitar" data-quitar-palabra="${escapeHtml(p)}">✕</span>
+    </span>
+  `).join('');
+
+  palabrasClaveSeleccionadasEl.querySelectorAll('[data-quitar-palabra]').forEach((el) => {
+    el.addEventListener('click', () => {
+      palabrasClaveSeleccionadas = palabrasClaveSeleccionadas.filter((p) => p !== el.dataset.quitarPalabra);
+      renderPalabrasClaveSeleccionadas(limite);
+      renderPalabrasClaveCandidatas(limite);
+    });
+  });
+}
+
+function agregarPalabraClaveSeleccionada(palabra, limite) {
+  if (palabrasClaveSeleccionadas.length >= limite) return;
+  if (palabrasClaveSeleccionadas.includes(palabra)) return;
+  palabrasClaveSeleccionadas = [...palabrasClaveSeleccionadas, palabra];
+  renderPalabrasClaveSeleccionadas(limite);
+  renderPalabrasClaveCandidatas(limite);
+}
+
+function renderPalabrasClaveExcluirChips(limite) {
+  palabrasClaveExcluirChipsEl.innerHTML = palabrasClaveExcluir.map((p) => `
+    <span class="categoria-chip" data-palabra-excluir="${escapeHtml(p)}">
+      ${escapeHtml(p)}
+      <span class="quitar" data-quitar-excluir="${escapeHtml(p)}">✕</span>
+    </span>
+  `).join('');
+
+  palabrasClaveExcluirChipsEl.querySelectorAll('[data-quitar-excluir]').forEach((el) => {
+    el.addEventListener('click', () => {
+      palabrasClaveExcluir = palabrasClaveExcluir.filter((p) => p !== el.dataset.quitarExcluir);
+      renderPalabrasClaveExcluirChips(limite);
+    });
+  });
+}
+
+function resetPalabrasClave() {
+  palabrasClaveCandidatas = [];
+  palabrasClaveSeleccionadas = [];
+  palabrasClaveExcluir = [];
+  sugerenciasUsadasEnEstaAlerta = 0;
+  palabrasClaveDescripcionInput.value = '';
+  palabrasClaveExcluirInput.value = '';
+  palabrasClaveCandidatasWrapEl.style.display = 'none';
+  setMensajePalabrasClave('');
+  palabrasClaveCandidatasEl.innerHTML = '';
+  palabrasClaveSeleccionadasEl.innerHTML = '';
+  palabrasClaveExcluirChipsEl.innerHTML = '';
+  sugerirPalabrasClaveBtn.disabled = false;
+  sugerirPalabrasClaveBtn.textContent = 'Sugerir palabras clave';
+}
+
+sugerirPalabrasClaveBtn.addEventListener('click', async () => {
+  const descripcion = palabrasClaveDescripcionInput.value.trim();
+  if (!descripcion) {
+    setMensajePalabrasClave('Describe qué buscás primero.');
+    return;
+  }
+
+  const { limitePalabrasClave, limiteSugerenciasIAAlerta } = await limitesPalabrasClaveDelPlan();
+
+  if (sugerenciasUsadasEnEstaAlerta >= limiteSugerenciasIAAlerta) {
+    setMensajePalabrasClave(`Alcanzaste el máximo de ${limiteSugerenciasIAAlerta} sugerencias para esta alerta. Podés elegir entre las candidatas que ya aparecieron, o escribir tus propias palabras a excluir.`);
+    return;
+  }
+
+  document.getElementById('palabrasClaveTope').textContent = limitePalabrasClave;
+  sugerirPalabrasClaveBtn.disabled = true;
+  sugerirPalabrasClaveBtn.textContent = 'Generando...';
+  setMensajePalabrasClave('');
+
+  try {
+    const { candidatas } = await apiFetch('/api/alerts/sugerir-palabras-clave', {
+      method: 'POST',
+      body: JSON.stringify({ descripcion }),
+    });
+    sugerenciasUsadasEnEstaAlerta++;
+    palabrasClaveCandidatas = candidatas || [];
+    palabrasClaveCandidatasWrapEl.style.display = palabrasClaveCandidatas.length > 0 ? 'block' : 'none';
+    renderPalabrasClaveCandidatas(limitePalabrasClave);
+    if (palabrasClaveCandidatas.length === 0) {
+      setMensajePalabrasClave('No se generaron candidatas — probá describiendo con más detalle.');
+    }
+  } catch (err) {
+    setMensajePalabrasClave(err.message);
+  } finally {
+    sugerirPalabrasClaveBtn.disabled = false;
+    sugerirPalabrasClaveBtn.textContent = 'Sugerir palabras clave';
+  }
+});
+
+palabrasClaveExcluirInput.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter' && e.key !== ',') return;
+  e.preventDefault();
+
+  const palabra = palabrasClaveExcluirInput.value.trim().replace(/,$/, '');
+  if (!palabra) return;
+
+  const { limitePalabrasClave } = await limitesPalabrasClaveDelPlan();
+  if (palabrasClaveExcluir.includes(palabra)) {
+    palabrasClaveExcluirInput.value = '';
+    return;
+  }
+  if (palabrasClaveExcluir.length >= limitePalabrasClave) {
+    showError(`Puedes excluir hasta ${limitePalabrasClave} palabras por alerta.`);
+    return;
+  }
+
+  palabrasClaveExcluir = [...palabrasClaveExcluir, palabra];
+  palabrasClaveExcluirInput.value = '';
+  renderPalabrasClaveExcluirChips(limitePalabrasClave);
+});
 
 categoriaBuscarInput.addEventListener('input', () => {
   clearTimeout(categoriaBuscarTimeout);
@@ -1191,10 +1384,16 @@ function renderConfigs() {
       return { codigo: cod, titulo: info ? info.titulo : cod, nivel: info ? info.nivel : 'categoria' };
     });
     const nombresCategorias = categoriasInfo.map((cat) => `${escapeHtml(cat.titulo)} <span class="nivel-badge ${cat.nivel}">${etiquetaNivel(cat.nivel)}</span> <span class="cod">(${cat.codigo})</span>`);
+    // Si no hay categoría pero sí palabras clave, el título no puede decir
+    // "todos los rubros y productos" — sería engañoso.
+    const tienePalabrasClave = c.palabras_clave && c.palabras_clave.length > 0;
+    const tituloFila = nombresCategorias.length
+      ? nombresCategorias.join(', ')
+      : (tienePalabrasClave ? `Por palabra clave: ${c.palabras_clave.map(escapeHtml).join(', ')}` : 'Todos los  rubros y productos');
     return `
     <div class="row">
       <div class="row-info">
-        <div class="row-title">${nombresCategorias.length ?  nombresCategorias.join(', ') : 'Todos los  rubros y productos'}</div>
+        <div class="row-title">${tituloFila}</div>
         <div class="row-meta">
           <span style="font-size: 14px;">${c.activo ? '🟢 Activa' : '⚪ Pausada'}</span>
           ${formatearTipoProcesoTag(c.tipos_proceso)}
@@ -1202,6 +1401,7 @@ function renderConfigs() {
           ${formatearMontoTag(c.monto_minimo, c.monto_maximo)}
           ${formatearRegionesTag(c.regiones)}
           ${formatearOrganismosTag(c.organismos)}
+          ${nombresCategorias.length ? formatearPalabrasClaveTag(c.palabras_clave, c.palabras_clave_excluir) : formatearPalabrasClaveTag(null, c.palabras_clave_excluir)}
         </div>
       </div>
       <div style="display:flex; gap:8px;">
@@ -1279,13 +1479,15 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
   const categorias = categoriasSeleccionadas.map((c) => c.codigo);
   const tramosLicitacion = [...tramosSeleccionados];
   const organismos = [...organismosSeleccionados];
+  const palabrasClave = [...palabrasClaveSeleccionadas];
+  const palabrasClaveExcluirFinal = [...palabrasClaveExcluir];
 
   const tiposProceso = [];
   if (tipoProcesoLicitacionChk.checked) tiposProceso.push('licitacion');
   if (tipoProcesoCompraAgilChk.checked) tiposProceso.push('compra_agil');
 
-  if (categorias.length === 0) {
-    showErrorModal('Debes elegir un producto o rubro para la alerta.');
+  if (categorias.length === 0 && palabrasClave.length === 0) {
+    showErrorModal('Debes elegir un producto/rubro o agregar palabras clave para la alerta.');
     btn.disabled = false;
     btn.textContent = 'Crear alerta';
     return;
@@ -1313,6 +1515,8 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
         montoMaximo: montoMaximo ? Number(montoMaximo) : null,
         regiones,
         categorias,
+        palabrasClave,
+        palabrasClaveExcluir: palabrasClaveExcluirFinal,
         tiposProceso,
         tramosLicitacion,
         organismos,
@@ -1321,6 +1525,7 @@ document.getElementById('newAlertForm').addEventListener('submit', async (e) => 
     document.getElementById('newAlertForm').reset();
     categoriasSeleccionadas = [];
     renderCategoriasChips();
+    resetPalabrasClave();
     resetRegionDropdown();
     resetCategoriaSelector();
     resetTramoDropdown();
@@ -2962,6 +3167,7 @@ document.getElementById('abrirNuevaAlertaBtn').addEventListener('click', () => {
 
   categoriasSeleccionadas = [];
   renderCategoriasChips();
+  resetPalabrasClave();
   resetRegionDropdown();
   resetCategoriaSelector();
   document.getElementById('newAlertForm').reset();
