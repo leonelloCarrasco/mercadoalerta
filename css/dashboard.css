@@ -554,6 +554,15 @@ table.analisis-table a:hover { text-decoration: underline; }
 }
 .categoria-chip .quitar:hover { opacity: 1; }
 
+.categoria-chip.candidata {
+  background: transparent; border: 1px dashed var(--border); color: var(--text-muted);
+  cursor: pointer;
+}
+.categoria-chip.candidata:hover { border-color: var(--gold); color: var(--gold); }
+.categoria-chip.candidata.disabled {
+  cursor: not-allowed; opacity: 0.4; pointer-events: none;
+}
+
 .nivel-badge {
   display: inline-block; font-family: var(--font-mono); font-size: 10px;
   padding: 1px 6px; border-radius: 3px; margin-left: 4px; vertical-align: middle;
