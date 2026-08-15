@@ -239,12 +239,47 @@ h2 { font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 34px); font
 .price-features li strong { color: var(--text); font-weight: 500; }
 .price-card .btn { width: 100%; justify-content: center; }
 
-/* Tarjeta única (un solo plan pago) — en vez de la grilla de 3 columnas
-   pensada para varios planes, se centra una sola tarjeta más ancha. */
+/* Tarjeta única (un solo plan pago) — layout de 2 columnas (precio+CTA a
+   la izquierda, checklist a la derecha), inspirado en el diseño de
+   referencia que se compartió en la conversación. Bastante más ancha que
+   la tarjeta vertical original, así que ya no comparte estilo con
+   .price-card genérica salvo lo básico (fondo, borde, radio). */
 .pricing-grid-solo {
   grid-template-columns: 1fr;
-  max-width: 420px;
+  max-width: 820px;
   margin: 0 auto;
+}
+.price-card-hero {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 48px;
+  padding: 40px 44px;
+}
+.price-card-hero .price-card-left {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+}
+.price-card-hero .price-card-right { flex: 1; padding-top: 4px; }
+.price-plan-label {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 16px;
+}
+/* Checklist con ✅ en vez del guión "—" de la tarjeta vertical original —
+   mismo <ul class="price-features">, clase extra .price-features-check
+   para no romper la tarjeta vertical si en algún momento se vuelve a usar. */
+.price-features-check { margin: 0; }
+.price-features-check li {
+  border-top: none; padding: 9px 0;
+  display: flex; align-items: flex-start; gap: 10px;
+  color: var(--text);
+}
+.price-features-check li::before { content: '✅'; flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+@media (max-width: 720px) {
+  /* En mobile, 2 columnas lado a lado no entra — vuelve a apilarse. */
+  .price-card-hero { flex-direction: column; gap: 28px; padding: 32px 24px; }
+  .price-card-hero .price-card-left { flex: none; }
 }
 @media (max-width: 900px) {
   /* La grilla original pasa a scroll horizontal en mobile (pensado para
@@ -272,6 +307,8 @@ h2 { font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 34px); font
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   max-width: 440px; width: 100%; padding: 32px 28px;
   position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .trial-modal h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 0 0 8px; }
 .trial-modal-sub { font-size: 13.5px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5; }
