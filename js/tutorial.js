@@ -6,8 +6,9 @@
  *
  * Motor: Driver.js v1 (CDN, cargado antes que este script en dashboard.html).
  * Reglas acordadas para este tour:
- *  - 7 pasos, uno por sección del sidebar: Inicio, Alertas, Notificaciones,
- *    Búsquedas, Oportunidades, Análisis de Precios, Análisis de Procesos.
+ *  - 6 pasos, uno por sección del sidebar: Inicio, Alertas, Notificaciones,
+ *    Búsquedas, Oportunidades, Análisis de Procesos. Análisis de Precios
+ *    queda afuera a propósito — el menú está deshabilitado por ahora.
  *  - Cada paso ENTRA a la sección real (mostrarSeccion, ya existe en
  *    dashboard.js) y muestra un overlay de ejemplo NO interactivo sobre el
  *    contenedor real — no se insertan datos falsos en las listas/tablas
@@ -19,7 +20,7 @@
  *    lugar: el callback onDestroyed a nivel de instancia.
  */
 
-const TUTORIAL_SECCIONES_MOBILE_EN_MAS = ['oportunidades', 'analisis', 'ia'];
+const TUTORIAL_SECCIONES_MOBILE_EN_MAS = ['oportunidades', 'ia'];
 
 /** Sección → contenedor real donde va el overlay mockeado. */
 const TUTORIAL_CONTENEDOR_MOCK = {
@@ -27,7 +28,6 @@ const TUTORIAL_CONTENEDOR_MOCK = {
   notificaciones: 'historyCard',
   busquedas: 'busquedasCard',
   oportunidades: 'oportunidadesCard',
-  analisis: 'analisisCard',
   ia: 'analisisMisAnalisisCard',
 };
 
@@ -43,7 +43,6 @@ const TUTORIAL_MOCK_ID = {
   notificaciones: 'tutorialMockNotificaciones',
   busquedas: 'tutorialMockBusquedas',
   oportunidades: 'tutorialMockOportunidades',
-  analisis: 'tutorialMockAnalisis',
   ia: 'tutorialMockIa',
 };
 
@@ -106,14 +105,8 @@ function tutorialHtmlMockInterno(nombreSeccion) {
         <button type="button" class="btn btn-danger" disabled>✖ Eliminar</button>
       </div>`,
 
-    // Mismo formato que construirVistaResumenPrecios (mínimo/promedio/máximo).
-    analisis: `
-      <p class="section-sub" style="margin-bottom:10px;">Notebook 15" i5 16GB — 12 registros</p>
-      <div style="display:flex; gap:24px; flex-wrap:wrap;">
-        <div><div class="section-sub">Mínimo</div><div style="font-size:18px; font-family:var(--font-mono);">$540.000</div></div>
-        <div><div class="section-sub">Promedio</div><div style="font-size:18px; font-family:var(--font-mono); color:var(--gold);">$620.000</div></div>
-        <div><div class="section-sub">Máximo</div><div style="font-size:18px; font-family:var(--font-mono);">$710.000</div></div>
-      </div>`,
+    // (bloque de "analisis" retirado — el menú de Análisis de Precios está
+    // deshabilitado por ahora)
 
     // Mismo formato que renderMisAnalisis (título, tipo, código, adjuntos, fecha) + botón Ver.
     ia: `
@@ -158,7 +151,7 @@ function tutorialLimpiarOverlaysMock() {
   document.querySelectorAll('.tutorial-mock-overlay').forEach((el) => el.remove());
 }
 
-/** En mobile, Oportunidades/Análisis de Precios/Análisis de Procesos viven bajo el botón "Más" del bottombar — hay que abrirlo antes de resaltar, si no el contenido está oculto y Driver.js no encuentra dónde anclar el popover. */
+/** En mobile, Oportunidades/Análisis de Procesos viven bajo el botón "Más" del bottombar — hay que abrirlo antes de resaltar, si no el contenido está oculto y Driver.js no encuentra dónde anclar el popover. */
 function tutorialAbrirMasMenuSiCorresponde(nombreSeccion) {
   const bottombarMasBtn = document.getElementById('bottombarMasBtn');
   const bottombarMasMenu = document.getElementById('bottombarMasMenu');
@@ -205,11 +198,6 @@ function tutorialPasoBase(nombreSeccion, popover) {
 }
 
 async function tutorialConstruirPasos() {
-  const tieneAnalisisPrecios = await tieneAcceso('accesoAnalisisPrecios');
-  const notaUpgradeAnalisis = tieneAnalisisPrecios
-    ? ''
-    : '<br><br><span style="color:var(--gold);">Esto se desbloquea en el plan Full.</span>';
-
   return [
     {
       element: '#inicioStats',
@@ -244,11 +232,6 @@ async function tutorialConstruirPasos() {
     tutorialPasoBase('oportunidades', {
       title: 'Oportunidades',
       description: 'Acá viven tus Recordatorios de cierre, el Seguimiento de estado, y tu Portafolio, para ir moviendo cada oportunidad por las etapas de tu propio proceso de venta.',
-      side: 'bottom',
-    }),
-    tutorialPasoBase('analisis', {
-      title: 'Análisis de Precios',
-      description: `Busca un producto o rubro y revisa el historial de precios en los que se ha adjudicado antes — útil para calibrar tu oferta económica.${notaUpgradeAnalisis}`,
       side: 'bottom',
     }),
     tutorialPasoBase('ia', {
