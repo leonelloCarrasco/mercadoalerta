@@ -238,6 +238,56 @@ h2 { font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 34px); font
 .price-features li::before { content: '— '; color: var(--gold); flex-shrink: 0; }
 .price-features li strong { color: var(--text); font-weight: 500; }
 .price-card .btn { width: 100%; justify-content: center; }
+
+/* Tarjeta única (un solo plan pago) — en vez de la grilla de 3 columnas
+   pensada para varios planes, se centra una sola tarjeta más ancha. */
+.pricing-grid-solo {
+  grid-template-columns: 1fr;
+  max-width: 420px;
+  margin: 0 auto;
+}
+@media (max-width: 900px) {
+  /* La grilla original pasa a scroll horizontal en mobile (pensado para
+     varias tarjetas) — con una sola tarjeta no hace falta nada de eso. */
+  .pricing-grid-solo {
+    display: block;
+    overflow: visible;
+    padding: 4px 24px 16px;
+  }
+  .pricing-grid-solo .price-card { max-width: 100%; }
+}
+.price-trial-note { font-size: 13.5px; color: var(--text-muted); margin: -14px 0 18px; }
+.price-trial-caption { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); text-align: center; margin-top: 10px; }
+
+/* Modal: qué incluye el Trial vs. Full — ver landing-la6f3c.html/js. */
+.trial-modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.6);
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.trial-modal-overlay.open { display: flex; }
+.trial-modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  max-width: 440px; width: 100%; padding: 32px 28px;
+  position: relative;
+}
+.trial-modal h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+.trial-modal-sub { font-size: 13.5px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5; }
+.trial-modal-cerrar {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;
+}
+.trial-modal-cerrar:hover { color: var(--text); }
+.trial-modal-comparacion { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+.trial-modal-fila { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; background: var(--surface); padding: 10px 14px; font-size: 13px; }
+.trial-modal-fila-header { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.trial-modal-valor-trial { color: var(--text-muted); text-align: right; min-width: 46px; }
+.trial-modal-valor-full { color: var(--gold); font-weight: 600; text-align: right; min-width: 46px; }
+.trial-modal-cargando { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.trial-modal-acciones { display: flex; flex-direction: column; gap: 10px; }
+.trial-modal-acciones .btn { width: 100%; justify-content: center; }
 .faq-list { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .faq-item { background: var(--surface); padding: 22px 26px; }
 .faq-item h3 { font-family: var(--font-body); font-weight: 600; font-size: 15px; margin-bottom: 8px; }
