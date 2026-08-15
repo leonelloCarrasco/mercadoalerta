@@ -65,15 +65,18 @@ function armarTarjetaPlanUnico(planFull, diasTrial) {
     : '';
 
   return `
-    <div class="price-card destacado">
+    <div class="price-card destacado price-card-hero">
       ${stampHtml}
-      <div class="price-plan-name">Plan ${planFull.nombreDisplay}</div>
-      <div class="price-plan-desc">${planFull.descripcion}</div>
-      ${precioHtml}
-      <div class="price-trial-note">Incluye ${diasTrial} días de prueba gratis.</div>
-      <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-primary dashboard-link cta-registro-trial" data-path="/register.html?plan=trial">⚡ Comenzar ${diasTrial} Días Gratis →</a>
-      <div class="price-trial-caption">${diasTrial} días gratis · Cancela cuando quieras</div>
-      <ul class="price-features">${armarFeaturesPlan(planFull)}</ul>
+      <div class="price-card-left">
+        <div class="price-plan-label">Plan ${planFull.nombreDisplay}</div>
+        ${precioHtml}
+        <div class="price-trial-note">Incluye ${diasTrial} días de prueba gratis.</div>
+        <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-primary dashboard-link cta-registro-trial" data-path="/register.html?plan=trial">⚡ Comenzar ${diasTrial} Días Gratis →</a>
+        <div class="price-trial-caption">${diasTrial} días gratis · Cancela cuando quieras</div>
+      </div>
+      <div class="price-card-right">
+        <ul class="price-features price-features-check">${armarFeaturesPlan(planFull)}</ul>
+      </div>
     </div>
   `;
 }
@@ -110,7 +113,7 @@ cargarPlanes();
 // .cta-registro-trial) ANTES de navegar a register.html. La tarjeta de
 // arriba describe el plan FULL — sin este modal, alguien podría asumir que
 // esas mismas cuotas aplican desde el primer día de la prueba gratis,
-// cuando en realidad el Trial tiene cuotas más chicas (ver planes.js,
+// cuando en realidad el Trial tiene cuotas menores (ver planes.js,
 // backend).
 const CAMPOS_COMPARACION = [
   { campo: 'limiteAlertas', etiqueta: 'Alertas activas' },
