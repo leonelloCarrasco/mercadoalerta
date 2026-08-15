@@ -1222,8 +1222,7 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Tu período de prueba de 14 días terminó. Elige un plan para seguir recibiendo alertas.</p>
         <div class="btn-group">
-          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
-          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Activar Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -1232,8 +1231,7 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Tu período de prueba termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Elige un plan para no perder tus alertas.</p>
         <div class="btn-group">
-          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
-          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Activar Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -1255,8 +1253,7 @@ function mostrarBannerPlan(usuario) {
       banner.innerHTML = `
         <p>Cancelaste tu suscripción — tu acceso termina en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}. Si te arrepentiste, puedes reactivarlo.</p>
         <div class="btn-group">
-          <button class="btn" id="btn-elegir-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-elegir-basico')">✅ Elegir Basic</button>
-          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Elegir Full</button>
+          <button class="btn" id="btn-elegir-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-elegir-full')">🌟 Activar Full</button>
         </div>
       `;
       banner.style.display = 'flex';
@@ -4698,16 +4695,14 @@ async function renderSuscripcionTrial(usuario) {
       : ' (venció)';
   }
 
-  // Precios desde el backend — así nunca hay que volver a tocar este
-  // archivo cuando cambien un valor en planes.js.
-  let textoBotonBasico = '✅ Elegir Básico';
-  let textoBotonFull = '🌟 Elegir Full';
+  // Precio desde el backend — así nunca hay que volver a tocar este
+  // archivo cuando cambie un valor en planes.js.
+  let textoBotonFull = '🌟 Activar Full';
   try {
     const planes = await obtenerPlanesData();
-    textoBotonBasico = `✅ Elegir Básico — $${planes.basico.monto.toLocaleString('es-CL')}/mes`;
-    textoBotonFull = `🌟 Elegir Full — $${planes.full.monto.toLocaleString('es-CL')}/mes`;
+    textoBotonFull = `🌟 Activar Full — $${planes.full.monto.toLocaleString('es-CL')}/mes`;
   } catch (err) {
-    // Si falla el fetch de precios, igual se muestran los botones sin el
+    // Si falla el fetch de precios, igual se muestra el botón sin el
     // precio en el texto — mejor eso que dejar la pantalla rota.
   }
 
@@ -4716,9 +4711,8 @@ async function renderSuscripcionTrial(usuario) {
       <span>Plan: <strong>Trial</strong></span><br>
       <span>Finaliza el: ${formatDate(usuario.fecha_expiracion_trial)}${diasTexto}</span>
     </div>
-    <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Elige un plan antes de esa fecha para no perder el acceso a tus alertas — todo lo que configuraste durante la prueba se mantiene guardado.</p>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0 0 0;">Activa Full antes de esa fecha para no perder el acceso a tus alertas — todo lo que configuraste durante la prueba se mantiene guardado.</p>
     <div class="modal-actions" style="justify-content: flex-start; margin-top:20px;">
-      <button type="button" class="btn" id="btn-plan-basico" onclick="iniciarUpgrade('${usuario.empresa_id}', 'basico', 'btn-plan-basico')">${textoBotonBasico}</button>
       <button type="button" class="btn" id="btn-plan-full" onclick="iniciarUpgrade('${usuario.empresa_id}', 'full', 'btn-plan-full')">${textoBotonFull}</button>
     </div>
   `;
@@ -4726,7 +4720,12 @@ async function renderSuscripcionTrial(usuario) {
 
 function renderSuscripcion(data) {
   const contenedor = document.getElementById('suscripcionContenido');
-  const nombrePlan = data.plan === 'full' ? 'Full' : 'Básico';
+  // Con la estrategia de un solo plan pago, 'full' es el único valor real
+  // posible acá — no queda ninguna empresa con 'basico' (nunca hubo, y el
+  // registro/upgrade ya no lo permiten). Se deja un fallback genérico en
+  // vez de asumir 'Básico' a ciegas, por si algún día vuelve a haber más
+  // de un plan pago.
+  const nombrePlan = data.plan === 'full' ? 'Full' : data.plan;
   const montoTexto = data.monto != null ? `${formatMoney(data.monto)} / mes` : 'No especificado';
 
   let estadoHtml;

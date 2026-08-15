@@ -69,8 +69,8 @@
       <span></span><span></span><span></span>
     </button>
     <div class="nav-links" id="navLinks">
-      <a class="plain" href="#planes">Planes</a>
-      <a class="plain" href="#como-funciona">Cómo funciona</a>
+      <a class="plain" href="#planes">Precio</a>
+      <a class="plain" href="#como-funciona">Cómo Funciona</a>
       <a class="nav-cta dashboard-link" target="_blank" data-path="/login.html" href="https://mercadoalerta.cl/login.html">Iniciar sesión</a>
     </div>
   </nav>
@@ -88,8 +88,8 @@
       <h1>Las Licitaciones y Compras Ágiles que te interesan,<br>antes de que <em>se te escapen</em>.</h1>
       <p class="hero-sub"><strong>MercadoAlerta</strong> revisa Mercado Público por ti, día y noche, y te avisa apenas aparece algo que calza con lo que buscas — sin entrar a revisar a mano todos los días.</p>
       <div class="hero-ctas">
-        <a href="#planes" class="btn btn-primary">Ver planes</a>
-        <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-ghost dashboard-link" data-path="/register.html?plan=trial">Empezar gratis</a>
+        <a href="#planes" class="btn btn-primary">Ver Precio</a>
+        <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-ghost dashboard-link cta-registro-trial" data-path="/register.html?plan=trial">Empezar gratis</a>
       </div>
     </div>
     <img src="/assets/mercadoalerta-dashboard-browser.png" class="hero-image" alt="Dashboard de MercadoAlerta">
@@ -142,13 +142,13 @@
 
   <section class="section reveal" id="planes">
     <div class="section-head">
-      <div class="section-eyebrow">Planes</div>
-      <h2>Un plan para cada etapa de tu empresa.</h2>
-      <p class="section-sub">Todos los planes incluyen el mismo motor de alertas — Licitaciones y Compras Ágiles, email y Telegram, historial completo. La diferencia es cuántas alertas, búsquedas y análisis con IA puedes tener activos cada mes.</p>
+      <div class="section-eyebrow">Plan</div>
+      <h2>Un plan simple, con 14 días para probarlo gratis.</h2>
+      <p class="section-sub">Full incluye todo — Licitaciones y Compras Ágiles, WhatsApp, palabras clave con IA, Análisis de Procesos con IA. Sin letra chica, sin niveles que comparar.</p>
     </div>
 
-    <div class="pricing-grid" id="pricingGrid">
-      <div class="price-card"><div class="price-plan-desc">Cargando planes…</div></div>
+    <div class="pricing-grid pricing-grid-solo" id="pricingGrid">
+      <div class="price-card"><div class="price-plan-desc">Cargando plan…</div></div>
     </div>
   </section>
 
@@ -164,7 +164,7 @@
       </div>
       <div class="faq-item">
         <h3>¿Qué pasa cuando termine mi período de prueba?</h3>
-        <p>Tienes 14 días gratis con el plan Trial. Pasado ese plazo, tu cuenta queda bloqueada hasta que elijas el plan Basic o Full y completes el pago — tus alertas y configuraciones quedan guardadas, no se pierden.</p>
+        <p>Tienes 14 días gratis con el plan Trial. Pasado ese plazo, tu cuenta queda bloqueada hasta que actives el plan Full y completes el pago — tus alertas y configuraciones quedan guardadas, no se pierden.</p>
       </div>
       <div class="faq-item">
         <h3>¿El precio de lanzamiento es para siempre?</h3>
@@ -172,7 +172,7 @@
       </div>
       <div class="faq-item">
         <h3>¿Cómo funciona WhatsApp como canal de alertas?</h3>
-        <p>Está disponible para los planes Basic y Full. Cada plan incluye un cupo mensual de mensajes por WhatsApp (10 veces tu límite de alertas activas) — si lo superas en un mes muy intenso, tus alertas siguen llegando por Email sin ningún corte, solo se pausa el canal de WhatsApp hasta el mes siguiente. Email está incluido y activo siempre, en los tres planes.</p>
+        <p>Está disponible en el plan Full. Incluye un cupo mensual de mensajes por WhatsApp (10 veces tu límite de alertas activas) — si lo superas en un mes muy intenso, tus alertas siguen llegando por Email sin ningún corte, solo se pausa el canal de WhatsApp hasta el mes siguiente. Email está incluido y activo siempre, también durante el Trial.</p>
       </div>
       <div class="faq-item">
         <h3>¿Cómo se paga la suscripción?</h3>
@@ -183,10 +183,10 @@
 
   <section class="footer-cta reveal">
     <h2>Deja de revisar Mercado Público a mano.</h2>
-    <p class="hero-sub">Regístrate gratis con el plan Trial, o elige el plan que calce con tu equipo.</p>
+    <p class="hero-sub">Empieza gratis con 14 días de prueba — sin tarjeta de crédito.</p>
     <div class="hero-ctas">
-      <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-primary dashboard-link" data-path="/register.html?plan=trial">Empezar gratis</a>
-      <a href="#planes" class="btn btn-ghost">Ver todos los planes</a>
+      <a href="https://mercadoalerta.cl/register.html?plan=trial" class="btn btn-primary dashboard-link cta-registro-trial" data-path="/register.html?plan=trial">Empezar gratis</a>
+      <a href="#planes" class="btn btn-ghost">Ver el plan Full</a>
     </div>
   </section>
 </div>
@@ -196,6 +196,26 @@
   <p>Herramienta independiente, sin afiliación con ChileCompra ni Mercado Público</p>
   <p>© <span id="copyrightYear">2026</span> MercadoAlerta. Todos los derechos reservados.</p>
 </footer>
+
+<!-- Modal: qué incluye el Trial vs. el plan Full — se muestra antes de
+     mandar a register.html, para que quede claro que la prueba gratis NO
+     tiene las mismas cuotas que se muestran en la tarjeta de arriba (esa
+     tarjeta describe el plan Full). Contenido armado por JS con los
+     números reales de /api/planes, no hardcodeado acá. -->
+<div class="trial-modal-overlay" id="trialModalOverlay">
+  <div class="trial-modal">
+    <button type="button" class="trial-modal-cerrar" id="trialModalCerrar" aria-label="Cerrar">✕</button>
+    <h3>Durante tu prueba gratis</h3>
+    <p class="trial-modal-sub">14 días para probar, con algunas cuotas más chicas que el plan Full — todo lo que configures se mantiene guardado si después activas Full.</p>
+    <div class="trial-modal-comparacion" id="trialModalComparacion">
+      <div class="trial-modal-cargando">Cargando…</div>
+    </div>
+    <div class="trial-modal-acciones">
+      <a href="#" class="btn btn-primary" id="trialModalContinuar">Empezar mi prueba gratis →</a>
+      <button type="button" class="btn btn-ghost" id="trialModalVolver">Volver</button>
+    </div>
+  </div>
+</div>
 
 <script src="js/landing-la6f3c.js"></script>
 <script src="js/copyright-year.js"></script>
