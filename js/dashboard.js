@@ -190,22 +190,20 @@ function formatMontoConTramo(h) {
 function formatDate(iso) {
   if (!iso) return 'No especificada';
   try {
-    return new Date(iso).toLocaleString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' });
   } catch { return iso; }
 }
 
-// Extrae "YYYY-MM-DD" en hora LOCAL (no UTC) — hace falta para que los filtros
-// de fecha comparen contra el mismo día que el usuario ve en pantalla (formatDate
-// de arriba también usa hora local). Comparar contra iso.slice(0,10) directo
-// compara en UTC, que puede ser un día distinto al que se muestra en Chile.
+// Extrae "YYYY-MM-DD" en hora de CHILE explícita — antes usaba .getFullYear()/
+// .getMonth()/.getDate() (hora LOCAL del navegador), que solo coincide con
+// Chile si el dispositivo del usuario está en esa zona horaria — se rompe si
+// alguien revisa el dashboard viajando fuera de Chile. El truco de locale
+// 'en-CA' da directo el formato YYYY-MM-DD con la zona horaria que se le pida.
 function fechaLocalISO(iso) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
 }
 
 function soloDigitos(valor) {
@@ -2184,7 +2182,7 @@ document.getElementById('descargarPdfBtn').addEventListener('click', async () =>
   doc.setFontSize(14);
   doc.text(`Búsqueda: ${escapeHtml(busqueda.nombre)}`, 40, 40);
   doc.setFontSize(9);
-  doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, 56);
+  doc.text(`Generado el ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`, 40, 56);
 
   doc.autoTable({
     startY: 70,
@@ -3508,7 +3506,7 @@ function actualizarResultadosPrecios() {
         <td>${escapeHtml(r.proveedor) || '—'}</td>
         <td>${formatMoney(r.precio_unitario)}</td>
         <td>${resultadoHtml}</td>
-        <td>${r.fecha_adjudicacion ? new Date(r.fecha_adjudicacion).toLocaleDateString('es-CL') : '—'}</td>
+        <td>${r.fecha_adjudicacion ? new Date(r.fecha_adjudicacion).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</td>
       </tr>
     `;
   }).join('');
@@ -4232,7 +4230,7 @@ document.getElementById('analisisDescargarPdfBtn').addEventListener('click', () 
   let y = 40 + tituloLineas.length * 16 + 6;
 
   doc.setFontSize(9);
-  doc.text(`Generado el ${new Date().toLocaleString('es-CL')}`, 40, y);
+  doc.text(`Generado el ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`, 40, y);
   y += 24;
 
   doc.setFontSize(10);
