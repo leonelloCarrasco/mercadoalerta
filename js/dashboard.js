@@ -210,6 +210,28 @@ function soloDigitos(valor) {
   return valor.replace(/\D/g, '');
 }
 
+// Traduce el `estado` crudo que devuelve MercadoPago (en inglés, ej.
+// "approved") al español — son los mismos valores documentados para el
+// campo status de un pago (approved/pending/rejected/etc.), no específicos
+// de MercadoAlerta. Si llega algo no mapeado, se muestra tal cual en vez de
+// romper — más seguro que asumir que la lista está completa.
+const ESTADOS_PAGO_MP = {
+  approved: 'Aprobado',
+  pending: 'Pendiente',
+  in_process: 'En proceso',
+  rejected: 'Rechazado',
+  refunded: 'Reembolsado',
+  cancelled: 'Cancelado',
+  in_mediation: 'En mediación',
+  charged_back: 'Contracargo',
+  processed: 'Procesado',
+  scheduled: 'Programado',
+};
+function traducirEstadoPagoMP(estado) {
+  if (!estado) return '—';
+  return ESTADOS_PAGO_MP[estado] || estado;
+}
+
 function formatearMiles(valor) {
   const digitos = soloDigitos(valor);
   if (!digitos) return '';
