@@ -2,6 +2,21 @@ const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://localhost:3000'
   : 'https://api.mercadoalerta.cl';
 
+// Compra Ágil deshabilitada en el front (septiembre 2026) — el poll de
+// Compra Ágil tiene problemas de rendimiento del lado de Mercado Público
+// (tiempos de respuesta de 10-20s, 504 frecuentes, ver conversación de
+// soporte/Contraloría en curso) que hacen que el dato no llegue con la
+// frescura necesaria para ofrecerlo como feature activa en el lanzamiento.
+// El poll en sí también está pausado del lado del backend
+// (POLL_COMPRA_AGIL_HABILITADO en src/jobs/index.js) — los dos
+// interruptores son independientes, pero se piensan para moverse juntos.
+// UN SOLO interruptor acá: cambiar esto a `true` reactiva las 3 opciones
+// de Compra Ágil (crear alerta, búsqueda guardada, análisis de precios) y
+// los 2 filtros "Tipo proceso" (Configuraciones, Notificaciones) sin tocar
+// nada más — no se borró ni el HTML ni la lógica que ya calculaba campos
+// según el tipo elegido, solo se oculta/deshabilita la opción de elegirlo.
+const COMPRA_AGIL_HABILITADA = false;
+
 const token = localStorage.getItem('token');
 if (!token) window.location.href = 'login.html';
 
@@ -5044,6 +5059,79 @@ document.getElementById('avatarQuitarBtn').addEventListener('click', async () =>
     btn.disabled = false;
   }
 });
+
+
+/**
+ * Aplica COMPRA_AGIL_HABILITADA (ver la constante al inicio del archivo) —
+ * oculta/deshabilita las 3 formas en que un usuario podría elegir "Compra
+ * Ágil" en el dashboard, más los 2 filtros "Tipo proceso" (Configuraciones,
+ * Notificaciones), sin tocar el HTML ni la lógica que ya existía para esos
+ * campos. `.closest('.checkbox-row')` oculta el <label> entero (texto +
+ * input), no solo el input, para que no quede un radio/checkbox invisible
+ * pero igual clickeable por accidente.
+ */
+function aplicarBanderaCompraAgil() {
+  if (COMPRA_AGIL_HABILITADA) return; // sin cambios — el HTML ya viene con Compra Ágil visible por defecto
+
+  // 1. Crear/editar alerta — forzar Licitaciones, ocultar la opción de Compra Ágil.
+  const chkCompraAgil = document.getElementById('tipoProcesoCompraAgil');
+  if (chkCompraAgil) {
+    chkCompraAgil.checked = false;
+    chkCompraAgil.closest('.checkbox-row')?.style.setProperty('display', 'none');
+  }
+  const optSelectAlerta = document.querySelector('#tipoProcesoSelect option[value="compra_agil"]');
+  if (optSelectAlerta) optSelectAlerta.disabled = true;
+  const optSelectAlertaAmbas = document.querySelector('#tipoProcesoSelect option[value="ambas"]');
+  if (optSelectAlertaAmbas) optSelectAlertaAmbas.disabled = true;
+
+  // 2. Búsquedas guardadas — ocultar la opción de Compra Ágil.
+  const radioBusquedaCA = document.getElementById('busquedaTipoCompraAgil');
+  if (radioBusquedaCA) {
+    radioBusquedaCA.closest('.checkbox-row')?.style.setProperty('display', 'none');
+  }
+  const optBusquedaCA = document.querySelector('#busquedaTipoSelect option[value="compra_agil"]');
+  if (optBusquedaCA) optBusquedaCA.disabled = true;
+
+  // 3. Análisis de Precios — ocultar la opción de Compra Ágil (sección
+  // igual sigue marcada como "temporalmente visible en Trial para
+  // pruebas" en el HTML — esto solo saca Compra Ágil de adentro de esa
+  // sección, no toca la visibilidad de la sección en sí).
+  const radioAnalisisCA = document.querySelector('input[name="analisisTipo"][value="compra_agil"]');
+  if (radioAnalisisCA) {
+    radioAnalisisCA.closest('.checkbox-row')?.style.setProperty('display', 'none');
+  }
+  const inputAnalisisCodigo = document.getElementById('analisisCodigo');
+  if (inputAnalisisCodigo) {
+    document.getElementById('analisisCodigo').placeholder = "Ej: 1509-5-L114";
+  }
+
+  // 4. Filtros "Tipo proceso" (Configuraciones y Notificaciones) — se
+  // ocultan por completo (campo entero, no solo la opción de Compra Ágil).
+  // Ambos ya vienen sin ninguna opción "selected" explícita en el HTML, así
+  // que el valor por defecto ya es "Todos" — no hace falta resetear nada
+  // antes de ocultarlos.
+  const filtroTipoConfig = document.getElementById('filtroTipoProcesoConfig');
+  if (filtroTipoConfig) filtroTipoConfig.closest('.field')?.style.setProperty('display', 'none');
+  const filtroTipoHist = document.getElementById('filtroTipoHist');
+  if (filtroTipoHist) filtroTipoHist.closest('.field')?.style.setProperty('display', 'none');
+}
+
+// resetTipoProceso() (definida más arriba) deja tildados los 2 checkboxes
+// por defecto ("ambas") cada vez que se abre el formulario de crear/editar
+// alerta — con Compra Ágil deshabilitada, se fuerza a que quede reseteado
+// en Licitaciones solamente, para no reabrir el formulario con un estado
+// que el usuario ya no puede ver ni modificar.
+const resetTipoProcesoOriginal = resetTipoProceso;
+resetTipoProceso = function resetTipoProcesoConBandera() {
+  resetTipoProcesoOriginal();
+  if (!COMPRA_AGIL_HABILITADA) {
+    tipoProcesoCompraAgilChk.checked = false;
+    tipoProcesoSelectEl.value = 'licitacion';
+    actualizarCamposSegunTipoProceso();
+  }
+};
+
+aplicarBanderaCompraAgil();
 
 cargarUsuario();
 cargarRegiones();
