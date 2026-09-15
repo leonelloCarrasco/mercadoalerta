@@ -89,13 +89,19 @@ function tutorialHtmlMockInterno(nombreSeccion) {
       </div>`,
 
     // Mismo formato que renderRecordatorios (título, tipo, código, organismo, monto, cierre, estado de aviso).
+    // Compra Ágil deshabilitada temporalmente (ver COMPRA_AGIL_HABILITADA en js/dashboard.js) — el
+    // ejemplo de mockup original usaba una Compra Ágil; se reemplaza acá por una Licitación,
+    // para no mostrar de ejemplo algo que hoy no está disponible. Original a restaurar:
+    //   <div class="row-title">Compra de equipos de laboratorio</div>
+    //   <span>⚡ Compra Ágil</span><br>
+    //   <span>Código: 987-6-CM24</span><br>
     oportunidades: `
       <div class="row" style="border-bottom:none;">
         <div class="row-info">
-          <div class="row-title">Compra de equipos de laboratorio</div>
+          <div class="row-title">Suministro de insumos de aseo institucional</div>
           <div class="row-meta">
-            <span>⚡ Compra Ágil</span><br>
-            <span>Código: 987-6-CM24</span><br>
+            <span>📋 Licitación</span><br>
+            <span>Código: 1509-45-L124</span><br>
             <span>Organismo: Universidad de Chile</span><br>
             <span>Monto: $4.200.000</span><br>
             <span>Cierra: 15 ago. 2026, 15:00</span><br>
@@ -221,7 +227,9 @@ async function tutorialConstruirPasos() {
     },
     tutorialPasoBase('notificaciones', {
       title: 'Notificaciones',
-      description: 'Cada vez que una Licitación o Compra Ágil nueva calza con tus alertas — o cambia de estado — queda registrada acá, además de llegarte por correo (y Telegram o WhatsApp si los configuras).',
+      // Compra Ágil deshabilitada temporalmente — original:
+      // 'Cada vez que una Licitación o Compra Ágil nueva calza con tus alertas — o cambia de estado — queda registrada acá, además de llegarte por correo (y Telegram o WhatsApp si los configuras).'
+      description: 'Cada vez que una Licitación nueva calza con tus alertas — o cambia de estado — queda registrada acá, además de llegarte por correo (y Telegram o WhatsApp si los configuras).',
       side: 'bottom',
     }),
     tutorialPasoBase('busquedas', {
@@ -236,7 +244,9 @@ async function tutorialConstruirPasos() {
     }),
     tutorialPasoBase('ia', {
       title: 'Análisis de Procesos con IA',
-      description: 'Ingresa el código de una Licitación o Compra Ágil, y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.',
+      // Compra Ágil deshabilitada temporalmente — original:
+      // 'Ingresa el código de una Licitación o Compra Ágil, y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.'
+      description: 'Ingresa el código de una Licitación, y sube las bases (o indica que no las tienes) — la IA te devuelve un resumen simple y un checklist de lo que exige, como apoyo para decidir más rápido.',
       side: 'bottom',
     }),
   ];
