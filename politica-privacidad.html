@@ -30,11 +30,6 @@
   table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { color: var(--text-muted); font-weight: 600; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
-  .placeholder-notice {
-    background: var(--surface); border: 1px solid var(--gold); border-radius: 8px;
-    padding: 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 32px;
-  }
-  .placeholder-notice strong { color: var(--gold); }
   .campo-pendiente { color: var(--gold); font-family: var(--font-mono); }
 </style>
 </head>
@@ -42,27 +37,10 @@
 <div class="wrap">
   <div class="logo"><a href="landing-la6f3c.html">← MercadoAlerta</a></div>
   <h1>Política de Privacidad</h1>
-  <p class="updated">Última actualización: pendiente</p>
+  <p class="updated">Última actualización: Septiembre 2026</p>
 
-  <div class="placeholder-notice">
-    <strong>Borrador para revisión legal.</strong> Este documento fue armado a partir de un
-    inventario real de los datos que trata MercadoAlerta y de los proveedores con los que
-    efectivamente trabaja hoy, pensado para adecuarse a la Ley N° 21.719 sobre Protección de
-    Datos Personales (vigente desde el 1 de diciembre de 2026). Debe ser revisado por un abogado
-    antes de publicarse como versión definitiva — en particular los campos marcados en dorado
-    (<span class="campo-pendiente">así</span>), que son datos de la empresa todavía sin definir
-    o completar.
-  </div>
 
-  <h2>1. Quién es el responsable del tratamiento de tus datos</h2>
-  <p>
-    El responsable del tratamiento de los datos personales descritos en esta política es
-    <span class="campo-pendiente">{RAZÓN SOCIAL DE LA EMPRESA}</span>, RUT
-    <span class="campo-pendiente">{RUT}</span>, con domicilio en
-    <span class="campo-pendiente">{DIRECCIÓN}</span>, Chile — en adelante, "MercadoAlerta".
-  </p>
-
-  <h2>2. Qué datos recopilamos</h2>
+  <h2>1. Qué datos recopilamos</h2>
   <h3>Datos de la cuenta</h3>
   <ul>
     <li>Nombre, apellido, email y teléfono de la persona que crea la cuenta.</li>
@@ -82,6 +60,10 @@
   <ul>
     <li>Si usas la función de Análisis de Procesos con IA, el contenido de los documentos de bases que subes se envía a Anthropic (ver sección 3) para generar el resumen — no se almacena el archivo original en los servidores de MercadoAlerta más allá de lo necesario para procesarlo.</li>
   </ul>
+  <h3>Texto que escribes para sugerencias de la IA</h3>
+  <ul>
+    <li>Si usas la función de sugerencia de palabras clave al crear una alerta, la descripción que escribes se envía a Anthropic (ver sección 3) para generar las sugerencias.</li>
+  </ul>
   <h3>Datos públicos de terceros</h3>
   <ul>
     <!-- Compra Ágil deshabilitada temporalmente (poll pausado, ver POLL_COMPRA_AGIL_HABILITADO
@@ -90,7 +72,7 @@
     <li>Como parte del servicio, MercadoAlerta también almacena y muestra información pública proveniente de Mercado Público — como nombres y RUT de proveedores adjudicados en procesos de Licitación. Esa información no la recolectamos directamente de esas personas, sino que ya es pública en las plataformas oficiales del Estado.</li>
   </ul>
 
-  <h2>3. Para qué usamos tus datos, y con qué base legal</h2>
+  <h2>2. Para qué usamos tus datos, y con qué base legal</h2>
   <table>
     <tr><th>Finalidad</th><th>Base legal</th></tr>
     <tr><td>Crear y administrar tu cuenta, enviarte las alertas configuradas</td><td>Ejecución del contrato de servicio</td></tr>
@@ -102,19 +84,20 @@
   </table>
   <p>No usamos tus datos para marketing ni se los cedemos a terceros con fines comerciales ajenos al servicio que contrataste.</p>
 
-  <h2>4. Con quién compartimos datos — proveedores y transferencias internacionales</h2>
+  <h2>3. Con quién compartimos datos — proveedores y transferencias internacionales</h2>
   <p>Para operar el servicio, compartimos datos puntuales con los siguientes proveedores. Todos ellos actúan como encargados del tratamiento (procesan datos por nuestra cuenta, no para sus propios fines), y las transferencias a cada uno están amparadas en los mecanismos que se indican:</p>
   <table>
     <tr><th>Proveedor</th><th>Qué dato recibe</th><th>Mecanismo de transferencia</th></tr>
     <tr><td><strong>Anthropic</strong> (análisis con IA)</td><td>Contenido de los documentos de bases que subes, solo cuando pides un análisis</td><td>Cláusulas Contractuales Tipo (SCC), incorporadas a sus Términos Comerciales</td></tr>
     <tr><td><strong>Resend</strong> (envío de correos)</td><td>Nombre, email, y el contenido de las alertas/notificaciones</td><td>Cláusulas Contractuales Tipo (SCC) + certificación EU-US Data Privacy Framework</td></tr>
     <tr><td><strong>Telegram</strong></td><td>ID de chat, contenido de las alertas (si vinculaste esta notificación)</td><td>Servicio que eliges vincular tú mismo, de forma voluntaria</td></tr>
+    <tr><td><strong>YCloud</strong> (envío de WhatsApp)</td><td>Número de teléfono, contenido de las alertas (si vinculaste esta notificación)</td><td>Servicio que eliges vincular tú mismo, de forma voluntaria</td></tr>
     <tr><td><strong>MercadoPago</strong> (pagos)</td><td>Datos necesarios para procesar tu pago</td><td>Mercado Pago S.A. (RUT 76.516.950-K) es una entidad con domicilio en Chile — el tratamiento de tus datos de pago queda sujeto a la normativa chilena directamente</td></tr>
     <tr><td><strong>Cloudflare</strong> (verificación "no soy un robot")</td><td>Señales técnicas del navegador (IP, características del dispositivo) — no identifica a la persona directamente</td><td>Cláusulas Contractuales Tipo (SCC), incorporadas automáticamente a sus términos</td></tr>
   </table>
   <p>No vendemos ni compartimos tu información con terceros para fines de marketing o publicidad.</p>
 
-  <h2>5. Seguridad de los datos</h2>
+  <h2>4. Seguridad de los datos</h2>
   <ul>
     <li>Contraseñas cifradas con bcrypt — nunca se guardan en texto plano.</li>
     <li>Comunicación cifrada (HTTPS/TLS) entre tu navegador y nuestros servidores.</li>
@@ -123,11 +106,11 @@
     <li>No usamos cookies de ningún tipo en el sitio — ni de sesión, ni de analítica, ni publicitarias.</li>
   </ul>
 
-  <h2>6. Cuánto tiempo conservamos tus datos</h2>
+  <h2>5. Cuánto tiempo conservamos tus datos</h2>
   <p>Conservamos tus datos personales mientras tu cuenta esté activa. Si solicitas la eliminación de tu cuenta, tus datos personales se eliminan dentro de un plazo de <strong>30 días</strong>.</p>
   <p>Los registros vinculados a pagos se conservan por el período que exige la normativa tributaria chilena, incluso después de eliminada la cuenta.</p>
 
-  <h2>7. Tus derechos</h2>
+  <h2>6. Tus derechos</h2>
   <p>De acuerdo con la Ley N° 21.719 sobre Protección de Datos Personales, tienes derecho a:</p>
   <ul>
     <li><strong>Acceder</strong>: pedir una copia de los datos personales que tenemos sobre ti.</li>
@@ -137,24 +120,24 @@
     <li><strong>Portabilidad</strong>: pedir tus datos en un formato que puedas llevarte a otro proveedor.</li>
     <li><strong>Bloqueo</strong>: pedir que se suspenda temporalmente el tratamiento de tus datos mientras se resuelve una consulta o reclamo.</li>
   </ul>
-  <p>Para ejercer cualquiera de estos derechos, escríbenos a <span class="campo-pendiente">{EMAIL DE SOPORTE}</span> indicando qué derecho quieres ejercer. Vamos a responder tu solicitud dentro de los plazos que establece la ley.</p>
+  <p>Para ejercer cualquiera de estos derechos, escríbenos a <span class="campo-pendiente">contacto@mercadoalerta.cl</span> indicando qué derecho quieres ejercer. Vamos a responder tu solicitud dentro de los plazos que establece la ley.</p>
   <p>Si consideras que no dimos una respuesta adecuada a tu solicitud, puedes reclamar ante la <strong>Agencia de Protección de Datos Personales</strong>, la autoridad chilena encargada de fiscalizar el cumplimiento de esta ley.</p>
 
-  <h2>8. Cookies</h2>
+  <h2>7. Cookies</h2>
   <p>MercadoAlerta no utiliza cookies de ningún tipo — ni de sesión, ni de analítica (no usamos Google Analytics ni herramientas similares), ni publicitarias. La sesión se mantiene mediante un token que tu navegador guarda localmente mientras estás usando el sitio.</p>
   <p>El único componente de terceros que podría dejar alguna cookie técnica propia es el widget de verificación "no soy un robot" (Cloudflare Turnstile), fuera del control directo de MercadoAlerta.</p>
 
-  <h2>9. Menores de edad</h2>
+  <h2>8. Menores de edad</h2>
   <p>MercadoAlerta está diseñado para uso empresarial y profesional. No recopilamos intencionalmente información de menores de 18 años. Si detectamos que una cuenta fue creada por un menor de edad, procederemos a eliminarla.</p>
 
-  <h2>10. Cambios a esta política</h2>
+  <h2>9. Cambios a esta política</h2>
   <p>Podemos actualizar esta política cuando sea necesario. Los cambios significativos serán notificados por correo electrónico con anticipación razonable. La fecha de la última actualización se indica al inicio de este documento.</p>
 
-  <h2>11. Legislación aplicable</h2>
+  <h2>10. Legislación aplicable</h2>
   <p>Esta Política de Privacidad se rige por la Ley N° 21.719 sobre Protección de Datos Personales y demás normativa aplicable de la República de Chile.</p>
 
-  <h2>12. Contacto</h2>
-  <p>Para consultas sobre esta política o para ejercer tus derechos, escribinos a <span class="campo-pendiente">{EMAIL DE SOPORTE}</span>.</p>
+  <h2>11. Contacto</h2>
+  <p>Para consultas sobre esta política o para ejercer tus derechos, escribinos a <span class="campo-pendiente">contacto@mercadoalerta.cl</span>.</p>
 
   <p style="margin-top: 32px;"><a href="landing-la6f3c.html" style="color: var(--gold);">← Volver al inicio</a></p>
 </div>
